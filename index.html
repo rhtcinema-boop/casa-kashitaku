@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=202610230002">
-<script src="js/lock.js?v=202610230002"></script>
+<link rel="stylesheet" href="css/style.css?v=202610230013">
+<script src="js/lock.js?v=202610230013"></script>
 <style>
   body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; overflow-wrap: anywhere; }
   .wrap { margin: 0 auto; padding: calc(var(--sat) + 12px) 16px calc(var(--sab) + 120px); }
@@ -65,8 +65,8 @@
   .tourbar small { font-size: 15px; color: var(--text2); font-weight: 500; margin-left: 2px; }
 
   /* 下のタブバー(すりガラス) */
-  nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bar); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); display: grid; grid-template-columns: repeat(4, 1fr); padding: 6px max(8px, calc((100% - 900px) / 2)) calc(var(--sab) + 8px); z-index: 20; }
-  nav button { border: 0; background: none; color: var(--gray); font-size: 16px; font-weight: 600; padding: 10px 0 8px; }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bar); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px max(8px, calc((100% - 900px) / 2)) calc(var(--sab) + 8px); z-index: 20; }
+  nav button { border: 0; background: none; color: var(--gray); font-size: clamp(11px, 3.3vw, 16px); font-weight: 600; padding: 10px 0 8px; white-space: nowrap; min-width: 0; }
   nav button span { display: block; font-size: 32px; line-height: 1.1; margin-bottom: 3px; }
   nav button.on { color: var(--blue); }
 
@@ -181,6 +181,23 @@
   .preview { margin-top: 10px; }
   .preview canvas, .preview img { width: 100%; border-radius: 14px; box-shadow: var(--shadow); }
   .hide { display: none !important; }
+  #tab-players { max-width: 900px; margin: 0 auto; }
+  .pl-list .pl { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; border-top: .5px solid var(--sep); }
+  .pl-list .pl:first-child { border-top: 0; }
+  .pl-list .pl .no { font-size: 24px; font-weight: 700; text-align: center; }
+  .pl-list .pl .nm { font-size: 19px; font-weight: 600; }
+  .pl-list .pl .nm small { font-size: 16px; font-weight: 700; margin-left: 6px; }
+  .pl-list .pl .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .pl-list .pl .chips span { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--fill); color: var(--c, var(--text2)); }
+  .pl-list .pl .chips span.live { background: var(--blue-tint); }
+  .pl-list .pl .btn { padding: 12px 14px; font-size: 16px; white-space: normal; max-width: 120px; }
+  .pl-list .pl.gone { opacity: .55; }
+  .pl-list .pl .chips span { white-space: nowrap; }
+  @media (max-width: 560px) {
+    .pl-list .pl { grid-template-columns: 36px minmax(0, 1fr); row-gap: 10px; }
+    .pl-list .pl .btn { grid-column: 2; max-width: none; justify-self: stretch; }
+    .pl-list .pl .no { align-self: start; padding-top: 2px; }
+  }
   .toast { max-width: 600px; margin: 0 auto; }
 
   /* 狭い幅(iPad の Slide Over・1/3 表示) */
@@ -213,6 +230,12 @@
     </div>
     <div class="tourbar" id="tourBar" style="display:none"></div>
     <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- プレイヤータブ -->
+  <section id="tab-players" class="hide">
+    <div class="stat" id="plStat"></div>
+    <div class="card pl-list" id="plList"></div>
   </section>
 
   <!-- 履歴タブ -->
@@ -280,6 +303,7 @@
 
 <nav id="nav">
   <button data-tab="input" class="on"><span>⌨︎</span>入力</button>
+  <button data-tab="players"><span>☺︎</span>プレイヤー</button>
   <button data-tab="log"><span>☰</span>履歴</button>
   <button data-tab="sum"><span>¥</span>収支</button>
   <button data-tab="set"><span>⚙︎</span>設定</button>
@@ -293,11 +317,11 @@
 
 <div class="toast" id="toast"><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=202610230002"></script>
-<script src="js/fit.js?v=202610230002"></script>
-<script src="js/model.js?v=202610230002"></script>
-<script src="js/api.js?v=202610230002"></script>
-<script src="js/image.js?v=202610230002"></script>
-<script src="js/phone.js?v=202610230002"></script>
+<script src="config.js?v=202610230013"></script>
+<script src="js/fit.js?v=202610230013"></script>
+<script src="js/model.js?v=202610230013"></script>
+<script src="js/api.js?v=202610230013"></script>
+<script src="js/image.js?v=202610230013"></script>
+<script src="js/phone.js?v=202610230013"></script>
 </body>
 </html>

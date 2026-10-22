@@ -89,6 +89,7 @@
     renderGrid();
     renderLog();
     renderSum();
+    renderPlayers();
     renderSet();
     if (openNo != null && $('#sheet').classList.contains('show')) { if (openNo !== 0) renderPanel(); else if (!pad) renderDealer(); } // 0 = ディーラー(テンキー入力中は作り直さない)
     fitScreen();
@@ -170,6 +171,43 @@
     if (p.tour.e + p.tour.re) parts.push(`T ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b>` : ''} ${K.signedPt(p.tour.pl)}`);
     return parts.join(' ／ ') || 'まだ入力なし';
   }
+  // ---------- プレイヤー一覧(全ゲーム終了ボタン付き) ----------
+  // その人のまだ終わっていないゲーム
+  function pendingGames(p) {
+    const q = [];
+    if (p.bac.in && !p.bac.done) q.push('bac');
+    if (p.cash.in && !p.cash.done) q.push('cash');
+    if (p.tour.e + p.tour.re && p.tour.alive) q.push('tour');
+    return q;
+  }
+  function renderPlayers() {
+    const nos = new Set(state.players.map(p => Number(p.no)));
+    state.txs.forEach(t => { if (t.game !== 'dealer' && t.no !== '' && t.no != null) nos.add(Number(t.no)); });
+    const list = [...nos].filter(n => n > 0).sort((a, b) => a - b).map(n => playerOf(n));
+    const playing = list.filter(p => pendingGames(p).length).length;
+    const played = list.filter(p => p.bac.in || p.cash.in || p.tour.e + p.tour.re).length;
+    $('#plStat').innerHTML = `<div><span>登録</span><b>${list.length}<small> 人</small></b></div><div><span>プレイ中</span><b>${playing}<small> 人</small></b></div><div><span>終了</span><b>${played - playing}<small> 人</small></b></div>`;
+    if (!list.length) { $('#plList').innerHTML = '<div class="empty">まだ誰も登録されていません</div>'; return; }
+    $('#plList').innerHTML = list.map(p => {
+      const pend = pendingGames(p), chips = [];
+      if (p.bac.in || p.bac.out) chips.push(`<span class="g-bac ${p.bac.done ? '' : 'live'}">バカラ ${p.bac.done ? '終了' : 'プレイ中'} ${K.signedPt(p.bac.pl)}</span>`);
+      if (p.cash.in || p.cash.out) chips.push(`<span class="g-cash ${p.cash.done ? '' : 'live'}">リング ${p.cash.done ? '終了' : 'プレイ中'} ${K.signedPt(p.cash.pl)}</span>`);
+      if (p.tour.e + p.tour.re) chips.push(`<span class="g-tour ${p.tour.alive ? 'live' : ''}">T ${p.tour.alive ? 'プレイ中' : (p.tour.rank || '飛び')} ${K.signedPt(p.tour.pl)}</span>`);
+      const any = chips.length;
+      return `<div class="pl ${any && !pend.length ? 'gone' : ''}">
+        <div class="no">${p.no}</div>
+        <div><div class="nm">${esc(p.name || '(未登録)')}${any ? `<small class="${cls(p.total)}">${K.signedPt(p.total)}</small>` : ''}</div>
+          <div class="chips">${chips.join('') || '<span>まだ遊んでいません</span>'}</div></div>
+        ${pend.length ? `<button class="btn gold" data-endall="${p.no}">全ゲーム終了</button>` : `<button class="btn" disabled>${any ? '終了済み' : '—'}</button>`}
+      </div>`;
+    }).join('');
+  }
+  $('#plList').addEventListener('click', e => {
+    const b = e.target.closest('[data-endall]'); if (!b) return;
+    openSheet(Number(b.dataset.endall));
+    startHome();
+  });
+
   function renderSum() {
     const t = agg.totals;
     $('#sumStat').innerHTML = `
@@ -301,10 +339,7 @@
   // バカラ・リング: IN があって OUT がまだ → OUT を入力(0 でも可)。トーナメント: 続行中 → 順位か圏外。
   let home = null; // { no, queue: ['bac','cash','tour'] }
   function startHome() {
-    const p = playerOf(openNo), q = [];
-    if (p.bac.in && !p.bac.done) q.push('bac');
-    if (p.cash.in && !p.cash.done) q.push('cash');
-    if (p.tour.e + p.tour.re && p.tour.alive) q.push('tour');
+    const p = playerOf(openNo), q = pendingGames(p);
     if (!q.length) return toast('終了していないゲームはありません', `No.${p.no} ${esc(p.name)} はすべて終了しています`);
     home = { no: openNo, queue: q };
     nextHome();
@@ -480,7 +515,7 @@
     const b = e.target.closest('button'); if (!b) return;
     tab = b.dataset.tab;
     document.querySelectorAll('#nav button').forEach(x => x.classList.toggle('on', x === b));
-    ['input', 'log', 'sum', 'set'].forEach(k => $('#tab-' + k).classList.toggle('hide', k !== tab));
+    ['input', 'players', 'log', 'sum', 'set'].forEach(k => $('#tab-' + k).classList.toggle('hide', k !== tab));
     if (tab !== 'sum') $('#preview').innerHTML = '';
     window.scrollTo(0, 0); // タブを押したら一番上から
     refresh();
