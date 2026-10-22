@@ -472,9 +472,9 @@
     }
   });
   // ---------- プライズをテキストで出す(LINE などに貼る用) ----------
-  // 1位から順に、金額の数字だけを1行ずつ(順位・単位・見出しなし)
+  // 1位から順に、円の金額をカンマ区切りで1行ずつ(順位・単位・見出しなし) 例: 1,150,000
   function prizeText(list) {
-    return list.map(v => String(K.round1(v))).join('\n');
+    return list.map(v => Math.round(v * 10000).toLocaleString('ja-JP')).join('\n');
   }
   async function shareText(text) {
     if (navigator.share) {
