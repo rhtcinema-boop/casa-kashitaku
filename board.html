@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f2f2f7">
 <title>casa 貸卓 — ボード</title>
 <link rel="icon" href="icon-180.png" type="image/png">
-<link rel="stylesheet" href="css/style.css?v=202610222138">
+<link rel="stylesheet" href="css/style.css?v=202610222156">
 <style>
   body { padding: 22px 26px 34px; }
   header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 18px; }
@@ -41,6 +41,7 @@
   td.ins { color: var(--text2); font-size: 13px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; text-align: left; }
   td.dimv { color: var(--fill2); }
   td.total { font-weight: 700; font-size: 18px; }
+  td.rk { color: var(--indigo); font-weight: 700; }
   tr.dealer td { color: var(--text2); background: var(--fill); }
   tr.sum td { font-weight: 700; border-top: 1px solid var(--sep); background: var(--blue-tint); }
   tr.house td { font-weight: 700; }
@@ -99,10 +100,10 @@
   </aside>
 </div>
 
-<script src="config.js?v=202610222138"></script>
-<script src="js/model.js?v=202610222138"></script>
-<script src="js/api.js?v=202610222138"></script>
-<script src="js/image.js?v=202610222138"></script>
+<script src="config.js?v=202610222156"></script>
+<script src="js/model.js?v=202610222156"></script>
+<script src="js/api.js?v=202610222156"></script>
+<script src="js/image.js?v=202610222156"></script>
 <script>
 (() => {
   const K = Kashitaku, API = KashitakuAPI, CFG = KASHITAKU_CONFIG, PY = CFG.POINT_YEN || 10000;
@@ -150,33 +151,33 @@
     const insTxt = arr => arr.length ? esc(arr.join(' + ')) : '';
     let html = `<table>
       <thead>
-        <tr><th class="grp" colspan="2"></th><th class="grp tot sep">合計</th><th class="grp bac sep" colspan="4">BACCARAT</th><th class="grp cash sep" colspan="4">CASH(リング)</th><th class="grp tour sep" colspan="4">TOURNAMENT</th></tr>
+        <tr><th class="grp" colspan="2"></th><th class="grp tot sep">合計</th><th class="grp bac sep" colspan="4">BACCARAT</th><th class="grp cash sep" colspan="4">CASH(リング)</th><th class="grp tour sep" colspan="5">TOURNAMENT</th></tr>
         <tr><th class="c">No</th><th class="l">名前</th><th class="sep">収支</th>
           <th class="sep l">IN 内訳</th><th>IN</th><th>OUT</th><th>収支</th>
           <th class="sep l">IN 内訳</th><th>IN</th><th>OUT</th><th>収支</th>
-          <th class="sep">E数</th><th>IN</th><th>OUT</th><th>収支</th></tr>
+          <th class="sep">E数</th><th>IN</th><th class="c">順位</th><th>OUT</th><th>収支</th></tr>
       </thead><tbody>`;
     html += rows.map(p => `<tr class="${!firstLoad && changedNos.has(p.no) ? 'flash' : ''}">
       <td class="c">${p.no}</td><td class="l name">${esc(p.name || '(未登録)')}</td>
       <td class="sep total ${cls(p.total)}">${sp(p.total)}</td>
       <td class="sep ins">${insTxt(p.bac.ins)}</td><td class="${p.bac.in ? '' : 'dimv'}">${n(p.bac.in)}</td><td class="${p.bac.out ? '' : 'dimv'}">${n(p.bac.out)}</td><td class="${cls(p.bac.pl)}">${sp(p.bac.pl)}</td>
       <td class="sep ins">${insTxt(p.cash.ins)}</td><td class="${p.cash.in ? '' : 'dimv'}">${n(p.cash.in)}</td><td class="${p.cash.out ? '' : 'dimv'}">${n(p.cash.out)}</td><td class="${cls(p.cash.pl)}">${sp(p.cash.pl)}</td>
-      <td class="sep ${p.tour.e + p.tour.re ? '' : 'dimv'}">${p.tour.e + p.tour.re}${p.tour.re ? `<small style="color:var(--dim)"> (再${p.tour.re})</small>` : ''}</td><td class="${p.tour.in ? '' : 'dimv'}">${n(p.tour.in)}</td><td class="${p.tour.out ? '' : 'dimv'}">${n(p.tour.out)}</td><td class="${cls(p.tour.pl)}">${sp(p.tour.pl)}</td>
+      <td class="sep ${p.tour.e + p.tour.re ? '' : 'dimv'}">${p.tour.e + p.tour.re}${p.tour.re ? `<small style="color:var(--dim)"> (再${p.tour.re})</small>` : ''}</td><td class="${p.tour.in ? '' : 'dimv'}">${n(p.tour.in)}</td><td class="c rk">${p.tour.rank || (p.tour.e + p.tour.re && !p.tour.alive ? '飛び' : '')}</td><td class="${p.tour.out ? '' : 'dimv'}">${n(p.tour.out)}</td><td class="${cls(p.tour.pl)}">${sp(p.tour.pl)}</td>
     </tr>`).join('');
-    if (!rows.length) html += `<tr><td colspan="15" class="empty">まだ入力はありません</td></tr>`;
+    if (!rows.length) html += `<tr><td colspan="16" class="empty">まだ入力はありません</td></tr>`;
     const dealerTotal = d.bac.pl;
     html += `<tr class="dealer"><td></td><td class="l name">バカラ ディーラー</td><td class="sep total ${cls(dealerTotal)}">${sp(dealerTotal)}</td>
       <td class="sep ins">${insTxt(d.bac.ins)}</td><td>${n(d.bac.in)}</td><td>${n(d.bac.out)}</td><td class="${cls(d.bac.pl)}">${sp(d.bac.pl)}</td>
       <td class="sep"></td><td></td><td></td><td></td>
-      <td class="sep"></td><td></td><td></td><td></td></tr>`;
+      <td class="sep"></td><td></td><td></td><td></td><td></td></tr>`;
     html += `<tr class="sum"><td></td><td class="l">プレイヤー合計</td><td class="sep total ${cls(t.players)}">${sp(t.players)}</td>
       <td class="sep"></td><td>${n(t.bac.in)}</td><td>${n(t.bac.out)}</td><td class="${cls(t.bac.pl)}">${sp(t.bac.pl)}</td>
       <td class="sep"></td><td>${n(t.cash.in)}</td><td>${n(t.cash.out)}</td><td class="${cls(t.cash.pl)}">${sp(t.cash.pl)}</td>
-      <td class="sep">${t.tour.e + t.tour.re}</td><td>${n(t.tour.in)}</td><td>${n(t.tour.out)}</td><td class="${cls(t.tour.pl)}">${sp(t.tour.pl)}</td></tr>`;
+      <td class="sep">${t.tour.e + t.tour.re}</td><td>${n(t.tour.in)}</td><td class="c">残り${t.tour.active}</td><td>${n(t.tour.out)}</td><td class="${cls(t.tour.pl)}">${sp(t.tour.pl)}</td></tr>`;
     html += `<tr class="house"><td></td><td class="l">店側(逆数)</td><td class="sep total ${cls(t.house)}">${sp(t.house)}</td>
       <td class="sep"></td><td></td><td></td><td class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}</td>
       <td class="sep"></td><td></td><td></td><td class="${cls(-t.cash.pl)}">${sp(-t.cash.pl)}</td>
-      <td class="sep"></td><td></td><td></td><td class="${cls(-t.tour.pl)}">${sp(-t.tour.pl)}</td></tr>`;
+      <td class="sep"></td><td></td><td></td><td></td><td class="${cls(-t.tour.pl)}">${sp(-t.tour.pl)}</td></tr>`;
     html += '</tbody></table>';
     $('#tablewrap').innerHTML = html;
     lastIds = newIds; firstLoad = false;

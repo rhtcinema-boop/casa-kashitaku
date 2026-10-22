@@ -10,7 +10,7 @@
       no, name: name || '',
       bac: { ins: [], in: 0, out: 0, pl: 0 },
       cash: { ins: [], in: 0, out: 0, pl: 0 },
-      tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0, alive: false },
+      tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0, alive: false, rank: '' },
       total: 0,
     };
   }
@@ -35,17 +35,16 @@
         if (t.type === 'entry') { p.tour.e += 1; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
         else if (t.type === 'reentry') { p.tour.re += 1; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
         else if (t.type === 'bust') p.tour.alive = false;
-        else if (t.type === 'prize' || t.type === 'out') { p.tour.out += pt; p.tour.alive = false; }
+        else if (t.type === 'prize' || t.type === 'out') { p.tour.out += pt; p.tour.alive = false; if (t.table) p.tour.rank = t.table; }
       } else if (t.game === 'bac' || t.game === 'cash') {
         const s = p[t.game];
         if (t.type === 'in') { s.ins.push(pt); s.in += pt; } else if (t.type === 'out') s.out += pt;
       }
     }
+    const rd = v => Math.round(v * 1000) / 1000; // 小数の賞金(166.8万など)の足し算誤差を消す
     for (const p of map.values()) {
-      p.bac.pl = p.bac.out - p.bac.in;
-      p.cash.pl = p.cash.out - p.cash.in;
-      p.tour.pl = p.tour.out - p.tour.in;
-      p.total = p.bac.pl + p.cash.pl + p.tour.pl;
+      for (const k of ['bac', 'cash', 'tour']) { p[k].in = rd(p[k].in); p[k].out = rd(p[k].out); p[k].pl = rd(p[k].out - p[k].in); }
+      p.total = rd(p.bac.pl + p.cash.pl + p.tour.pl);
     }
     dealer.bac.pl = dealer.bac.out - dealer.bac.in;
     dealer.cash.pl = dealer.cash.out - dealer.cash.in;
@@ -56,8 +55,8 @@
       cash: { in: sum('cash', s => s.in), out: sum('cash', s => s.out) },
       tour: { e: sum('tour', s => s.e), re: sum('tour', s => s.re), in: sum('tour', s => s.in), out: sum('tour', s => s.out) },
     };
-    for (const k of ['bac', 'cash', 'tour']) totals[k].pl = totals[k].out - totals[k].in; // プレイヤー側収支
-    totals.players = totals.bac.pl + totals.cash.pl + totals.tour.pl;
+    for (const k of ['bac', 'cash', 'tour']) { totals[k].in = rd(totals[k].in); totals[k].out = rd(totals[k].out); totals[k].pl = rd(totals[k].out - totals[k].in); } // プレイヤー側収支
+    totals.players = rd(totals.bac.pl + totals.cash.pl + totals.tour.pl);
     totals.house = -totals.players; // 店側
     totals.tourPool = totals.tour.in; // プライズプール(万)
     totals.tour.active = list.filter(p => p.tour.alive).length; // 残り人数
@@ -66,7 +65,7 @@
   }
 
   function fmtPt(pt) { pt = pt || 0; return (pt < 0 ? '-' : '') + Math.abs(pt).toLocaleString('ja-JP') + '万'; }
-  function fmtYen(pt, pointYen) { const y = pt * (pointYen || 10000); return (y < 0 ? '-' : '') + '¥' + Math.abs(y).toLocaleString('ja-JP'); }
+  function fmtYen(pt, pointYen) { const y = Math.round(pt * (pointYen || 10000)); return (y < 0 ? '-' : '') + '¥' + Math.abs(y).toLocaleString('ja-JP'); }
   function signedPt(pt) { return (pt > 0 ? '+' : '') + fmtPt(pt); }
   function signedYen(pt, py) { return (pt > 0 ? '+' : '') + fmtYen(pt, py); }
   // 営業日(日本時間)。朝6時までは前の日として扱う(深夜0時をまたいでも同じ日)
@@ -91,5 +90,28 @@
   }
   const rankLabel = i => ['1st', '2nd', '3rd'][i] || `${i + 1}th`;
 
-  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel };
+  // プライズの傾斜計算(単位: 万。内部は円の整数で計算)
+  // X = 入賞人数、Y = 最下位の賞金。下から k 番目 = Y + (k-1)×a、a は合計がプールになるよう自動で決める。
+  // 1位以外は 1,000 円未満を切り捨て、切り捨てた分はすべて 1位に足す。
+  // 戻り値: { prizes: [1位, 2位, …](万), a(万), error }
+  function calcPrizes(poolMan, X, Y) {
+    const pool = Math.round(poolMan * 10000), y = Math.round(Y * 10000);
+    X = Math.floor(X);
+    if (!(X >= 1)) return { prizes: [], a: 0, error: '入賞人数を1人以上にしてください' };
+    if (!(pool > 0)) return { prizes: [], a: 0, error: 'まだエントリーがありません' };
+    if (X === 1) return { prizes: [pool / 10000], a: 0, error: '' };
+    const steps = X * (X - 1) / 2;
+    const aYen = (pool - X * y) / steps;
+    if (aYen < 0) return { prizes: [], a: aYen / 10000, error: `最低賞金が高すぎます(最大 ${Math.floor(pool / X / 10000)}万)` };
+    const bottomUp = [];
+    for (let k = 0; k < X; k++) bottomUp.push(y + k * aYen);
+    const top = bottomUp.reverse();                               // [1位, 2位, …]
+    const rest = top.slice(1).map(v => Math.floor(v / 1000) * 1000); // 1位以外: 1,000円未満切り捨て
+    const first = pool - rest.reduce((s, v) => s + v, 0);           // 余りは 1位へ
+    return { prizes: [first, ...rest].map(v => v / 10000), a: aYen / 10000, error: '' };
+  }
+  // 万の小数(0.1 = 1,000円)を見やすく
+  const round1 = v => Math.round(v * 10) / 10;
+
+  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel, calcPrizes, round1 };
 })(typeof window !== 'undefined' ? window : globalThis);

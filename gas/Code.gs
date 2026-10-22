@@ -175,27 +175,27 @@ function renderDay(date) {
   for (var i = 1; i < MAX_INS; i++) head1.push('');
   head1 = head1.concat(['', '', '', '', '番号', 'CASH']);
   for (i = 1; i < MAX_INS; i++) head1.push('');
-  head1 = head1.concat(['', '', '', '', '番号', 'TOURNAMENT', '', '', '']);
+  head1 = head1.concat(['', '', '', '', '番号', 'TOURNAMENT', '', '', '', '']);
   var head2 = ['', '', '', '', '', '', 'IN 内訳(万表記)'];
   for (i = 1; i < MAX_INS; i++) head2.push('');
   head2 = head2.concat(['IN 合計', 'OUT', '収支', '', '', 'IN 内訳(万表記)']);
   for (i = 1; i < MAX_INS; i++) head2.push('');
-  head2 = head2.concat(['IN 合計', 'OUT', '収支', '', '', 'E数', 'IN合計', 'OUT', '収支']);
+  head2 = head2.concat(['IN 合計', 'OUT', '収支', '', '', 'E数', 'IN合計', 'OUT', '収支', '順位']);
 
   var rows = [head1, head2];
   var blank = function (n) { var a = []; for (var k = 0; k < n; k++) a.push(''); return a; };
-  var yen = function (pt) { return pt * 10000; };
+  var yen = function (pt) { return Math.round(pt * 10000); };
   var ins = function (arr) { var out = []; for (var k = 0; k < MAX_INS; k++) out.push(k < arr.length ? arr[k] : ''); if (arr.length > MAX_INS) { out[MAX_INS - 1] = arr.slice(MAX_INS - 1).reduce(function (a, b) { return a + b; }, 0); } return out; };
   agg.players.forEach(function (p) {
-    var r = [p.no, p.name, '', yen(p.total), '', p.no].concat(ins(p.bac.ins), [yen(p.bac.in), yen(p.bac.out), yen(p.bac.pl), '', p.no], ins(p.cash.ins), [yen(p.cash.in), yen(p.cash.out), yen(p.cash.pl), '', p.no, p.tour.e + p.tour.re, yen(p.tour.in), yen(p.tour.out), yen(p.tour.pl)]);
+    var r = [p.no, p.name, '', yen(p.total), '', p.no].concat(ins(p.bac.ins), [yen(p.bac.in), yen(p.bac.out), yen(p.bac.pl), '', p.no], ins(p.cash.ins), [yen(p.cash.in), yen(p.cash.out), yen(p.cash.pl), '', p.no, p.tour.e + p.tour.re, yen(p.tour.in), yen(p.tour.out), yen(p.tour.pl), p.tour.rank || (p.tour.e + p.tour.re && !p.tour.alive ? '飛び' : '')]);
     rows.push(r);
   });
   // ディーラー行(バカラ卓・リング卓の補充/回収)
   var d = agg.dealer;
   var dealerTotal = d.bac.pl;
-  rows.push(['', 'バカラディーラー', '', yen(dealerTotal), '', ''].concat(ins(d.bac.ins), [yen(d.bac.in), yen(d.bac.out), yen(d.bac.pl), '', ''], blank(MAX_INS), ['', '', '', '', '', '', '', '', '']));
+  rows.push(['', 'バカラディーラー', '', yen(dealerTotal), '', ''].concat(ins(d.bac.ins), [yen(d.bac.in), yen(d.bac.out), yen(d.bac.pl), '', ''], blank(MAX_INS), ['', '', '', '', '', '', '', '', '', '']));
   var t = agg.totals;
-  rows.push(['差額', '', '', yen(t.players + dealerTotal), '', '合計'].concat(blank(MAX_INS), [yen(t.bac.in + d.bac.in), yen(t.bac.out + d.bac.out), yen(t.bac.pl + d.bac.pl), '', '合計'], blank(MAX_INS), [yen(t.cash.in), yen(t.cash.out), yen(t.cash.pl), '', '合計', t.tour.e + t.tour.re, yen(t.tour.in), yen(t.tour.out), yen(t.tour.pl)]));
+  rows.push(['差額', '', '', yen(t.players + dealerTotal), '', '合計'].concat(blank(MAX_INS), [yen(t.bac.in + d.bac.in), yen(t.bac.out + d.bac.out), yen(t.bac.pl + d.bac.pl), '', '合計'], blank(MAX_INS), [yen(t.cash.in), yen(t.cash.out), yen(t.cash.pl), '', '合計', t.tour.e + t.tour.re, yen(t.tour.in), yen(t.tour.out), yen(t.tour.pl), '']));
 
   var width = rows[0].length;
   rows = rows.map(function (r) { while (r.length < width) r.push(''); return r.slice(0, width); });
@@ -212,7 +212,7 @@ function renderDay(date) {
 // model.js と同じ集計
 function aggregate(players, txs) {
   var map = {};
-  var mk = function (no, name) { return { no: no, name: name || '', bac: { ins: [], in: 0, out: 0, pl: 0 }, cash: { ins: [], in: 0, out: 0, pl: 0 }, tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0 }, total: 0 }; };
+  var mk = function (no, name) { return { no: no, name: name || '', bac: { ins: [], in: 0, out: 0, pl: 0 }, cash: { ins: [], in: 0, out: 0, pl: 0 }, tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0, alive: false, rank: '' }, total: 0 }; };
   players.forEach(function (p) { map[p.no] = mk(p.no, p.name); });
   var dealer = { bac: { ins: [], in: 0, out: 0, pl: 0 }, cash: { ins: [], in: 0, out: 0, pl: 0 } };
   txs.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (t) {
@@ -225,9 +225,10 @@ function aggregate(players, txs) {
     if (!map[t.no]) map[t.no] = mk(t.no, '');
     var p = map[t.no];
     if (t.game === 'tour') {
-      if (t.type === 'entry') { p.tour.e++; p.tour.ins.push(pt); p.tour.in += pt; }
-      else if (t.type === 'reentry') { p.tour.re++; p.tour.ins.push(pt); p.tour.in += pt; }
-      else p.tour.out += pt;
+      if (t.type === 'entry') { p.tour.e++; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
+      else if (t.type === 'reentry') { p.tour.re++; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
+      else if (t.type === 'bust') p.tour.alive = false;
+      else { p.tour.out += pt; p.tour.alive = false; if (t.table) p.tour.rank = t.table; }
     } else if (p[t.game]) {
       if (t.type === 'in') { p[t.game].ins.push(pt); p[t.game].in += pt; } else p[t.game].out += pt;
     }

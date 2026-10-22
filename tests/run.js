@@ -313,6 +313,40 @@ test('営業日は朝6時で切り替わる(深夜0時をまたいでも同じ�
   assert.strictEqual(K.todayJST(jst('2099-05-02T06:00:00')), '2099-05-02');
 });
 
+test('プライズ傾斜: X=6, Y=40, プール620 → 1位以外は千円未満切り捨て、余りは1位', async () => {
+  const { K } = loadClient(loadGas());
+  const r = K.calcPrizes(620, 6, 40);
+  assert.strictEqual(JSON.stringify(r.prizes), JSON.stringify([166.8, 141.3, 116, 90.6, 65.3, 40]));
+  assert.strictEqual(Math.round(r.prizes.reduce((a, b) => a + b, 0) * 10) / 10, 620);
+  // 下から k 番目 = Y + (k-1)a(切り捨て前)
+  assert.ok(Math.abs(r.a - 380 / 15) < 1e-9);
+  assert.ok(K.calcPrizes(620, 6, 200).error, '最低賞金が高すぎるとエラー');
+  assert.strictEqual(JSON.stringify(K.calcPrizes(620, 1, 40).prizes), '[620]');
+  // いろいろな人数・額で合計が必ずプールと一致する
+  for (let pool = 20; pool <= 2000; pool += 37) for (let x = 1; x <= 12; x++) {
+    const rr = K.calcPrizes(pool, x, 10); if (rr.error) continue;
+    assert.strictEqual(Math.round(rr.prizes.reduce((a, b) => a + b, 0) * 10) / 10, pool, `pool ${pool} x ${x}`);
+    rr.prizes.slice(1).forEach(v => assert.strictEqual(Math.round(v * 10) / 10, v, '1位以外は千円単位'));
+  }
+});
+
+test('飛びで順位を選ぶと賞金が入り、シートの日付タブに順位が出る', async () => {
+  const gas = loadGas(); const c = loadClient(gas);
+  await c.API.setConfig(D, { prizes: '166.8,141.3,116,90.6,65.3,40' });
+  for (const n of [1, 2, 3]) { await c.API.register(D, n, 'P' + n); await c.API.addTx(D, { no: n, game: 'tour', type: 'entry', pt: 20 }); }
+  await c.API.addTx(D, { no: 3, game: 'tour', type: 'bust', pt: 0 });
+  await c.API.addTx(D, { no: 2, game: 'tour', type: 'prize', pt: 141.3, table: '2nd' });
+  await c.API.addTx(D, { no: 1, game: 'tour', type: 'prize', pt: 166.8, table: '1st' });
+  const v = c.API.view(D), a = c.K.aggregate(v.players, v.txs, v.config);
+  assert.strictEqual(a.players[0].tour.rank, '1st'); assert.strictEqual(a.players[0].tour.pl, 146.8);
+  assert.strictEqual(a.totals.tour.active, 0);
+  await c.API.sync(D);
+  const day = gas.mock.ss.getSheetByName(D).rows;
+  assert.strictEqual(day[1][44], '順位');
+  assert.strictEqual(day[2][44], '1st'); assert.strictEqual(day[3][44], '2nd'); assert.strictEqual(day[4][44], '飛び');
+  assert.strictEqual(day[2][42], 1668000, '賞金は円で正確に');
+});
+
 test('取り消しの id は自分の入力を指す', async () => {
   const gas = loadGas(); const c = loadClient(gas);
   const st = await c.API.addTx(D, { no: 1, game: 'bac', type: 'in', pt: 10 });

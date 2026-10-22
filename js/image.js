@@ -30,7 +30,7 @@
       { k: 'no', t: 'No', w: 60, a: 'center' }, { k: 'name', t: '名前', w: 200, a: 'left' },
       { k: 'bacIn', t: 'バカラ IN', w: 110, a: 'right', col: '#007aff' }, { k: 'bacPl', t: '収支', w: 100, a: 'right' },
       { k: 'cashIn', t: 'リング IN', w: 110, a: 'right', col: '#30b0c7' }, { k: 'cashPl', t: '収支', w: 100, a: 'right' },
-      { k: 'tourE', t: 'T 回数', w: 80, a: 'right', col: '#5856d6' }, { k: 'tourIn', t: 'T IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
+      { k: 'tourE', t: 'T 回数・順位', w: 110, a: 'right', col: '#5856d6' }, { k: 'tourIn', t: 'T IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
       { k: 'total', t: '合計収支', w: 130, a: 'right' },
     ];
     let cx = 40; cols.forEach(cl => { cl.x = cx; cx += cl.w; });
@@ -47,7 +47,7 @@
     players.forEach((p, i) => {
       if (i % 2) { x.fillStyle = 'rgba(0,0,0,.025)'; x.fillRect(40, y - rowH / 2, W - 80, rowH); }
       x.strokeStyle = 'rgba(60,60,67,.12)'; x.beginPath(); x.moveTo(40, y + rowH / 2); x.lineTo(W - 40, y + rowH / 2); x.stroke();
-      const vals = { no: p.no, name: p.name || '(未登録)', bacIn: fp(p.bac.in), bacPl: sp(p.bac.pl), cashIn: fp(p.cash.in), cashPl: sp(p.cash.pl), tourE: p.tour.e + p.tour.re, tourIn: fp(p.tour.in), tourPl: sp(p.tour.pl), total: sp(p.total) };
+      const vals = { no: p.no, name: p.name || '(未登録)', bacIn: fp(p.bac.in), bacPl: sp(p.bac.pl), cashIn: fp(p.cash.in), cashPl: sp(p.cash.pl), tourE: (p.tour.e + p.tour.re) + (p.tour.rank ? ' ' + p.tour.rank : ''), tourIn: fp(p.tour.in), tourPl: sp(p.tour.pl), total: sp(p.total) };
       cols.forEach(cl => {
         x.textAlign = cl.a;
         x.font = font(cl.k === 'total' ? 22 : 19, cl.k === 'total' || cl.k === 'name' ? 700 : 400);

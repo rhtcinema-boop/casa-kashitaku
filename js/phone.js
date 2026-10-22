@@ -110,7 +110,7 @@
       const p = playerOf(no), reg = isReg(no);
       const s = p[game];
       let st = '';
-      if (game === 'tour') { const n = s.e + s.re; if (n) st = s.alive ? `${n}回 ${s.in}万` : (s.out ? `賞金 ${s.out}万` : '飛び'); }
+      if (game === 'tour') { const n = s.e + s.re; if (n) st = s.alive ? `${n}回 ${s.in}万` : (s.rank ? `${s.rank} ${K.fmtPt(s.out)}` : s.out ? `賞金 ${K.fmtPt(s.out)}` : '飛び'); }
       else if (s.in || s.out) st = `${s.in}万${s.out ? ` → ${s.out}` : ''}`;
       const act = !!st;
       html += `<button class="cell g-${game} ${reg ? 'reg' : 'empty'} ${act ? 'act' : ''}" data-no="${no}">
@@ -160,7 +160,7 @@
     const list = agg.players.filter(p => p.name || p.bac.in || p.cash.in || p.tour.in || p.bac.out || p.cash.out || p.tour.out);
     $('#sumList').innerHTML = list.length ? list.map(p => `
       <div class="row"><small class="num">${p.no}</small>
-        <div>${esc(p.name || '(未登録)')}<i>バカラ ${p.bac.in}万 ${K.signedPt(p.bac.pl)} ／ リング ${p.cash.in}万 ${K.signedPt(p.cash.pl)} ／ T ${p.tour.e + p.tour.re}回 ${K.signedPt(p.tour.pl)}</i></div>
+        <div>${esc(p.name || '(未登録)')}<i>バカラ ${p.bac.in}万 ${K.signedPt(p.bac.pl)} ／ リング ${p.cash.in}万 ${K.signedPt(p.cash.pl)} ／ T ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b> 賞金${K.fmtPt(p.tour.out)}` : ''} ${K.signedPt(p.tour.pl)}</i></div>
         <b class="num ${cls(p.total)}">${K.signedPt(p.total)}</b></div>`).join('') : '<div class="empty">まだ入力はありません</div>';
   }
 
@@ -168,13 +168,15 @@
     $('#setDate').value = date;
     $('#setTourFee b').textContent = state.config.tourFee ?? 20;
     $('#setReFee b').textContent = state.config.reentryFee ?? state.config.tourFee ?? 20;
-    // プライズ
+    // 適用中のプライズ
     const prizes = K.parsePrizes(state.config);
-    $('#prizeRows').innerHTML = prizes.map((v, i) => `<div class="prize-r"><span style="color:var(--dim)">${K.rankLabel(i)}</span><b class="num">${v.toLocaleString('ja-JP')} 万</b><button class="btn" data-prize="${i}" style="padding:8px 12px">変更</button></div>`).join('')
-      || '<div class="prize-r" style="color:var(--dim);font-size:13px;grid-template-columns:1fr">まだ設定がありません。「順位を追加」で賞金を入れてください。</div>';
-    const ptotal = prizes.reduce((a, b) => a + b, 0), pool = agg.totals.tour.in;
-    $('#prizeTotal').textContent = `${ptotal.toLocaleString('ja-JP')} 万`;
-    $('#prizeInfo').textContent = `プライズプール(T の IN 合計) ${pool} 万 ／ 差 ${K.signedPt(pool - ptotal)}`;
+    const pool = agg.totals.tour.in;
+    $('#prizeRows').innerHTML = prizes.map((v, i) => `<div class="prize-r"><span class="lbl">${K.rankLabel(i)}</span><span></span><b class="num">${K.fmtPt(v)}</b></div>`).join('')
+      || '<div class="prize-r" style="color:var(--text2);font-size:15px;grid-template-columns:1fr">まだ確定していません。上の「自動計算」から作れます。</div>';
+    const ptotal = K.round1(prizes.reduce((a, b) => a + b, 0));
+    $('#prizeTotal').textContent = K.fmtPt(ptotal);
+    $('#prizeInfo').textContent = prizes.length ? `プール ${K.fmtPt(pool)} ／ 差 ${K.signedPt(K.round1(pool - ptotal))}` : '';
+    renderCalcHead();
     // 会計札と名前
     if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#rosterRows')) return; // 入力中は作り直さない
     const sig = state.players.map(p => `${p.no}:${p.name}`).sort().join('|');
@@ -217,8 +219,7 @@
       actsHtml = `<div class="acts">
         <button class="btn in" data-act="entry">エントリー<br><small>${state.config.tourFee ?? 20}万</small></button>
         <button class="btn re" data-act="reentry">リエントリー<br><small>${state.config.reentryFee ?? state.config.tourFee ?? 20}万</small></button>
-        <button class="btn bust" data-act="bust" ${s.alive ? '' : 'disabled'}>飛び</button>
-        <button class="btn out" data-act="prize">賞金</button></div>`;
+        <button class="btn bust full" data-act="bust" ${s.alive ? '' : 'disabled'}>${s.rank ? `${s.rank} で終了` : '飛び(順位を選ぶ)'}</button></div>`;
     } else {
       statHtml = `<div class="stat">
         <div><span>合計 IN</span><b>${s.in}<small> 万</small></b></div>
@@ -235,17 +236,18 @@
   }
 
   // 賞金: 順位を押すだけ。すでに出た順位は「済」で押せない
+  // 飛び → 順位を選ぶ。おすすめ = 今の残り人数(その人が飛ぶと、その順位で終わる)
   function renderRanks() {
     const prizes = K.parsePrizes(state.config);
-    if (!prizes.length) return `<div class="empty">設定タブでプライズ(順位ごとの賞金)を入れてください</div>
-      <div class="confirm" style="grid-template-columns:1fr"><button class="btn" data-padcancel>戻る</button></div>`;
     const done = {};
     state.txs.filter(t => t.game === 'tour' && t.type === 'prize' && t.table).forEach(t => { done[t.table] = t.no; });
-    return `<div class="ranks">${prizes.map((v, i) => {
+    const remain = agg.totals.tour.active, sugg = remain >= 1 && remain <= prizes.length ? remain - 1 : -1;
+    return `<div class="pick-h">順位を選んでください<small>残り ${remain}人${sugg >= 0 ? ` → この人は ${K.rankLabel(sugg)}` : ' → まだ入賞圏外'}</small></div>
+      <div class="ranks">${prizes.map((v, i) => {
       const label = K.rankLabel(i), who = done[label];
-      return `<button class="btn rank" data-rank="${i}" ${who != null ? 'disabled' : ''}><span>${label}</span><b>${v}万</b>${who != null ? `<i>済 ${who}番</i>` : ''}</button>`;
+      return `<button class="btn rank ${i === sugg ? 'sugg' : ''}" data-rank="${i}" ${who != null ? 'disabled' : ''}><span>${label}</span><b>${K.fmtPt(v)}</b>${who != null ? `<i>済 ${who}番</i>` : ''}</button>`;
     }).join('')}</div>
-      <div class="confirm" style="grid-template-columns:1fr"><button class="btn" data-padcancel>戻る</button></div>`;
+      <div class="acts"><button class="btn bust ${sugg < 0 ? 'sugg' : ''}" data-act="bustOut">圏外で飛び<br><small>賞金なし</small></button><button class="btn" data-padcancel>戻る</button></div>`;
   }
 
   function renderPad(p) {
@@ -269,6 +271,8 @@
   }
 
   // ---------- 送信 ----------
+  // 追加系(エントリー・飛び・順位など)はパネルを閉じてから記録
+  function sendClose(tx, label) { closeSheet(); return send(tx, label); }
   async function send(tx, label) {
     if (busy) return; busy = true;
     try {
@@ -322,16 +326,21 @@
       const a = act.dataset.act;
       if (a === 'entry' || a === 'reentry') {
         const fee = a === 'entry' ? (state.config.tourFee ?? 20) : (state.config.reentryFee ?? state.config.tourFee ?? 20);
-        return send({ no: openNo, game: 'tour', type: a, pt: Number(fee) }, `${a === 'entry' ? 'エントリー' : 'リエントリー'} +1(${fee}万)`);
+        return sendClose({ no: openNo, game: 'tour', type: a, pt: Number(fee) }, `${a === 'entry' ? 'エントリー' : 'リエントリー'} +1(${fee}万)`);
       }
-      if (a === 'bust') return send({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び');
-      pad = a === 'prize' ? { type: 'rank' } : { type: a, value: '', allowNeg: false, neg: false }; return renderPanel();
+      // 飛び: プライズが確定していれば順位を選ぶ。無ければそのまま飛び
+      if (a === 'bust') {
+        if (!K.parsePrizes(state.config).length) return sendClose({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び');
+        pad = { type: 'rank' }; return renderPanel();
+      }
+      if (a === 'bustOut') { pad = null; return sendClose({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び(圏外)'); }
+      pad = { type: a, value: '', allowNeg: false, neg: false }; return renderPanel();
     }
     const rk = t.closest('[data-rank]');
     if (rk) {
       const i = Number(rk.dataset.rank), pt = K.parsePrizes(state.config)[i], label = K.rankLabel(i);
       pad = null;
-      return send({ no: openNo, game: 'tour', type: 'prize', pt, table: label }, `${label} 賞金 ${pt}万`);
+      return sendClose({ no: openNo, game: 'tour', type: 'prize', pt, table: label }, `${label} で終了 賞金 ${K.fmtPt(pt)}`);
     }
     if (t.closest('[data-rename]')) {
       const cur = nameOf(openNo);
@@ -404,24 +413,68 @@
     if (v == null || v === '' || isNaN(Number(v))) return;
     try { await refresh(await API.setConfig(date, { [key]: Number(v) })); } catch (e) { toast('保存できませんでした', e.message, true); }
   }
-  // プライズ編集
-  async function savePrizes(arr) {
-    try { await refresh(await API.setConfig(date, { prizes: arr.join(',') })); } catch (e) { toast('保存できませんでした', e.message, true); }
+  // ---------- プライズ傾斜の自動計算 ----------
+  // X = 入賞人数、Y = 最低賞金。自動計算 → 金額を手で直す → 確定で順位に適用。
+  // 下書き(pc.draft)は確定するまで端末の中だけ(自動同期で消えないよう、画面の作り直しでも触らない)
+  const pc = { x: null, y: null, draft: null };
+  function pcDefaults() {
+    if (pc.x == null) pc.x = Number(state.config.prizeX) || 6;
+    if (pc.y == null) pc.y = Number(state.config.prizeY) || Number(state.config.tourFee ?? 20) * 2;
   }
-  $('#prizeBox').addEventListener('click', e => {
-    const b = e.target.closest('[data-prize]'); if (!b) return;
-    const arr = K.parsePrizes(state.config); const i = Number(b.dataset.prize);
-    const v = prompt(`${K.rankLabel(i)} の賞金(万)`, arr[i]);
-    if (v == null || v === '' || isNaN(Number(v))) return;
-    arr[i] = Number(v); savePrizes(arr);
+  function renderCalcHead() {
+    pcDefaults();
+    const pool = agg.totals.tour.in, t = agg.totals.tour;
+    $('#pcPool').textContent = K.fmtPt(pool);
+    $('#pcPoolInfo').textContent = `トーナメントの IN 合計(${t.e + t.re} エントリー)`;
+    $('#pcX').textContent = pc.x + '人';
+    $('#pcY').textContent = pc.y + '万';
+    const r = K.calcPrizes(pool, pc.x, pc.y);
+    $('#pcA').textContent = r.error ? r.error : `${K.round1(r.a)}万`;
+    $('#pcA').classList.toggle('pc-warn', !!r.error);
+    if (pc.draft) renderDraftSum();
+  }
+  function renderDraft() {
+    $('#pcDraft').classList.toggle('hide', !pc.draft);
+    if (!pc.draft) return;
+    $('#pcRows').innerHTML = pc.draft.map((v, i) => `<div class="prize-r"><span class="lbl">${K.rankLabel(i)}</span><span></span><input data-pi="${i}" inputmode="decimal" value="${v}"></div>`).join('');
+    renderDraftSum();
+  }
+  function renderDraftSum() {
+    const sum = K.round1(pc.draft.reduce((a, b) => a + (Number(b) || 0), 0)), pool = agg.totals.tour.in, diff = K.round1(pool - sum);
+    $('#pcSum').textContent = K.fmtPt(sum);
+    $('#pcDiff').textContent = diff === 0 ? 'プールとぴったり' : `プールとの差 ${K.signedPt(diff)}`;
+    $('#pcDiff').classList.toggle('pc-warn', diff !== 0);
+  }
+  $('#prizeCalc').addEventListener('click', e => {
+    const b = e.target.closest('.stepper button');
+    if (b) {
+      const k = b.closest('.stepper').dataset.k, d = Number(b.dataset.d);
+      pcDefaults();
+      if (k === 'x') pc.x = Math.max(1, Math.min(50, pc.x + d));
+      if (k === 'y') pc.y = Math.max(0, pc.y + d);
+      return renderCalcHead();
+    }
+    if (e.target.closest('#pcCalc')) {
+      const r = K.calcPrizes(agg.totals.tour.in, pc.x, pc.y);
+      if (r.error) return toast('計算できません', r.error, true);
+      pc.draft = r.prizes.slice();
+      return renderDraft();
+    }
+    if (e.target.closest('#pcApply')) {
+      if (!pc.draft) return;
+      const vals = pc.draft.map(v => K.round1(Number(v)));
+      if (vals.some(v => !(v >= 0))) return toast('金額を確認してください', '数字でない欄があります', true);
+      API.setConfig(date, { prizes: vals.join(','), prizeX: pc.x, prizeY: pc.y }).then(st => {
+        pc.draft = null; renderDraft(); refresh(st);
+        toast('プライズを確定しました', vals.map((v, i) => `${K.rankLabel(i)} ${v}`).join(' ／ '));
+      });
+    }
   });
-  $('#prizeAdd').addEventListener('click', () => {
-    const arr = K.parsePrizes(state.config);
-    const v = prompt(`${K.rankLabel(arr.length)} の賞金(万)`, '');
-    if (v == null || v === '' || isNaN(Number(v))) return;
-    arr.push(Number(v)); savePrizes(arr);
+  $('#prizeCalc').addEventListener('input', e => {
+    const inp = e.target.closest('input[data-pi]'); if (!inp || !pc.draft) return;
+    pc.draft[Number(inp.dataset.pi)] = inp.value.replace(/[^0-9.]/g, '');
+    renderDraftSum();
   });
-  $('#prizeDel').addEventListener('click', () => { const arr = K.parsePrizes(state.config); if (!arr.length) return; arr.pop(); savePrizes(arr); });
   // 会計札と名前: 欄を離れたら保存
   $('#rosterRows').addEventListener('change', async e => {
     const inp = e.target.closest('input[data-no]'); if (!inp) return;

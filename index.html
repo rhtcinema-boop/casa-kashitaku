@@ -14,7 +14,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=202610222138">
+<link rel="stylesheet" href="css/style.css?v=202610222156">
 <style>
   body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
   .wrap { margin: 0 auto; padding: calc(var(--sat) + 12px) 16px calc(var(--sab) + 100px); }
@@ -103,6 +103,9 @@
   .ranks .rank b { font-size: clamp(24px, 4.2vw, 34px); font-weight: 700; }
   .ranks .rank i { font-style: normal; font-size: 12px; color: var(--text2); }
   .ranks .rank[disabled] { opacity: .35; }
+  .ranks .rank.sugg, .acts .btn.sugg { box-shadow: inset 0 0 0 3px var(--blue), var(--shadow); }
+  .pick-h { font-size: 20px; font-weight: 700; margin: 4px 2px 12px; }
+  .pick-h small { display: block; font-size: 15px; font-weight: 500; color: var(--text2); margin-top: 2px; }
 
   /* テンキー */
   .pad { display: none; }
@@ -150,11 +153,19 @@
   .prize-r { display: grid; grid-template-columns: 56px 1fr auto; gap: 8px; align-items: center; padding: 10px 16px; border-top: .5px solid var(--sep); }
   .prize-r:first-child { border-top: 0; }
   .prize-r b { font-size: 19px; }
+  .prize-r input { width: 120px; justify-self: end; text-align: right; border: 0; background: var(--fill); color: var(--text); border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 19px; font-weight: 700; }
+  .prize-r .lbl { color: var(--indigo); font-weight: 700; font-size: 17px; }
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .stepper button { border: 0; background: var(--fill); color: var(--blue); border-radius: 10px; min-width: 44px; height: 40px; font-size: 18px; font-weight: 600; }
+  .stepper b { min-width: 54px; text-align: center; font-size: 22px; }
+  .btn.big { padding: 15px; font-size: 18px; }
+  .pc-warn { color: var(--red) !important; }
   .summary-tab .stat b { font-size: clamp(20px, 3.6vw, 30px); }
   .summary-tab .list .row { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; padding: 12px 16px; border-top: .5px solid var(--sep); }
   .summary-tab .list .row:first-child { border-top: 0; }
   .summary-tab .list .row i { display: block; font-style: normal; font-size: 13px; color: var(--text2); margin-top: 2px; }
   .summary-tab .list .row b { font-size: 19px; }
+  .summary-tab .list .row i b.rk { font-size: 13px; color: var(--indigo); }
   .preview { margin-top: 10px; }
   .preview canvas, .preview img { width: 100%; border-radius: 14px; box-shadow: var(--shadow); }
   .hide { display: none !important; }
@@ -223,11 +234,25 @@
       <div class="row"><span>トーナメント リエントリー<i>1回の金額(万)</i></span><button class="btn" id="setReFee"><b></b> 万</button></div>
     </div>
 
-    <h3 class="sec-h">プライズ(順位ごとの賞金・万)</h3>
-    <div class="card set" id="prizeBox">
+    <h3 class="sec-h">プライズ 傾斜の自動計算</h3>
+    <div class="card set" id="prizeCalc">
+      <div class="row"><span>プール<i id="pcPoolInfo"></i></span><b id="pcPool"></b></div>
+      <div class="row"><span>入賞人数 X</span><div class="stepper" data-k="x"><button data-d="-1">−</button><b id="pcX"></b><button data-d="1">＋</button></div></div>
+      <div class="row"><span>最低賞金 Y<i>いちばん下の順位(万)</i></span><div class="stepper" data-k="y"><button data-d="-5">−5</button><button data-d="-1">−</button><b id="pcY"></b><button data-d="1">＋</button><button data-d="5">＋5</button></div></div>
+      <div class="row"><span>a<i>1つ上の順位ごとに増える額</i></span><b id="pcA"></b></div>
+      <div class="row" style="grid-template-columns:1fr"><button class="btn gold big" id="pcCalc">自動計算</button></div>
+      <div id="pcDraft" class="hide">
+        <div class="row" style="grid-template-columns:1fr"><span style="font-size:14px;color:var(--text2)">金額はタップして直せます(万。0.1 = 1,000円)</span></div>
+        <div id="pcRows"></div>
+        <div class="row"><span>合計<i id="pcDiff"></i></span><b id="pcSum"></b></div>
+        <div class="row" style="grid-template-columns:1fr"><button class="btn gold big" id="pcApply">確定して順位に適用</button></div>
+      </div>
+    </div>
+
+    <h3 class="sec-h">適用中のプライズ</h3>
+    <div class="card set">
       <div id="prizeRows"></div>
       <div class="row"><span>合計<i id="prizeInfo"></i></span><b id="prizeTotal"></b></div>
-      <div class="row" style="grid-template-columns:1fr 1fr;gap:8px"><button class="btn" id="prizeAdd">順位を追加</button><button class="btn" id="prizeDel">最後を削除</button></div>
     </div>
 
     <h3 class="sec-h">会計札と名前の紐づけ</h3>
@@ -261,10 +286,10 @@
 
 <div class="toast" id="toast"><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=202610222138"></script>
-<script src="js/model.js?v=202610222138"></script>
-<script src="js/api.js?v=202610222138"></script>
-<script src="js/image.js?v=202610222138"></script>
-<script src="js/phone.js?v=202610222138"></script>
+<script src="config.js?v=202610222156"></script>
+<script src="js/model.js?v=202610222156"></script>
+<script src="js/api.js?v=202610222156"></script>
+<script src="js/image.js?v=202610222156"></script>
+<script src="js/phone.js?v=202610222156"></script>
 </body>
 </html>
