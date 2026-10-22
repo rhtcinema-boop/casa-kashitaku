@@ -74,7 +74,7 @@
 
   // ---------- 描画 ----------
   function render() {
-    $('#hDate').textContent = date + (date === K.todayJST() ? '(今日)' : '');
+    { const [y, m, d] = date.split('-').map(Number), wd = '日月火水木金土'[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; $('#hDate').textContent = `${m}月${d}日(${wd})` + (date === K.todayJST() ? '' : ' 別の日'); }
     $('#hSheet').href = CFG.SHEET_URL || '#';
     document.querySelectorAll('#games button').forEach(b => b.classList.toggle('on', b.dataset.game === game));
     renderGrid();
@@ -96,8 +96,17 @@
     const tb = $('#tourBar'), tt = agg.totals.tour;
     tb.style.display = game === 'tour' ? 'grid' : 'none';
     if (game === 'tour') tb.innerHTML = `<div><span>総エントリー</span><b>${tt.e + tt.re}</b></div><div><span>残り</span><b>${tt.active}<small>人</small></b></div><div><span>プール</span><b>${tt.in}<small>万</small></b></div>`;
+    // 設定で名前を登録した人だけ表示(登録を消しても、このゲームに入力がある人は残す)
+    const nos = new Set(state.players.map(p => Number(p.no)));
+    state.txs.forEach(t => { if (t.game === game && t.no !== '' && t.no != null) nos.add(Number(t.no)); });
+    const list = [...nos].filter(n => n > 0).sort((a, b) => a - b);
+    if (!list.length) {
+      grid.innerHTML = `<div class="nogrid">まだ誰も登録されていません<br><button class="btn gold" data-goto="set">設定で会計札と名前を登録</button></div>`;
+      grid.style.gridAutoRows = '';
+      return;
+    }
     let html = '';
-    for (let no = 1; no <= CFG.MAX_NO; no++) {
+    for (const no of list) {
       const p = playerOf(no), reg = isReg(no);
       const s = p[game];
       let st = '';
@@ -106,12 +115,28 @@
       const act = !!st;
       html += `<button class="cell g-${game} ${reg ? 'reg' : 'empty'} ${act ? 'act' : ''}" data-no="${no}">
         <div class="n">${no}</div>
-        <div class="nm">${reg ? esc(p.name || '') : '—'}</div>
+        <div class="nm">${reg ? esc(p.name || '') : '(未登録)'}</div>
         ${st ? `<div class="st">${st}</div>` : ''}
       </button>`;
     }
     grid.innerHTML = html;
+    fitGrid(list.length);
   }
+
+  // 1行5人で、画面の残りの高さいっぱいに広げる(多いときはスクロール)
+  let gridCount = 0;
+  function fitGrid(count) {
+    gridCount = count;
+    const grid = $('#grid'); if (!grid || grid.style.display === 'none' || !count) return;
+    const rows = Math.ceil(count / 5), gap = 8;
+    const navH = ($('nav') || {}).offsetHeight || 70;
+    const avail = window.innerHeight - grid.getBoundingClientRect().top - navH - 12;
+    const cellW = (grid.clientWidth - gap * 4) / 5;
+    // 高さは「画面の残り ÷ 行数」。ただし縦長になりすぎないよう幅の1.3倍まで
+    const h = Math.max(96, Math.min(220, cellW * 1.3, Math.floor((avail - gap * (rows - 1)) / rows)));
+    grid.style.gridAutoRows = h + 'px';
+  }
+  window.addEventListener('resize', () => fitGrid(gridCount));
 
   function renderLog() {
     const txs = [...state.txs].sort((a, b) => b.ts - a.ts);
@@ -279,7 +304,10 @@
 
   // ---------- イベント ----------
   $('#games').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; game = b.dataset.game; pad = null; render(); });
-  $('#grid').addEventListener('click', e => { const c = e.target.closest('.cell'); if (c) { pad = null; openSheet(Number(c.dataset.no)); } });
+  $('#grid').addEventListener('click', e => {
+    const g = e.target.closest('[data-goto]'); if (g) return document.querySelector(`#nav [data-tab="${g.dataset.goto}"]`).click();
+    const c = e.target.closest('.cell'); if (c) { pad = null; openSheet(Number(c.dataset.no)); }
+  });
   $('#dealerBox').addEventListener('click', e => {
     const b = e.target.closest('[data-dealer]'); if (!b) return;
     openNo = 0; pad = { type: b.dataset.type === 'in' ? 'dealerIn' : 'dealerOut', table: b.dataset.dealer, value: '', allowNeg: true, neg: false };

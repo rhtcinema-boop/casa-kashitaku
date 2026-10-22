@@ -3,73 +3,74 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#070a08">
+<meta name="theme-color" content="#f2f2f7">
 <title>casa 貸卓 — ボード</title>
 <link rel="icon" href="icon-180.png" type="image/png">
-<link rel="stylesheet" href="css/style.css?v=202610222117">
+<link rel="stylesheet" href="css/style.css?v=202610222138">
 <style>
-  body { padding: 18px 22px 30px; }
-  header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 14px; }
-  h1 { margin: 0; font-size: 14px; letter-spacing: .3em; color: var(--gold); }
-  .date { font-size: 22px; font-weight: 700; margin-top: 2px; }
-  .status { font-size: 12px; color: var(--dim); text-align: right; }
-  .status b { color: var(--plus); font-weight: 600; } .status b.off { color: var(--minus); }
-  .tools { display: flex; gap: 8px; align-items: center; }
-  .tools select, .tools input { border: 1px solid #3a3320; background: #0e0c07; color: #e8e3d2; border-radius: 10px; padding: 8px 10px; font: inherit; }
+  body { padding: 22px 26px 34px; }
+  header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 18px; }
+  h1 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .02em; }
+  .date { font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin-top: 0; }
+  .status { font-size: 13px; color: var(--text2); text-align: right; }
+  .status b { color: var(--blue); font-weight: 600; } .status b.off { color: var(--red); }
+  .tools { display: flex; gap: 10px; align-items: center; color: var(--text2); }
+  .tools select { border: 0; background: var(--fill); color: var(--text); border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 16px; }
 
-  .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px; }
-  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
-  .tile span { display: block; font-size: 12px; color: var(--dim); letter-spacing: .1em; }
-  .tile b { display: block; font-size: 30px; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .tile b small { font-size: 13px; color: var(--dim); font-weight: 400; margin-left: 2px; }
-  .tile i { display: block; font-style: normal; font-size: 12px; color: var(--dim); margin-top: 2px; }
-  .tile.gold b { background: linear-gradient(180deg, #fff1bd, #c9a03e); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-  .tile.bac { border-top: 3px solid var(--bac); } .tile.cash { border-top: 3px solid var(--cash); } .tile.tour { border-top: 3px solid var(--tour); }
+  .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 18px; }
+  .tile { background: var(--card); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .tile span { display: block; font-size: 13px; color: var(--text2); font-weight: 500; }
+  .tile b { display: block; font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tile b small { font-size: 15px; color: var(--text2); font-weight: 500; margin-left: 2px; }
+  .tile i { display: block; font-style: normal; font-size: 13px; color: var(--text2); margin-top: 3px; }
+  .tile.gold { background: var(--blue); }
+  .tile.gold span, .tile.gold i, .tile.gold b, .tile.gold b small { color: #fff; }
+  .tile.bac span { color: var(--bac); } .tile.cash span { color: var(--cash); } .tile.tour span { color: var(--tour); }
 
-  .main { display: grid; grid-template-columns: 1fr 300px; gap: 14px; align-items: start; }
-  .tablewrap { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  th, td { padding: 8px 10px; border-bottom: 1px solid #1d1a10; text-align: right; }
-  th { font-size: 12px; color: var(--dim); font-weight: 600; position: sticky; top: 0; background: #0b0d0a; }
-  th.grp { font-size: 12px; letter-spacing: .15em; border-bottom: 0; padding-bottom: 2px; }
-  th.grp.bac { color: var(--bac); } th.grp.cash { color: var(--cash); } th.grp.tour { color: var(--tour); } th.grp.tot { color: var(--gold); }
+  .main { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+  .tablewrap { background: var(--card); border-radius: 16px; overflow: auto; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th, td { padding: 10px 12px; border-bottom: .5px solid var(--sep); text-align: right; }
+  th { font-size: 12px; color: var(--text2); font-weight: 600; position: sticky; top: 0; background: var(--card); }
+  th.grp { font-size: 13px; font-weight: 700; border-bottom: 0; padding-bottom: 2px; }
+  th.grp.bac { color: var(--bac); } th.grp.cash { color: var(--cash); } th.grp.tour { color: var(--tour); } th.grp.tot { color: var(--text); }
   td.l, th.l { text-align: left; }
-  td.c, th.c { text-align: center; }
-  td.sep, th.sep { border-left: 1px solid #2a2416; }
-  td.name { font-weight: 700; font-size: 16px; }
-  td.ins { color: var(--dim); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; text-align: left; }
-  td.dimv { color: rgba(255, 255, 255, .22); }
-  td.total { font-weight: 700; font-size: 17px; }
-  tr.dealer td { color: var(--dim); background: rgba(255, 215, 115, .04); }
-  tr.dealer td.name { color: var(--gold); }
-  tr.sum td { font-weight: 700; border-top: 2px solid var(--line); color: var(--gold); background: rgba(255, 215, 115, .05); }
-  tr.house td { font-weight: 700; color: #e8e3d2; }
+  td.c, th.c { text-align: center; color: var(--text2); }
+  td.sep, th.sep { border-left: .5px solid var(--sep); }
+  td.name { font-weight: 600; font-size: 17px; }
+  td.ins { color: var(--text2); font-size: 13px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  td.dimv { color: var(--fill2); }
+  td.total { font-weight: 700; font-size: 18px; }
+  tr.dealer td { color: var(--text2); background: var(--fill); }
+  tr.sum td { font-weight: 700; border-top: 1px solid var(--sep); background: var(--blue-tint); }
+  tr.house td { font-weight: 700; }
   tr.flash td { animation: flash 1.6s ease-out; }
-  @keyframes flash { 0% { background: rgba(255, 215, 115, .35); } 100% { background: transparent; } }
-  .empty { padding: 40px; text-align: center; color: var(--dim); }
+  @keyframes flash { 0% { background: var(--blue-tint); } 100% { background: transparent; } }
+  .empty { padding: 40px; text-align: center; color: var(--text2); }
 
-  .side { display: grid; gap: 14px; }
-  .feed { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-  .feed h2 { margin: 0; padding: 10px 14px; font-size: 12px; letter-spacing: .2em; color: var(--gold); border-bottom: 1px solid var(--line); }
-  .feed .row { padding: 9px 14px; border-bottom: 1px solid #1d1a10; font-size: 14px; }
-  .feed .row i { display: block; font-style: normal; font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .side { display: grid; gap: 16px; }
+  .feed { background: var(--card); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+  .feed h2 { margin: 0; padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; border-bottom: .5px solid var(--sep); }
+  .feed .row { padding: 10px 16px; border-bottom: .5px solid var(--sep); font-size: 15px; }
+  .feed .row i { display: block; font-style: normal; font-size: 12px; color: var(--text2); margin-top: 2px; }
   .feed .row:first-of-type { animation: flash 1.6s ease-out; }
   .side .btn { width: 100%; }
-  .preview { margin-top: 8px; } .preview canvas { width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+  .preview { margin-top: 8px; } .preview canvas { width: 100%; border-radius: 12px; box-shadow: var(--shadow); }
   @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } .main { grid-template-columns: 1fr; } }
   /* iPad の画面分割(1/2・1/3・Slide Over) */
   @media (max-width: 760px) {
-    body { padding: 12px 10px 24px; }
+    body { padding: 14px 12px 26px; }
     header { grid-template-columns: 1fr auto; gap: 8px; }
     header .tools { grid-column: 1 / -1; order: 3; flex-wrap: wrap; }
-    .tiles { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .tile b { font-size: 24px; }
-    table { font-size: 13px; }
-    th, td { padding: 6px 7px; }
+    .date { font-size: 28px; }
+    .tiles { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .tile b { font-size: 28px; }
+    table { font-size: 14px; }
+    th, td { padding: 8px 8px; }
   }
   @media (max-width: 420px) {
-    .tile { padding: 10px; }
-    .tile b { font-size: 20px; }
+    .tile { padding: 12px; }
+    .tile b { font-size: 24px; }
     .tile i { display: none; }
   }
 </style>
@@ -98,10 +99,10 @@
   </aside>
 </div>
 
-<script src="config.js?v=202610222117"></script>
-<script src="js/model.js?v=202610222117"></script>
-<script src="js/api.js?v=202610222117"></script>
-<script src="js/image.js?v=202610222117"></script>
+<script src="config.js?v=202610222138"></script>
+<script src="js/model.js?v=202610222138"></script>
+<script src="js/api.js?v=202610222138"></script>
+<script src="js/image.js?v=202610222138"></script>
 <script>
 (() => {
   const K = Kashitaku, API = KashitakuAPI, CFG = KASHITAKU_CONFIG, PY = CFG.POINT_YEN || 10000;
@@ -145,7 +146,7 @@
     const rows = agg.players.filter(p => !hide || p.bac.in || p.bac.out || p.cash.in || p.cash.out || p.tour.in || p.tour.out);
     const newIds = new Set(state.txs.map(x => x.id));
     const changedNos = new Set(state.txs.filter(x => !lastIds.has(x.id)).map(x => Number(x.no)));
-    const dv = (v, unit) => v ? `${n(v)}${unit || ''}` : `<span style="color:rgba(255,255,255,.22)">0</span>`;
+    const dv = (v, unit) => v ? `${n(v)}${unit || ''}` : `<span style="color:var(--fill2)">0</span>`;
     const insTxt = arr => arr.length ? esc(arr.join(' + ')) : '';
     let html = `<table>
       <thead>

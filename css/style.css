@@ -1,26 +1,55 @@
-/* casa 貸卓 — 共通スタイル */
+/* casa 貸卓 — 共通スタイル(iOS 純正アプリ風: 白と青、ダークモード自動対応) */
 :root {
-  --gold: #ffd773; --gold2: #c9a03e; --dim: #9aa89c; --plus: #7ee0a0; --minus: #ff7a6b;
-  --card: rgba(10, 9, 6, .82); --line: #2a2416; --bg: #070a08;
-  --bac: #d9a441; --cash: #5fb6e0; --tour: #c77dff; --dealer: #9aa89c;
+  color-scheme: light dark;
+  --bg: #f2f2f7;               /* systemGroupedBackground */
+  --card: #ffffff;             /* secondarySystemGroupedBackground */
+  --fill: rgba(120, 120, 128, .12);
+  --fill2: rgba(120, 120, 128, .2);
+  --text: #000000;
+  --text2: rgba(60, 60, 67, .6);
+  --sep: rgba(60, 60, 67, .18);
+  --blue: #007aff;
+  --blue-tint: rgba(0, 122, 255, .1);
+  --red: #ff3b30;
+  --red-tint: rgba(255, 59, 48, .1);
+  --indigo: #5856d6;
+  --indigo-tint: rgba(88, 86, 214, .1);
+  --teal: #30b0c7;
+  --gray: #8e8e93;
+  --bar: rgba(249, 249, 249, .86);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 14px rgba(0, 0, 0, .05);
+  /* ゲームの色 */
+  --bac: var(--blue); --cash: var(--teal); --tour: var(--indigo); --dealer: var(--gray);
+  /* 旧名(画面のコードから参照) */
+  --gold: var(--blue); --dim: var(--text2); --line: var(--sep); --plus: var(--blue); --minus: var(--red);
   --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000; --card: #1c1c1e; --fill: rgba(120, 120, 128, .24); --fill2: rgba(120, 120, 128, .36);
+    --text: #ffffff; --text2: rgba(235, 235, 245, .6); --sep: rgba(84, 84, 88, .6);
+    --blue: #0a84ff; --blue-tint: rgba(10, 132, 255, .18); --red: #ff453a; --red-tint: rgba(255, 69, 58, .18);
+    --indigo: #5e5ce6; --indigo-tint: rgba(94, 92, 230, .2); --teal: #40c8e0; --gray: #98989d;
+    --bar: rgba(22, 22, 24, .86); --shadow: none;
+  }
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { background: var(--bg); }
-body { margin: 0; min-height: 100%; background: radial-gradient(ellipse at 50% 0%, #13231a, #070a08 60%) fixed; color: #e8e3d2; font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", sans-serif; -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
 button { font: inherit; color: inherit; cursor: pointer; }
 .num { font-variant-numeric: tabular-nums; }
-.plus { color: var(--plus); } .minus { color: var(--minus); } .zero { color: var(--dim); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
-.btn { border: 1px solid #3a3320; background: #15120a; color: #cfd6cc; border-radius: 12px; padding: 12px 14px; font-size: 15px; }
-.btn:active { background: #241d0e; }
-.btn.gold { background: linear-gradient(180deg, #ffe9a8, #c9a03e); color: #1a1408; font-weight: 700; border-color: #c9a03e; }
-.btn.red { background: #3a1510; border-color: #6a2a20; color: #ffb3a8; }
+.plus { color: var(--blue); } .minus { color: var(--red); } .zero { color: var(--text2); }
+.card { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
+.btn { border: 0; background: var(--fill); color: var(--blue); border-radius: 12px; padding: 12px 16px; font-size: 16px; font-weight: 600; }
+.btn:active { opacity: .6; }
+.btn.gold { background: var(--blue); color: #fff; }
+.btn.red { background: var(--red-tint); color: var(--red); }
 .btn.ghost { background: transparent; }
-.btn[disabled] { opacity: .4; pointer-events: none; }
+.btn[disabled] { opacity: .35; pointer-events: none; }
 .g-bac { --c: var(--bac); } .g-cash { --c: var(--cash); } .g-tour { --c: var(--tour); } .g-dealer { --c: var(--dealer); }
-.tag { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 12px; border: 1px solid var(--c, #3a3320); color: var(--c, #cfd6cc); }
-.toast { position: fixed; left: 12px; right: 12px; top: calc(var(--sat) + 62px); z-index: 50; background: #11190f; border: 1px solid #2f4a2a; border-radius: 14px; padding: 12px 14px; display: none; grid-template-columns: 1fr auto; gap: 10px; align-items: center; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
-.toast.show { display: grid; }
-.toast .t1 { font-size: 14px; } .toast .t2 { font-size: 20px; font-weight: 700; margin-top: 2px; }
-.toast.err { background: #2a120f; border-color: #6a2a20; }
+.tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--fill); color: var(--c, var(--text2)); }
+.toast { position: fixed; left: 12px; right: 12px; top: calc(var(--sat) + 70px); z-index: 50; background: var(--card); color: var(--text); border-radius: 16px; padding: 14px 16px; display: none; grid-template-columns: 1fr auto; gap: 10px; align-items: center; box-shadow: 0 8px 30px rgba(0, 0, 0, .18); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.toast.show { display: grid; animation: drop .25s cubic-bezier(.2, .9, .3, 1.2); }
+@keyframes drop { from { transform: translateY(-12px); opacity: 0; } }
+.toast .t1 { font-size: 15px; color: var(--text2); } .toast .t2 { font-size: 21px; font-weight: 700; margin-top: 2px; }
+.toast.err .t1, .toast.err .t2 { color: var(--red); }
