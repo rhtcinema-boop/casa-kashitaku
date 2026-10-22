@@ -3,7 +3,7 @@
 // 1万 = 1万円。IN は買い込み/エントリー、OUT は精算/賞金。ディーラーは game='dealer' で IN=補充(+/-)、OUT=回収。
 (function (g) {
   const GAMES = { bac: 'バカラ', cash: 'リング', tour: 'トーナメント', dealer: 'バカラディーラー' };
-  const TYPES = { in: 'IN', out: 'OUT', entry: 'エントリー', reentry: 'リエントリー', prize: '賞金', bust: '飛び' };
+  const TYPES = { in: 'IN', out: 'OUT', entry: 'エントリー', reentry: 'リエントリー', prize: '賞金', bust: '飛び', home: '帰宅' };
 
   function emptyPlayer(no, name) {
     return {
@@ -12,6 +12,7 @@
       cash: { ins: [], in: 0, out: 0, pl: 0, done: false },
       tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0, alive: false, rank: '' },
       total: 0,
+      home: false,   // 帰宅ボタンを押した(また IN・エントリーしたら在店に戻る)
     };
   }
 
@@ -31,6 +32,8 @@
       const no = Number(t.no);
       if (!map.has(no)) map.set(no, emptyPlayer(no, ''));
       const p = map.get(no);
+      if (t.type === 'home') { p.home = true; continue; }
+      if (t.type === 'in' || t.type === 'entry' || t.type === 'reentry') p.home = false;
       if (t.game === 'tour') {
         if (t.type === 'entry') { p.tour.e += 1; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
         else if (t.type === 'reentry') { p.tour.re += 1; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
@@ -77,6 +80,7 @@
   function describeTx(t) {
     const g = GAMES[t.game] || t.game;
     if (t.game === 'dealer') return `バカラディーラー チップ${t.type === 'in' ? '補充' : '回収'} ${signedPt(t.pt)}`;
+    if (t.type === 'home') return '帰宅';
     if (t.type === 'bust') return `${g} 飛び`;
     if (t.type === 'prize' && t.table) return `${g} ${t.table} 賞金 ${fmtPt(t.pt)}`;
     return `${g} ${TYPES[t.type] || t.type} ${fmtPt(t.pt)}`;

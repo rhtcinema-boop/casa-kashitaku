@@ -184,9 +184,8 @@
     const nos = new Set(state.players.map(p => Number(p.no)));
     state.txs.forEach(t => { if (t.game !== 'dealer' && t.no !== '' && t.no != null) nos.add(Number(t.no)); });
     const list = [...nos].filter(n => n > 0).sort((a, b) => a - b).map(n => playerOf(n));
-    const playing = list.filter(p => pendingGames(p).length).length;
-    const played = list.filter(p => p.bac.in || p.cash.in || p.tour.e + p.tour.re).length;
-    $('#plStat').innerHTML = `<div><span>登録</span><b>${list.length}<small> 人</small></b></div><div><span>プレイ中</span><b>${playing}<small> 人</small></b></div><div><span>終了</span><b>${played - playing}<small> 人</small></b></div>`;
+    const gone = list.filter(p => p.home).length;
+    $('#plStat').innerHTML = `<div><span>登録</span><b>${list.length}<small> 人</small></b></div><div><span>在店</span><b>${list.length - gone}<small> 人</small></b></div><div><span>帰宅</span><b>${gone}<small> 人</small></b></div>`;
     if (!list.length) { $('#plList').innerHTML = '<div class="empty">まだ誰も登録されていません</div>'; return; }
     $('#plList').innerHTML = list.map(p => {
       const pend = pendingGames(p), chips = [];
@@ -194,11 +193,11 @@
       if (p.cash.in || p.cash.out) chips.push(`<span class="g-cash ${p.cash.done ? '' : 'live'}">リング ${p.cash.done ? '終了' : 'プレイ中'} ${K.signedPt(p.cash.pl)}</span>`);
       if (p.tour.e + p.tour.re) chips.push(`<span class="g-tour ${p.tour.alive ? 'live' : ''}">T ${p.tour.alive ? 'プレイ中' : (p.tour.rank || '飛び')} ${K.signedPt(p.tour.pl)}</span>`);
       const any = chips.length;
-      return `<div class="pl ${any && !pend.length ? 'gone' : ''}">
+      return `<div class="pl ${p.home ? 'gone' : ''}">
         <div class="no">${p.no}</div>
         <div><div class="nm">${esc(p.name || '(未登録)')}${any ? `<small class="${cls(p.total)}">${K.signedPt(p.total)}</small>` : ''}</div>
           <div class="chips">${chips.join('') || '<span>まだ遊んでいません</span>'}</div></div>
-        ${pend.length ? `<button class="btn gold" data-endall="${p.no}">全ゲーム終了</button>` : `<button class="btn" disabled>${any ? '終了済み' : '—'}</button>`}
+        ${p.home ? `<button class="btn" disabled>帰宅済み</button>` : `<button class="btn ${pend.length ? 'gold' : ''}" data-endall="${p.no}">${pend.length ? '全ゲーム終了して帰宅' : '帰宅'}</button>`}
       </div>`;
     }).join('');
   }
@@ -273,7 +272,7 @@
     const g = (pad && pad.game) || game; // 帰宅の途中は、いま終了させているゲーム
     const s = p[g];
     let statHtml, actsHtml;
-    const homeBtn = `<button class="btn home full" data-act="home">帰宅(全ゲームを終了)</button>`;
+    const homeBtn = p.home ? `<button class="btn home full" disabled>帰宅済み</button>` : `<button class="btn home full" data-act="home">帰宅${pendingGames(p).length ? '(全ゲームを終了)' : ''}</button>`;
     if (g === 'tour') {
       statHtml = `<div class="stat">
         <div><span>回数</span><b>${s.e + s.re}<small> 回</small></b></div>
@@ -340,14 +339,16 @@
   let home = null; // { no, queue: ['bac','cash','tour'] }
   function startHome() {
     const p = playerOf(openNo), q = pendingGames(p);
-    if (!q.length) return toast('終了していないゲームはありません', `No.${p.no} ${esc(p.name)} はすべて終了しています`);
+    if (p.home && !q.length) return toast('すでに帰宅済みです', `No.${p.no} ${esc(p.name)}`);
     home = { no: openNo, queue: q };
     nextHome();
   }
   async function nextHome() {
     if (!home) return;
     if (!home.queue.length) {
-      const p = playerOf(home.no); home = null; pad = null; closeSheet();
+      const no = home.no; home = null; pad = null; closeSheet();
+      await send({ no, game: 'home', type: 'home', pt: 0 }, '帰宅');
+      const p = playerOf(no);
       return toast(`No.${p.no} ${esc(p.name)} 帰宅しました`, `合計収支 ${K.signedPt(p.total)}`);
     }
     const g = home.queue[0];

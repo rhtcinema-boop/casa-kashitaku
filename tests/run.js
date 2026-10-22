@@ -350,6 +350,24 @@ test('飛びで順位を選ぶと賞金が入り、シートの日付タブに�
   assert.strictEqual(day[2][42], 1668000, '賞金は円で正確に');
 });
 
+test('帰宅: ボタンを押したときだけ帰宅、また IN したら在店に戻る', async () => {
+  const gas = loadGas(); const c = loadClient(gas);
+  await c.API.addTx(D, { no: 1, game: 'bac', type: 'in', pt: 10 });
+  await c.API.addTx(D, { no: 1, game: 'bac', type: 'out', pt: 0 });
+  let v = c.API.view(D), a = c.K.aggregate(v.players, v.txs, v.config);
+  assert.strictEqual(a.players[0].home, false, '全ゲーム終了だけでは帰宅にならない');
+  await c.API.addTx(D, { no: 1, game: 'home', type: 'home', pt: 0 });
+  v = c.API.view(D); a = c.K.aggregate(v.players, v.txs, v.config);
+  assert.strictEqual(a.players[0].home, true);
+  assert.strictEqual(a.players[0].total, -10, '帰宅は収支に影響しない');
+  await c.API.addTx(D, { no: 1, game: 'cash', type: 'in', pt: 20 });
+  v = c.API.view(D); a = c.K.aggregate(v.players, v.txs, v.config);
+  assert.strictEqual(a.players[0].home, false, 'また IN したら在店');
+  await c.API.sync(D);
+  assert.strictEqual(gas.call.get(D).txs.length, 4, '帰宅もシートに記録される');
+  assert.ok(gas.mock.ss.getSheetByName(D), '日付タブも作れる');
+});
+
 test('取り消しの id は自分の入力を指す', async () => {
   const gas = loadGas(); const c = loadClient(gas);
   const st = await c.API.addTx(D, { no: 1, game: 'bac', type: 'in', pt: 10 });
