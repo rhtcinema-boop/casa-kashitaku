@@ -316,10 +316,13 @@ test('営業日は朝6時で切り替わる(深夜0時をまたいでも同じ�
 test('プライズ傾斜: X=6, Y=40, プール620 → 1位以外は5万単位に切り捨て、余りは1位', async () => {
   const { K } = loadClient(loadGas());
   const r = K.calcPrizes(620, 6, 40);
-  assert.strictEqual(JSON.stringify(r.prizes), JSON.stringify([170, 140, 115, 90, 65, 40]));
+  assert.strictEqual(JSON.stringify(r.prizes), JSON.stringify([210, 145, 105, 70, 50, 40]));
   assert.strictEqual(Math.round(r.prizes.reduce((a, b) => a + b, 0) * 10) / 10, 620);
-  // 下から k 番目 = Y + (k-1)a(切り捨て前)
-  assert.ok(Math.abs(r.a - 380 / 15) < 1e-9);
+  // 元のシートと同じ規則: a = (プール − X×Y) ÷ 35(X=6)
+  assert.ok(Math.abs(r.a - 380 / 35) < 1e-9);
+  // 切り捨て前の値は元シートの H 列(203, 149, 105, 73, 51, 40)と一致する
+  const raw = [15, 10, 6, 3, 1, 0].map(w => 40 + w * r.a);
+  assert.strictEqual(JSON.stringify(raw.map(Math.round)), JSON.stringify([203, 149, 105, 73, 51, 40]));
   assert.ok(K.calcPrizes(620, 6, 200).error, '最低賞金が高すぎるとエラー');
   assert.strictEqual(JSON.stringify(K.calcPrizes(620, 1, 40).prizes), '[620]');
   // いろいろな人数・額で合計が必ずプールと一致する

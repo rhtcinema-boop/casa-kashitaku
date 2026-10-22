@@ -14,7 +14,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=202610222213">
+<link rel="stylesheet" href="css/style.css?v=202610222219">
 <style>
   body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
   .wrap { margin: 0 auto; padding: calc(var(--sat) + 12px) 16px calc(var(--sab) + 100px); }
@@ -240,7 +240,7 @@
       <div class="row"><span>プール<i id="pcPoolInfo"></i></span><b id="pcPool"></b></div>
       <div class="row"><span>入賞人数 X</span><div class="stepper" data-k="x"><button data-d="-1">−</button><b id="pcX"></b><button data-d="1">＋</button></div></div>
       <div class="row"><span>最低賞金 Y<i>いちばん下の順位(万)</i></span><div class="stepper" data-k="y"><button data-d="-5">−5</button><button data-d="-1">−</button><b id="pcY"></b><button data-d="1">＋</button><button data-d="5">＋5</button></div></div>
-      <div class="row"><span>a<i>1つ上の順位ごとに増える額</i></span><b id="pcA"></b></div>
+      <div class="row"><span>a<i>下から 0a・1a・3a・6a・10a・15a… と上乗せ</i></span><b id="pcA"></b></div>
       <div class="row" style="grid-template-columns:1fr"><button class="btn gold big" id="pcCalc">自動計算</button></div>
       <div id="pcDraft" class="hide">
         <div class="row" style="grid-template-columns:1fr"><span style="font-size:14px;color:var(--text2)">1位以外は5万単位に切り捨て、余りは1位。金額はタップして直せます(万)</span></div>
@@ -287,10 +287,10 @@
 
 <div class="toast" id="toast"><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=202610222213"></script>
-<script src="js/model.js?v=202610222213"></script>
-<script src="js/api.js?v=202610222213"></script>
-<script src="js/image.js?v=202610222213"></script>
-<script src="js/phone.js?v=202610222213"></script>
+<script src="config.js?v=202610222219"></script>
+<script src="js/model.js?v=202610222219"></script>
+<script src="js/api.js?v=202610222219"></script>
+<script src="js/image.js?v=202610222219"></script>
+<script src="js/phone.js?v=202610222219"></script>
 </body>
 </html>

@@ -91,7 +91,9 @@
   const rankLabel = i => ['1st', '2nd', '3rd'][i] || `${i + 1}th`;
 
   // プライズの傾斜計算(単位: 万。内部は円の整数で計算)
-  // X = 入賞人数、Y = 最下位の賞金。下から k 番目 = Y + (k-1)×a、a は合計がプールになるよう自動で決める。
+  // X = 入賞人数、Y = 最下位の賞金。元のシート「プライズ」タブと同じ規則:
+  //   下から 1,2,3,4,5,6… 番目 = Y + 0a, 1a, 3a, 6a, 10a, 15a …(重みは三角数 k(k+1)/2。上に行くほど差が広がる)
+  //   a は合計がプールになるよう自動で決める(重みの合計 = (X-1)X(X+1)/6)。
   // 1位以外は 5万円単位に切り捨て(万の位 0〜4 → 0、5〜9 → 5)、切り捨てた分はすべて 1位に足す。
   // 戻り値: { prizes: [1位, 2位, …](万), a(万), error }
   function calcPrizes(poolMan, X, Y) {
@@ -100,11 +102,12 @@
     if (!(X >= 1)) return { prizes: [], a: 0, error: '入賞人数を1人以上にしてください' };
     if (!(pool > 0)) return { prizes: [], a: 0, error: 'まだエントリーがありません' };
     if (X === 1) return { prizes: [pool / 10000], a: 0, error: '' };
-    const steps = X * (X - 1) / 2;
+    const weight = k => k * (k + 1) / 2;                       // 下から k 番目(0 始まり)の重み
+    const steps = (X - 1) * X * (X + 1) / 6;                   // 重みの合計(X=6 なら 35)
     const aYen = (pool - X * y) / steps;
     if (aYen < 0) return { prizes: [], a: aYen / 10000, error: `最低賞金が高すぎます(最大 ${Math.floor(pool / X / 10000)}万)` };
     const bottomUp = [];
-    for (let k = 0; k < X; k++) bottomUp.push(y + k * aYen);
+    for (let k = 0; k < X; k++) bottomUp.push(y + weight(k) * aYen);
     const top = bottomUp.reverse();                               // [1位, 2位, …]
     const UNIT = 50000;                                              // 5万円
     const rest = top.slice(1).map(v => Math.floor(v / UNIT) * UNIT); // 1位以外: 5万円単位に切り捨て
