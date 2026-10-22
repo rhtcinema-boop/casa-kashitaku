@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070a08">
+<title>casa 貸卓 — ボード</title>
+<link rel="icon" href="icon-180.png" type="image/png">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { padding: 18px 22px 30px; }
+  header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 14px; letter-spacing: .3em; color: var(--gold); }
+  .date { font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .status { font-size: 12px; color: var(--dim); text-align: right; }
+  .status b { color: var(--plus); font-weight: 600; } .status b.off { color: var(--minus); }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .tools select, .tools input { border: 1px solid #3a3320; background: #0e0c07; color: #e8e3d2; border-radius: 10px; padding: 8px 10px; font: inherit; }
+
+  .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+  .tile span { display: block; font-size: 12px; color: var(--dim); letter-spacing: .1em; }
+  .tile b { display: block; font-size: 30px; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tile b small { font-size: 13px; color: var(--dim); font-weight: 400; margin-left: 2px; }
+  .tile i { display: block; font-style: normal; font-size: 12px; color: var(--dim); margin-top: 2px; }
+  .tile.gold b { background: linear-gradient(180deg, #fff1bd, #c9a03e); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .tile.bac { border-top: 3px solid var(--bac); } .tile.cash { border-top: 3px solid var(--cash); } .tile.tour { border-top: 3px solid var(--tour); }
+
+  .main { display: grid; grid-template-columns: 1fr 300px; gap: 14px; align-items: start; }
+  .tablewrap { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #1d1a10; text-align: right; }
+  th { font-size: 12px; color: var(--dim); font-weight: 600; position: sticky; top: 0; background: #0b0d0a; }
+  th.grp { font-size: 12px; letter-spacing: .15em; border-bottom: 0; padding-bottom: 2px; }
+  th.grp.bac { color: var(--bac); } th.grp.cash { color: var(--cash); } th.grp.tour { color: var(--tour); } th.grp.tot { color: var(--gold); }
+  td.l, th.l { text-align: left; }
+  td.c, th.c { text-align: center; }
+  td.sep, th.sep { border-left: 1px solid #2a2416; }
+  td.name { font-weight: 700; font-size: 16px; }
+  td.ins { color: var(--dim); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  td.dimv { color: rgba(255, 255, 255, .22); }
+  td.total { font-weight: 700; font-size: 17px; }
+  tr.dealer td { color: var(--dim); background: rgba(255, 215, 115, .04); }
+  tr.dealer td.name { color: var(--gold); }
+  tr.sum td { font-weight: 700; border-top: 2px solid var(--line); color: var(--gold); background: rgba(255, 215, 115, .05); }
+  tr.house td { font-weight: 700; color: #e8e3d2; }
+  tr.flash td { animation: flash 1.6s ease-out; }
+  @keyframes flash { 0% { background: rgba(255, 215, 115, .35); } 100% { background: transparent; } }
+  .empty { padding: 40px; text-align: center; color: var(--dim); }
+
+  .side { display: grid; gap: 14px; }
+  .feed { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .feed h2 { margin: 0; padding: 10px 14px; font-size: 12px; letter-spacing: .2em; color: var(--gold); border-bottom: 1px solid var(--line); }
+  .feed .row { padding: 9px 14px; border-bottom: 1px solid #1d1a10; font-size: 14px; }
+  .feed .row i { display: block; font-style: normal; font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .feed .row:first-of-type { animation: flash 1.6s ease-out; }
+  .side .btn { width: 100%; }
+  .preview { margin-top: 8px; } .preview canvas { width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+  @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, 1fr); } .main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>casa 貸卓 ボード</h1><div class="date" id="hDate"></div></div>
+  <div class="tools">
+    <select id="dateSel"></select>
+    <label style="font-size:13px;color:var(--dim)"><input type="checkbox" id="hideEmpty" checked style="width:auto;margin-right:4px"> 未入力の番号を隠す</label>
+  </div>
+  <div class="status" id="status">…</div>
+</header>
+
+<div class="tiles" id="tiles"></div>
+
+<div class="main">
+  <div class="tablewrap" id="tablewrap"></div>
+  <aside class="side">
+    <div class="feed"><h2>直近の入力</h2><div id="feed"></div></div>
+    <div>
+      <button class="btn gold" id="makeImage">収支一覧の画像を作る(保存)</button>
+      <div class="preview" id="preview"></div>
+    </div>
+    <a class="btn" id="openSheet" target="_blank" rel="noopener" style="text-decoration:none;text-align:center;display:block">スプレッドシートを開く</a>
+  </aside>
+</div>
+
+<script src="config.js"></script>
+<script src="js/model.js"></script>
+<script src="js/api.js"></script>
+<script src="js/image.js"></script>
+<script>
+(() => {
+  const K = Kashitaku, API = KashitakuAPI, CFG = KASHITAKU_CONFIG, PY = CFG.POINT_YEN || 10000;
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const cls = v => v > 0 ? 'plus' : v < 0 ? 'minus' : 'zero';
+  const n = v => v.toLocaleString('ja-JP');
+  const sp = v => (v > 0 ? '+' : '') + n(v);
+  const qs = new URLSearchParams(location.search);
+  let date = qs.get('date') || K.todayJST();
+  let state = null, agg = null, lastIds = new Set(), firstLoad = true;
+
+  async function refresh() {
+    try {
+      state = await API.getState(date);
+      agg = K.aggregate(state.players, state.txs, state.config);
+      $('#status').innerHTML = `<b>${API.mode === 'gas' ? 'シート接続中' : 'テストモード'}</b><br>${new Date().toLocaleTimeString('ja-JP')} 更新`;
+      render();
+    } catch (e) {
+      $('#status').innerHTML = `<b class="off">接続エラー</b><br>${esc(e.message)}`;
+    }
+  }
+
+  function render() {
+    const t = agg.totals, d = agg.dealer;
+    $('#hDate').textContent = date;
+    // 日付セレクタ
+    const sel = $('#dateSel'); const dates = [...new Set([...(state.dates || []), date])].sort().reverse();
+    sel.innerHTML = dates.map(x => `<option value="${x}" ${x === date ? 'selected' : ''}>${x}</option>`).join('');
+    // タイル
+    $('#tiles').innerHTML = `
+      <div class="tile tour"><span>トーナメント エントリー</span><b>${t.tour.e + t.tour.re}<small>回</small></b><i>エントリー ${t.tour.e} ／ リエントリー ${t.tour.re} ／ 1回 ${state.config.tourFee ?? 20}万</i></div>
+      <div class="tile tour"><span>プライズプール</span><b>${n(t.tour.in)}<small>万</small></b><i>${(() => { const pz = K.parsePrizes(state.config); return pz.length ? pz.map((v, i) => `${K.rankLabel(i)} ${n(v)}`).join(' ／ ') + ` ／ 計 ${n(pz.reduce((a, b) => a + b, 0))}` : `${K.fmtYen(t.tour.in, PY)} ／ 賞金済 ${n(t.tour.out)}万`; })()}</i></div>
+      <div class="tile bac"><span>バカラ 店側</span><b class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}<small>万</small></b><i>IN ${n(t.bac.in)} ／ OUT ${n(t.bac.out)} ／ ディーラー 補充${n(d.bac.in)} 回収${n(d.bac.out)}</i></div>
+      <div class="tile cash"><span>リング 店側</span><b class="${cls(-t.cash.pl)}">${sp(-t.cash.pl)}<small>万</small></b><i>IN ${n(t.cash.in)} ／ OUT ${n(t.cash.out)}</i></div>
+      <div class="tile tour"><span>トーナメント 店側</span><b class="${cls(-t.tour.pl)}">${sp(-t.tour.pl)}<small>万</small></b><i>IN ${n(t.tour.in)} ／ OUT ${n(t.tour.out)}</i></div>
+      <div class="tile gold"><span>店側 合計</span><b>${sp(t.house)}<small>万</small></b><i>${K.signedYen(t.house, PY)} ／ 参加 ${agg.players.filter(p => p.name).length} 名</i></div>`;
+
+    // テーブル
+    const hide = $('#hideEmpty').checked;
+    const rows = agg.players.filter(p => !hide || p.bac.in || p.bac.out || p.cash.in || p.cash.out || p.tour.in || p.tour.out);
+    const newIds = new Set(state.txs.map(x => x.id));
+    const changedNos = new Set(state.txs.filter(x => !lastIds.has(x.id)).map(x => Number(x.no)));
+    const dv = (v, unit) => v ? `${n(v)}${unit || ''}` : `<span style="color:rgba(255,255,255,.22)">0</span>`;
+    const insTxt = arr => arr.length ? esc(arr.join(' + ')) : '';
+    let html = `<table>
+      <thead>
+        <tr><th class="grp" colspan="2"></th><th class="grp tot sep">合計</th><th class="grp bac sep" colspan="4">BACCARAT</th><th class="grp cash sep" colspan="4">CASH(リング)</th><th class="grp tour sep" colspan="4">TOURNAMENT</th></tr>
+        <tr><th class="c">No</th><th class="l">名前</th><th class="sep">収支</th>
+          <th class="sep l">IN 内訳</th><th>IN</th><th>OUT</th><th>収支</th>
+          <th class="sep l">IN 内訳</th><th>IN</th><th>OUT</th><th>収支</th>
+          <th class="sep">E数</th><th>IN</th><th>OUT</th><th>収支</th></tr>
+      </thead><tbody>`;
+    html += rows.map(p => `<tr class="${!firstLoad && changedNos.has(p.no) ? 'flash' : ''}">
+      <td class="c">${p.no}</td><td class="l name">${esc(p.name || '(未登録)')}</td>
+      <td class="sep total ${cls(p.total)}">${sp(p.total)}</td>
+      <td class="sep ins">${insTxt(p.bac.ins)}</td><td class="${p.bac.in ? '' : 'dimv'}">${n(p.bac.in)}</td><td class="${p.bac.out ? '' : 'dimv'}">${n(p.bac.out)}</td><td class="${cls(p.bac.pl)}">${sp(p.bac.pl)}</td>
+      <td class="sep ins">${insTxt(p.cash.ins)}</td><td class="${p.cash.in ? '' : 'dimv'}">${n(p.cash.in)}</td><td class="${p.cash.out ? '' : 'dimv'}">${n(p.cash.out)}</td><td class="${cls(p.cash.pl)}">${sp(p.cash.pl)}</td>
+      <td class="sep ${p.tour.e + p.tour.re ? '' : 'dimv'}">${p.tour.e + p.tour.re}${p.tour.re ? `<small style="color:var(--dim)"> (再${p.tour.re})</small>` : ''}</td><td class="${p.tour.in ? '' : 'dimv'}">${n(p.tour.in)}</td><td class="${p.tour.out ? '' : 'dimv'}">${n(p.tour.out)}</td><td class="${cls(p.tour.pl)}">${sp(p.tour.pl)}</td>
+    </tr>`).join('');
+    if (!rows.length) html += `<tr><td colspan="15" class="empty">まだ入力はありません</td></tr>`;
+    const dealerTotal = d.bac.pl;
+    html += `<tr class="dealer"><td></td><td class="l name">バカラ ディーラー</td><td class="sep total ${cls(dealerTotal)}">${sp(dealerTotal)}</td>
+      <td class="sep ins">${insTxt(d.bac.ins)}</td><td>${n(d.bac.in)}</td><td>${n(d.bac.out)}</td><td class="${cls(d.bac.pl)}">${sp(d.bac.pl)}</td>
+      <td class="sep"></td><td></td><td></td><td></td>
+      <td class="sep"></td><td></td><td></td><td></td></tr>`;
+    html += `<tr class="sum"><td></td><td class="l">プレイヤー合計</td><td class="sep total ${cls(t.players)}">${sp(t.players)}</td>
+      <td class="sep"></td><td>${n(t.bac.in)}</td><td>${n(t.bac.out)}</td><td class="${cls(t.bac.pl)}">${sp(t.bac.pl)}</td>
+      <td class="sep"></td><td>${n(t.cash.in)}</td><td>${n(t.cash.out)}</td><td class="${cls(t.cash.pl)}">${sp(t.cash.pl)}</td>
+      <td class="sep">${t.tour.e + t.tour.re}</td><td>${n(t.tour.in)}</td><td>${n(t.tour.out)}</td><td class="${cls(t.tour.pl)}">${sp(t.tour.pl)}</td></tr>`;
+    html += `<tr class="house"><td></td><td class="l">店側(逆数)</td><td class="sep total ${cls(t.house)}">${sp(t.house)}</td>
+      <td class="sep"></td><td></td><td></td><td class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}</td>
+      <td class="sep"></td><td></td><td></td><td class="${cls(-t.cash.pl)}">${sp(-t.cash.pl)}</td>
+      <td class="sep"></td><td></td><td></td><td class="${cls(-t.tour.pl)}">${sp(-t.tour.pl)}</td></tr>`;
+    html += '</tbody></table>';
+    $('#tablewrap').innerHTML = html;
+    lastIds = newIds; firstLoad = false;
+
+    // フィード
+    const nameOf = no => (state.players.find(p => Number(p.no) === Number(no)) || {}).name || '';
+    const feed = [...state.txs].sort((a, b) => b.ts - a.ts).slice(0, 25);
+    $('#feed').innerHTML = feed.length ? feed.map(x => `<div class="row">${x.game === 'dealer' ? '' : `<b>No.${x.no}</b> ${esc(nameOf(x.no))} `}<span class="tag g-${x.game}">${K.describeTx(x)}</span><i>${new Date(x.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</i></div>`).join('') : '<div class="row" style="color:var(--dim)">まだ入力はありません</div>';
+    $('#openSheet').href = CFG.SHEET_URL || '#';
+  }
+
+  $('#dateSel').addEventListener('change', e => { date = e.target.value; firstLoad = true; history.replaceState(null, '', `?date=${date}`); refresh(); });
+  $('#hideEmpty').addEventListener('change', render);
+  $('#makeImage').addEventListener('click', async () => {
+    const c = KashitakuImage.renderSummary(agg, date);
+    $('#preview').innerHTML = ''; $('#preview').appendChild(c);
+    await KashitakuImage.shareCanvas(c, `casa貸卓_${date}.png`);
+  });
+  setInterval(() => { if (!document.hidden) refresh(); }, API.mode === 'gas' ? 5000 : 2000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  refresh();
+})();
+</script>
+</body>
+</html>

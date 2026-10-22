@@ -1,0 +1,26 @@
+/* casa 貸卓 — 共通スタイル */
+:root {
+  --gold: #ffd773; --gold2: #c9a03e; --dim: #9aa89c; --plus: #7ee0a0; --minus: #ff7a6b;
+  --card: rgba(10, 9, 6, .82); --line: #2a2416; --bg: #070a08;
+  --bac: #d9a441; --cash: #5fb6e0; --tour: #c77dff; --dealer: #9aa89c;
+  --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { background: var(--bg); }
+body { margin: 0; min-height: 100%; background: radial-gradient(ellipse at 50% 0%, #13231a, #070a08 60%) fixed; color: #e8e3d2; font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", sans-serif; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.num { font-variant-numeric: tabular-nums; }
+.plus { color: var(--plus); } .minus { color: var(--minus); } .zero { color: var(--dim); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.btn { border: 1px solid #3a3320; background: #15120a; color: #cfd6cc; border-radius: 12px; padding: 12px 14px; font-size: 15px; }
+.btn:active { background: #241d0e; }
+.btn.gold { background: linear-gradient(180deg, #ffe9a8, #c9a03e); color: #1a1408; font-weight: 700; border-color: #c9a03e; }
+.btn.red { background: #3a1510; border-color: #6a2a20; color: #ffb3a8; }
+.btn.ghost { background: transparent; }
+.btn[disabled] { opacity: .4; pointer-events: none; }
+.g-bac { --c: var(--bac); } .g-cash { --c: var(--cash); } .g-tour { --c: var(--tour); } .g-dealer { --c: var(--dealer); }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 12px; border: 1px solid var(--c, #3a3320); color: var(--c, #cfd6cc); }
+.toast { position: fixed; left: 12px; right: 12px; top: calc(var(--sat) + 10px); z-index: 50; background: #11190f; border: 1px solid #2f4a2a; border-radius: 14px; padding: 12px 14px; display: none; grid-template-columns: 1fr auto; gap: 10px; align-items: center; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+.toast.show { display: grid; }
+.toast .t1 { font-size: 14px; } .toast .t2 { font-size: 20px; font-weight: 700; margin-top: 2px; }
+.toast.err { background: #2a120f; border-color: #6a2a20; }
