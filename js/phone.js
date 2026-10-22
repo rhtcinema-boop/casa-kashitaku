@@ -465,6 +465,12 @@
     } else {
       if (pt <= 5) {
         lines.push('プレイヤー引きます。');
+        // プレイヤーの3枚目を待っている間: バンカーの条件を先に言う(簡略版)
+        if (p3 == null) {
+          const cond = bt <= 2 ? 'バンカーは必ず引きます。' : bt === 3 ? 'プレイヤーが8以外ならバンカー引きます。' : bt === 4 ? 'プレイヤーが2〜7ならバンカー引きます。'
+            : bt === 5 ? 'プレイヤーが4〜7ならバンカー引きます。' : bt === 6 ? 'プレイヤーが6か7ならバンカー引きます。' : 'バンカーは引きません。';
+          lines.push(cond);
+        }
         if (p3 != null) {
           if (r.need === 'b3' || b3 != null) lines.push(`プレイヤーの3枚目が${p3}なので、バンカー引きます。`);
           else if (r.done) lines.push(`プレイヤーの3枚目が${p3}なので、バンカー引きません。`);
@@ -482,7 +488,8 @@
       else lines.push(`${r.bt}対${r.pt}で、バンカーの勝ちです。${r.banker6 ? 'バンカー6、配当は半分です。' : ''}`);
     }
     // いま言う一言を大きく、それまでの分は小さく(終わったときは「もう引きません」以降をまとめて大きく)
-    const nowFrom = r.done ? Math.max(0, lines.findIndex(x => x.startsWith('もう引きません') || x.startsWith('ナチュラル'))) : lines.length - 1;
+    const nowFrom = r.done ? Math.max(0, lines.findIndex(x => x.startsWith('もう引きません') || x.startsWith('ナチュラル')))
+      : r.need === 'p3' ? Math.max(0, lines.length - 2) : lines.length - 1; // プレイヤーが引く場面は「引きます」と条件をまとめて
     return lines.map((x, i) => `<p class="${i >= nowFrom ? 'now' : 'past'}">${x}</p>`).join('');
   }
   function drawNum(n) {
