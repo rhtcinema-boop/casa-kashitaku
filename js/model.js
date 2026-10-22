@@ -8,8 +8,8 @@
   function emptyPlayer(no, name) {
     return {
       no, name: name || '',
-      bac: { ins: [], in: 0, out: 0, pl: 0 },
-      cash: { ins: [], in: 0, out: 0, pl: 0 },
+      bac: { ins: [], in: 0, out: 0, pl: 0, done: false },
+      cash: { ins: [], in: 0, out: 0, pl: 0, done: false },
       tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0, alive: false, rank: '' },
       total: 0,
     };
@@ -38,7 +38,7 @@
         else if (t.type === 'prize' || t.type === 'out') { p.tour.out += pt; p.tour.alive = false; if (t.table) p.tour.rank = t.table; }
       } else if (t.game === 'bac' || t.game === 'cash') {
         const s = p[t.game];
-        if (t.type === 'in') { s.ins.push(pt); s.in += pt; } else if (t.type === 'out') s.out += pt;
+        if (t.type === 'in') { s.ins.push(pt); s.in += pt; s.done = false; } else if (t.type === 'out') { s.out += pt; s.done = true; } // OUT したら終了、また IN したら復帰
       }
     }
     const rd = v => Math.round(v * 1000) / 1000; // 小数の賞金(166.8万など)の足し算誤差を消す
