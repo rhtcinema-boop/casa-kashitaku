@@ -31,7 +31,7 @@
       { k: 'total', t: '合計収支', w: 130, a: 'right' }, // 名前のすぐ右に合計
       { k: 'bacIn', t: 'バカラ IN', w: 110, a: 'right', col: '#007aff' }, { k: 'bacPl', t: '収支', w: 100, a: 'right' },
       { k: 'cashIn', t: 'リング IN', w: 110, a: 'right', col: '#30b0c7' }, { k: 'cashPl', t: '収支', w: 100, a: 'right' },
-      { k: 'tourE', t: 'トナメ 回数', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourRank', t: '順位', w: 70, a: 'center', col: '#5856d6' }, { k: 'tourIn', t: 'トナメ IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
+      { k: 'tourIn', t: 'トナメ IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourE', t: '回数', w: 70, a: 'right', col: '#5856d6' }, { k: 'tourRank', t: '順位', w: 70, a: 'center', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
     ];
     let cx = 40; cols.forEach(cl => { cl.x = cx; cx += cl.w; });
     const colX = cl => cl.a === 'right' ? cl.x + cl.w - 8 : cl.a === 'center' ? cl.x + cl.w / 2 : cl.x + 8;
