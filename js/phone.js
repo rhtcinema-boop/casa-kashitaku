@@ -25,30 +25,47 @@
     agg = K.aggregate(state.players, state.txs, state.config);
     setStatus();
     render();
+    if (st) scheduleSync(); // 入力・削除・設定のあとは自動で送る
   }
-  // 同期: 未同期分をまとめてシートへ送り、最新を取り込む
-  let syncAgain = false;
+  // ---------- 同期(自動) ----------
+  // 入力が止まって2秒後に送信、15秒ごとに他の端末の入力を取り込む。同期ボタンで今すぐも可。
+  let syncAgain = false, syncTimer = null, manualSync = false, lastSyncError = false;
+  function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(() => doSync(true), 2000); }
   async function doSync(quiet) {
-    if (API.isSyncing()) { syncAgain = true; return; } // 終わったらもう一度(日付を変えた時など)
+    if (!quiet) manualSync = true;
+    if (API.isSyncing()) { syncAgain = true; setStatus(); return; } // 終わったらもう一度
+    clearTimeout(syncTimer);
     const d0 = date;
     const promise = API.sync(date);
     setStatus();
     try {
       await promise;
-      refresh(); // 同期中に日付が変わっても、今の日付を表示する
-      if (!quiet) toast('同期しました', 'シートと同じ状態です');
+      lastSyncError = false;
+      safeRender(); // 同期中に日付が変わっても、今の日付を表示する
+      if (manualSync) toast('同期しました', '他の端末と同じ状態です');
     } catch (e) {
-      refresh();
-      toast('同期できませんでした', '入力は端末に残っています。電波を確認してもう一度押してください', true);
+      lastSyncError = true;
+      safeRender();
+      if (manualSync) toast('同期できませんでした', '入力は端末に残っています。電波が戻ると自動で送ります', true);
     }
+    manualSync = false;
     if (syncAgain || date !== d0) { syncAgain = false; doSync(true); }
+    else setStatus();
+  }
+  // 「消す?」の確認中は画面を作り直さない(押し間違い防止)
+  function safeRender() {
+    const typing = document.activeElement && document.activeElement.tagName === 'INPUT';
+    if (typing || document.querySelector('[data-del].arm')) { state = API.view(date); agg = K.aggregate(state.players, state.txs, state.config); setStatus(); return; }
+    refresh();
   }
   const hm = t => new Date(t).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
   function setStatus() {
     const n = state.pendingTotal || 0, btn = $('#syncBtn');
     btn.classList.toggle('dirty', n > 0);
-    btn.classList.toggle('spin', API.isSyncing());
-    $('#syncCount').textContent = API.isSyncing() ? '同期中…' : n ? `未同期 ${n}` : (state.syncedAt ? `${hm(state.syncedAt)} 済` : '未同期');
+    const busyNow = API.isSyncing() && (manualSync || n > 0);
+    btn.classList.toggle('spin', busyNow);
+    btn.classList.toggle('err', lastSyncError && n > 0);
+    $('#syncCount').textContent = busyNow ? '送信中…' : n ? (lastSyncError ? `未送信 ${n}` : `送信待ち ${n}`) : (state.syncedAt ? `${hm(state.syncedAt)} 共有済` : '未同期');
     $('#status').textContent = API.mode === 'gas' ? '' : 'テストモード';
   }
   const playerOf = no => agg.players.find(p => p.no === no) || K.emptyPlayer(no, (state.players.find(p => Number(p.no) === no) || {}).name);
@@ -329,7 +346,7 @@
   $('#toastUndo').addEventListener('click', async () => {
     if (!lastTx) return;
     const { id, date: d } = lastTx; lastTx = null; $('#toast').classList.remove('show');
-    try { await API.undo(d, id); refresh(); toast('取り消しました', ''); } catch (e) { toast('取り消せませんでした', e.message, true); }
+    try { await API.undo(d, id); refresh(); scheduleSync(); toast('取り消しました', ''); } catch (e) { toast('取り消せませんでした', e.message, true); }
   });
   // 削除: 1回目で「消す?」に変わり、3秒以内にもう1回で削除
   async function delTap(b) {
@@ -383,7 +400,7 @@
     const no = Number(inp.dataset.no), name = inp.value.trim();
     if (name === nameOf(no)) return;
     if (!name && !isReg(no)) return;
-    try { const st = await API.register(date, no, name); state = st; agg = K.aggregate(st.players, st.txs, st.config); inp.classList.toggle('saved', !!name); setStatus(); }
+    try { const st = await API.register(date, no, name); state = st; agg = K.aggregate(st.players, st.txs, st.config); inp.classList.toggle('saved', !!name); setStatus(); scheduleSync(); }
     catch (err) { toast('保存できませんでした', err.message, true); }
   });
   $('#rosterRows').addEventListener('keydown', e => {
@@ -412,4 +429,7 @@
   // 開いたときに1回だけ同期(他のスマホの入力を取り込む)
   refresh();
   doSync(true);
+  setInterval(() => { if (!document.hidden) doSync(true); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) doSync(true); });
+  window.addEventListener('online', () => doSync(true));
 })();

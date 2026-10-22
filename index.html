@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=202610221909">
+<link rel="stylesheet" href="css/style.css?v=202610222116">
 <style>
   body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
   .wrap { max-width: 560px; margin: 0 auto; padding: calc(var(--sat) + 10px) 12px calc(var(--sab) + 90px); }
@@ -105,7 +105,9 @@
   .syncbtn small { font-size: 10px; color: var(--dim); margin-top: 1px; white-space: nowrap; }
   .syncbtn.dirty { background: linear-gradient(180deg, #ffe9a8, #c9a03e); color: #1a1408; border-color: #c9a03e; }
   .syncbtn.dirty small { color: #3a2a08; font-weight: 700; }
-  .syncbtn.spin { opacity: .6; pointer-events: none; }
+  .syncbtn.spin { opacity: .6; }
+  .syncbtn.err { background: #3a1510; border-color: #c0392b; color: #ffb3a8; }
+  .syncbtn.err small { color: #ffb3a8; font-weight: 700; }
   .sheetbtn { border: 1px solid #2f4a2a; background: #11190f; color: #b9f0b0; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 700; text-decoration: none; }
   .tourbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
   .tourbar div { background: rgba(199, 125, 255, .1); border: 1px solid #5a3a7a; border-radius: 12px; padding: 8px; text-align: center; }
@@ -239,10 +241,10 @@
 
 <div class="toast" id="toast"><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=202610221909"></script>
-<script src="js/model.js?v=202610221909"></script>
-<script src="js/api.js?v=202610221909"></script>
-<script src="js/image.js?v=202610221909"></script>
-<script src="js/phone.js?v=202610221909"></script>
+<script src="config.js?v=202610222116"></script>
+<script src="js/model.js?v=202610222116"></script>
+<script src="js/api.js?v=202610222116"></script>
+<script src="js/image.js?v=202610222116"></script>
+<script src="js/phone.js?v=202610222116"></script>
 </body>
 </html>
