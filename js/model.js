@@ -92,7 +92,7 @@
 
   // プライズの傾斜計算(単位: 万。内部は円の整数で計算)
   // X = 入賞人数、Y = 最下位の賞金。下から k 番目 = Y + (k-1)×a、a は合計がプールになるよう自動で決める。
-  // 1位以外は 1,000 円未満を切り捨て、切り捨てた分はすべて 1位に足す。
+  // 1位以外は 5万円単位に切り捨て(万の位 0〜4 → 0、5〜9 → 5)、切り捨てた分はすべて 1位に足す。
   // 戻り値: { prizes: [1位, 2位, …](万), a(万), error }
   function calcPrizes(poolMan, X, Y) {
     const pool = Math.round(poolMan * 10000), y = Math.round(Y * 10000);
@@ -106,7 +106,8 @@
     const bottomUp = [];
     for (let k = 0; k < X; k++) bottomUp.push(y + k * aYen);
     const top = bottomUp.reverse();                               // [1位, 2位, …]
-    const rest = top.slice(1).map(v => Math.floor(v / 1000) * 1000); // 1位以外: 1,000円未満切り捨て
+    const UNIT = 50000;                                              // 5万円
+    const rest = top.slice(1).map(v => Math.floor(v / UNIT) * UNIT); // 1位以外: 5万円単位に切り捨て
     const first = pool - rest.reduce((s, v) => s + v, 0);           // 余りは 1位へ
     return { prizes: [first, ...rest].map(v => v / 10000), a: aYen / 10000, error: '' };
   }

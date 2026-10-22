@@ -313,10 +313,10 @@ test('営業日は朝6時で切り替わる(深夜0時をまたいでも同じ�
   assert.strictEqual(K.todayJST(jst('2099-05-02T06:00:00')), '2099-05-02');
 });
 
-test('プライズ傾斜: X=6, Y=40, プール620 → 1位以外は千円未満切り捨て、余りは1位', async () => {
+test('プライズ傾斜: X=6, Y=40, プール620 → 1位以外は5万単位に切り捨て、余りは1位', async () => {
   const { K } = loadClient(loadGas());
   const r = K.calcPrizes(620, 6, 40);
-  assert.strictEqual(JSON.stringify(r.prizes), JSON.stringify([166.8, 141.3, 116, 90.6, 65.3, 40]));
+  assert.strictEqual(JSON.stringify(r.prizes), JSON.stringify([170, 140, 115, 90, 65, 40]));
   assert.strictEqual(Math.round(r.prizes.reduce((a, b) => a + b, 0) * 10) / 10, 620);
   // 下から k 番目 = Y + (k-1)a(切り捨て前)
   assert.ok(Math.abs(r.a - 380 / 15) < 1e-9);
@@ -326,7 +326,7 @@ test('プライズ傾斜: X=6, Y=40, プール620 → 1位以外は千円未満�
   for (let pool = 20; pool <= 2000; pool += 37) for (let x = 1; x <= 12; x++) {
     const rr = K.calcPrizes(pool, x, 10); if (rr.error) continue;
     assert.strictEqual(Math.round(rr.prizes.reduce((a, b) => a + b, 0) * 10) / 10, pool, `pool ${pool} x ${x}`);
-    rr.prizes.slice(1).forEach(v => assert.strictEqual(Math.round(v * 10) / 10, v, '1位以外は千円単位'));
+    rr.prizes.slice(1).forEach(v => assert.strictEqual(v % 5, 0, '1位以外は5万単位'));
   }
 });
 
