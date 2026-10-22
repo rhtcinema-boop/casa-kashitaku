@@ -69,21 +69,22 @@ function loadGas() {
 function loadClient(gas, opts = {}) {
   const store = Object.assign({}, opts.store || {});
   const win = {
-    KASHITAKU_CONFIG: { GAS_URL: opts.local ? '' : 'https://gas.example/exec', MAX_NO: 50, POINT_YEN: 10000 },
+    KASHITAKU_CONFIG: { GAS_URL: opts.local ? '' : 'https://gas.example/exec', MAX_NO: 50, POINT_YEN: 10000, SYNC_TIMEOUT_MS: 200 },
     localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
   };
-  let fail = false, delay = 0, loseReply = false;
+  let fail = false, delay = 0, loseReply = false, hang = false;
   win.fetch = async (url, init) => {
     if (fail) throw new Error('offline');
+    if (hang) return new Promise(() => {}); // 返事が永遠に来ない
     if (delay) await new Promise(r => setTimeout(r, delay));
     const body = init && init.method === 'POST' ? gas.call.post(JSON.parse(init.body)) : gas.call.get(new URL(url).searchParams.get('date'));
     if (loseReply) throw new Error('reply lost'); // シートには届いたが返事が途切れた
     return { ok: true, json: async () => body };
   };
-  const ctx = vm.createContext({ window: win, localStorage: win.localStorage, fetch: (...a) => win.fetch(...a), URL, Date, JSON, Math, Object, Number, String, Set, Promise, setTimeout, console });
+  const ctx = vm.createContext({ window: win, localStorage: win.localStorage, fetch: (...a) => win.fetch(...a), URL, Date, JSON, Math, Object, Number, String, Set, Promise, setTimeout, clearTimeout, AbortController, console });
   ctx.globalThis = ctx;
   for (const f of ['js/model.js', 'js/api.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
-  return { K: win.Kashitaku || ctx.Kashitaku, API: win.KashitakuAPI, store, setFail: v => { fail = v; }, setDelay: v => { delay = v; }, setLoseReply: v => { loseReply = v; } };
+  return { K: win.Kashitaku || ctx.Kashitaku, API: win.KashitakuAPI, store, setFail: v => { fail = v; }, setDelay: v => { delay = v; }, setLoseReply: v => { loseReply = v; }, setHang: v => { hang = v; } };
 }
 
 // ---------- テスト ----------
@@ -366,6 +367,18 @@ test('帰宅: ボタンを押したときだけ帰宅、また IN したら在�
   await c.API.sync(D);
   assert.strictEqual(gas.call.get(D).txs.length, 4, '帰宅もシートに記録される');
   assert.ok(gas.mock.ss.getSheetByName(D), '日付タブも作れる');
+});
+
+test('通信が返ってこなくても同期は止まり続けず、あとで送れる', async () => {
+  const gas = loadGas(); const c = loadClient(gas);
+  await c.API.addTx(D, { no: 1, game: 'bac', type: 'in', pt: 10 });
+  c.setHang(true);
+  await assert.rejects(c.API.sync(D));
+  assert.strictEqual(c.API.isSyncing(), false, '同期中のまま固まらない');
+  c.setHang(false);
+  await c.API.sync(D);
+  assert.strictEqual(gas.call.get(D).txs.length, 1);
+  assert.strictEqual(c.API.view(D).pendingTotal, 0);
 });
 
 test('取り消しの id は自分の入力を指す', async () => {

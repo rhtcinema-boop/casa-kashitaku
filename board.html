@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#f2f2f7">
 <title>casa 貸卓 — ボード</title>
 <link rel="icon" href="icon-180.png" type="image/png">
-<link rel="stylesheet" href="css/style.css?v=202610230042">
-<script src="js/lock.js?v=202610230042"></script>
+<link rel="stylesheet" href="css/style.css?v=202610230047">
+<script src="js/lock.js?v=202610230047"></script>
 <style>
   body { padding: 22px 26px 34px; overflow-wrap: anywhere; }
   header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 18px; }
@@ -101,11 +101,11 @@
   </aside>
 </div>
 
-<script src="config.js?v=202610230042"></script>
-<script src="js/fit.js?v=202610230042"></script>
-<script src="js/model.js?v=202610230042"></script>
-<script src="js/api.js?v=202610230042"></script>
-<script src="js/image.js?v=202610230042"></script>
+<script src="config.js?v=202610230047"></script>
+<script src="js/fit.js?v=202610230047"></script>
+<script src="js/model.js?v=202610230047"></script>
+<script src="js/api.js?v=202610230047"></script>
+<script src="js/image.js?v=202610230047"></script>
 <script>
 (() => {
   const K = Kashitaku, API = KashitakuAPI, CFG = KASHITAKU_CONFIG, PY = CFG.POINT_YEN || 10000;
@@ -139,7 +139,7 @@
     $('#tiles').innerHTML = `
       <div class="tile tour"><span>トーナメント 総エントリー ／ 残り</span><b>${t.tour.e + t.tour.re}<small>回</small> ／ ${t.tour.active}<small>人</small></b><i>エントリー ${t.tour.e} ／ リエントリー ${t.tour.re} ／ 1回 ${state.config.tourFee ?? 20}万</i></div>
       <div class="tile tour"><span>プライズプール</span><b>${n(t.tour.in)}<small>万</small></b><i>${(() => { const pz = K.parsePrizes(state.config); return pz.length ? pz.map((v, i) => `${K.rankLabel(i)} ${n(v)}`).join(' ／ ') + ` ／ 計 ${n(pz.reduce((a, b) => a + b, 0))}` : `${K.fmtYen(t.tour.in, PY)} ／ 賞金済 ${n(t.tour.out)}万`; })()}</i></div>
-      <div class="tile bac"><span>バカラ 店側</span><b class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}<small>万</small></b><i>IN ${n(t.bac.in)} ／ OUT ${n(t.bac.out)} ／ バカラディーラー 補充${n(d.bac.in)} 回収${n(d.bac.out)}</i></div>
+      <div class="tile bac"><span>バカラ 店側</span><b class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}<small>万</small></b><i>IN ${n(t.bac.in)} ／ OUT ${n(t.bac.out)} ／ バカラディーラー 補充${n(d.bac.in)} 回収${n(d.bac.out)}<br><span class="${t.bacDiff ? 'minus' : 'plus'}">プレイヤー収支 ${sp(t.bac.pl)} ／ ディーラー収支 ${sp(d.bac.pl)} ／ 差額 ${sp(t.bacDiff)}${t.bacDiff ? ' ずれあり' : ' 一致'}</span></i></div>
       <div class="tile cash"><span>リング 店側</span><b class="${cls(-t.cash.pl)}">${sp(-t.cash.pl)}<small>万</small></b><i>IN ${n(t.cash.in)} ／ OUT ${n(t.cash.out)}</i></div>
       <div class="tile tour"><span>トーナメント 店側</span><b class="${cls(-t.tour.pl)}">${sp(-t.tour.pl)}<small>万</small></b><i>IN ${n(t.tour.in)} ／ OUT ${n(t.tour.out)}</i></div>
       <div class="tile gold"><span>店側 合計</span><b>${sp(t.house)}<small>万</small></b><i>${K.signedYen(t.house, PY)} ／ 参加 ${agg.players.filter(p => p.name).length} 名</i></div>`;
@@ -172,8 +172,8 @@
       <td class="sep ins">${insTxt(d.bac.ins)}</td><td>${n(d.bac.in)}</td><td>${n(d.bac.out)}</td><td class="${cls(d.bac.pl)}">${sp(d.bac.pl)}</td>
       <td class="sep"></td><td></td><td></td><td></td>
       <td class="sep"></td><td></td><td></td><td></td><td></td></tr>`;
-    html += `<tr class="sum"><td></td><td class="l">プレイヤー合計</td><td class="sep total ${cls(t.players)}">${sp(t.players)}</td>
-      <td class="sep"></td><td>${n(t.bac.in)}</td><td>${n(t.bac.out)}</td><td class="${cls(t.bac.pl)}">${sp(t.bac.pl)}</td>
+    html += `<tr class="sum"><td></td><td class="l">差額<small style="display:block;font-weight:500;color:var(--text2);font-size:12px">全員+バカラディーラー</small></td><td class="sep total ${cls(t.allDiff)}">${sp(t.allDiff)}</td>
+      <td class="sep"></td><td>${n(K.round1(t.bac.in + d.bac.in))}</td><td>${n(K.round1(t.bac.out + d.bac.out))}</td><td class="${t.bacDiff ? 'minus' : 'plus'}">${sp(t.bacDiff)}${t.bacDiff ? '' : ' 一致'}</td>
       <td class="sep"></td><td>${n(t.cash.in)}</td><td>${n(t.cash.out)}</td><td class="${cls(t.cash.pl)}">${sp(t.cash.pl)}</td>
       <td class="sep">${t.tour.e + t.tour.re}</td><td>${n(t.tour.in)}</td><td class="c">残り${t.tour.active}</td><td>${n(t.tour.out)}</td><td class="${cls(t.tour.pl)}">${sp(t.tour.pl)}</td></tr>`;
     html += `<tr class="house"><td></td><td class="l">店側(逆数)</td><td class="sep total ${cls(t.house)}">${sp(t.house)}</td>

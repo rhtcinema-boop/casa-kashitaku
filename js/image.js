@@ -62,7 +62,8 @@
     const t = agg.totals;
     x.fillStyle = 'rgba(0,122,255,.08)'; x.fillRect(40, y - rowH / 2, W - 80, rowH);
     x.font = font(19, 700); x.fillStyle = '#007aff';
-    const tv = { no: '', name: 'プレイヤー合計', bacIn: fp(t.bac.in), bacPl: sp(t.bac.pl), cashIn: fp(t.cash.in), cashPl: sp(t.cash.pl), tourE: t.tour.e + t.tour.re, tourIn: fp(t.tour.in), tourPl: sp(t.tour.pl), total: sp(t.players) };
+    const dl = agg.dealer.bac;
+    const tv = { no: '', name: '差額(全員+ディーラー)', bacIn: fp(Math.round((t.bac.in + dl.in) * 10) / 10), bacPl: sp(t.bacDiff), cashIn: fp(t.cash.in), cashPl: sp(t.cash.pl), tourE: t.tour.e + t.tour.re, tourIn: fp(t.tour.in), tourPl: sp(t.tour.pl), total: sp(t.allDiff) };
     cols.forEach(cl => { x.textAlign = cl.a; fitFill(x, String(tv[cl.k]), colX(cl), y, cl.w - 12); });
     y += rowH;
     // フッター: 店側

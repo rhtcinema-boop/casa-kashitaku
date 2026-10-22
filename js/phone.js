@@ -419,6 +419,10 @@
         <div><span>補充 合計</span><b>${K.fmtPt(d.in)}</b></div>
         <div><span>回収 合計</span><b>${K.fmtPt(d.out)}</b></div>
         <div><span>手元差</span><b>${K.signedPt(K.round1(d.in - d.out))}</b></div></div>
+      <div class="stat">
+        <div><span>プレイヤー</span><b class="${cls(agg.totals.bac.pl)}">${K.signedPt(agg.totals.bac.pl)}</b></div>
+        <div><span>ディーラー</span><b class="${cls(d.pl)}">${K.signedPt(d.pl)}</b></div>
+        <div class="${agg.totals.bacDiff ? 'diff-ng' : 'diff-ok'}"><span>差額</span><b>${K.signedPt(agg.totals.bacDiff)}</b><small>${agg.totals.bacDiff ? 'ずれあり' : '一致'}</small></div></div>
       <div class="acts"><button class="btn in" data-dealer="bac" data-type="in">チップ 補充</button><button class="btn out" data-dealer="bac" data-type="out">チップ 回収</button></div>${hist}`;
     fitPanel();
   }

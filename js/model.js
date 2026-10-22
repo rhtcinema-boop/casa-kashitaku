@@ -61,6 +61,9 @@
     for (const k of ['bac', 'cash', 'tour']) { totals[k].in = rd(totals[k].in); totals[k].out = rd(totals[k].out); totals[k].pl = rd(totals[k].out - totals[k].in); } // プレイヤー側収支
     totals.players = rd(totals.bac.pl + totals.cash.pl + totals.tour.pl);
     totals.house = -totals.players; // 店側
+    dealer.bac.in = rd(dealer.bac.in); dealer.bac.out = rd(dealer.bac.out); dealer.bac.pl = rd(dealer.bac.out - dealer.bac.in);
+    totals.bacDiff = rd(totals.bac.pl + dealer.bac.pl);  // バカラ: プレイヤー収支合計 + ディーラー収支(合っていれば 0)
+    totals.allDiff = rd(totals.players + dealer.bac.pl); // 全体の差額(元シートの「差額」行と同じ)
     totals.tourPool = totals.tour.in; // プライズプール(万)
     totals.tour.active = list.filter(p => p.tour.alive).length; // 残り人数
     totals.tour.players = list.filter(p => p.tour.e + p.tour.re > 0).length;

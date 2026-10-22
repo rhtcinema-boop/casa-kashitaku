@@ -72,8 +72,17 @@
   let syncing = null;           // 実行中の Promise
   const inFlight = new Set();   // 送信中の opId
 
+  // 通信が返ってこないとき(電波が途切れた等)に止まり続けないよう、時間で打ち切る
+  const TIMEOUT_MS = CFG.SYNC_TIMEOUT_MS || 30000;
+  async function fetchT(url, init) {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    let timer;
+    const timeout = new Promise((_, rej) => { timer = setTimeout(() => { if (ctl) ctl.abort(); rej(new Error('通信がタイムアウトしました')); }, TIMEOUT_MS); });
+    try { return await Promise.race([fetch(url, Object.assign({}, init, ctl ? { signal: ctl.signal } : {})), timeout]); }
+    finally { clearTimeout(timer); }
+  }
   async function gasGet(date) {
-    const r = await fetch(`${CFG.GAS_URL}?date=${encodeURIComponent(date)}&_=${Date.now()}`, { cache: 'no-store' });
+    const r = await fetchT(`${CFG.GAS_URL}?date=${encodeURIComponent(date)}&_=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
     if (j.error) throw new Error(j.error);
@@ -81,7 +90,7 @@
   }
   async function gasPost(body) {
     body.by = deviceId;
-    const r = await fetch(CFG.GAS_URL, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+    const r = await fetchT(CFG.GAS_URL, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
     if (j.error) throw new Error(j.error);
