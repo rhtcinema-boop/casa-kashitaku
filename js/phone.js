@@ -127,7 +127,7 @@
       if (game === 'tour') { const n = s.e + s.re; if (n) st = s.alive ? `${n}回 ${s.in}万` : (s.rank ? `${s.rank} ${K.fmtPt(s.out)}` : s.out ? `賞金 ${K.fmtPt(s.out)}` : '飛び'); }
       else if (s.in || s.out) st = `${s.in}万${s.out ? ` → ${s.out}` : ''}`;
       const act = !!st;
-      const out = game === 'tour' ? (s.e + s.re > 0 && !s.alive) : !!s.done; // 飛び・順位確定・OUT 済みは少し暗く
+      const out = p.home || (game === 'tour' ? (s.e + s.re > 0 && !s.alive) : !!s.done); // 帰宅・飛び・順位確定・OUT 済みは少し暗く
       html += `<button class="cell g-${game} ${reg ? 'reg' : 'empty'} ${act ? 'act' : ''} ${out ? 'out' : ''}" data-no="${no}">
         <div class="n">${no}</div>
         <div class="nm">${reg ? esc(p.name || '') : '(未登録)'}</div>
