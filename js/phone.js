@@ -437,7 +437,7 @@
     const third = r.need === 'p3' || r.need === 'b3';
     $('#panel').innerHTML = `<button class="close" data-close>✕</button>
       <h2 class="g-dealer">3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
-      <div class="bd-hands">${hand('p', 'プレイヤー')}${hand('b', 'バンカー')}</div>
+      <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div><!-- ディーラーから見て 左: バンカー / 右: プレイヤー -->
       ${res}
       ${r.reasons.length ? `<ul class="bd-why">${r.reasons.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
       ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<span></span><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
