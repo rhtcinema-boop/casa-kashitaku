@@ -38,7 +38,7 @@ function doPost(e) {
       case 'clearDay': clearDay(date); break;
       default: return json({ error: 'unknown op: ' + body.op });
     }
-    renderDay(date);
+    if (body.op !== "clearDay") renderDay(date);
     return json(state(date));
   } catch (err) {
     return json({ error: String(err && err.message || err) });
@@ -71,7 +71,7 @@ function register(date, no, name) {
   var sh = sheet(SpreadsheetApp.getActive(), '名簿', ROSTER_HEAD);
   var vals = sh.getDataRange().getValues();
   for (var i = 1; i < vals.length; i++) {
-    if (String(vals[i][0]) === date && Number(vals[i][1]) === Number(no)) { sh.getRange(i + 1, 3).setValue(name); return; }
+    if (dstr(vals[i][0]) === date && Number(vals[i][1]) === Number(no)) { sh.getRange(i + 1, 3).setValue(name); return; }
   }
   sh.appendRow([date, Number(no), name]);
 }
@@ -100,9 +100,10 @@ function setConfig(date, config) {
   var vals = sh.getDataRange().getValues();
   Object.keys(config).forEach(function (k) {
     for (var i = 1; i < vals.length; i++) {
-      if (String(vals[i][0]) === date && String(vals[i][1]) === k) { sh.getRange(i + 1, 3).setValue(config[k]); return; }
+      if (dstr(vals[i][0]) === date && String(vals[i][1]) === k) { sh.getRange(i + 1, 3).setNumberFormat('@').setValue(String(config[k])); return; }
     }
-    sh.appendRow([date, k, config[k]]);
+    sh.appendRow([date, k, '']);
+    sh.getRange(sh.getLastRow(), 1, 1, 3).setNumberFormat('@').setValues([[date, k, String(config[k])]]);
     vals.push([date, k, config[k]]);
   });
 }
@@ -114,7 +115,7 @@ function clearDay(date) {
     var vals = sh.getDataRange().getValues();
     for (var i = vals.length - 1; i >= 1; i--) {
       var dcol = n === 'ログ' ? 2 : 0;
-      if (String(vals[i][dcol]) === date) sh.deleteRow(i + 1);
+      if (dstr(vals[i][dcol]) === date) sh.deleteRow(i + 1);
     }
   });
   var day = ss.getSheetByName(date); if (day) ss.deleteSheet(day);
@@ -215,7 +216,7 @@ function aggregate(players, txs) {
 // ---------- ユーティリティ ----------
 function sheet(ss, name, head) {
   var sh = ss.getSheetByName(name);
-  if (!sh) { sh = ss.insertSheet(name); sh.appendRow(head); sh.setFrozenRows(1); }
+  if (!sh) { sh = ss.insertSheet(name); sh.appendRow(head); sh.setFrozenRows(1); sh.getRange("A:C").setNumberFormat("@"); }
   return sh;
 }
 function rowsOf(sh) {
@@ -226,5 +227,6 @@ function rowsOf(sh) {
     var o = {}; head.forEach(function (h, i) { o[h] = r[i] instanceof Date ? r[i].getTime() : r[i]; if (h === 'date' && r[i] instanceof Date) o[h] = Utilities.formatDate(r[i], 'Asia/Tokyo', 'yyyy-MM-dd'); }); return o;
   });
 }
+function dstr(v) { return v instanceof Date ? Utilities.formatDate(v, "Asia/Tokyo", "yyyy-MM-dd") : String(v); }
 function todayJST() { return Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd'); }
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
