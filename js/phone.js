@@ -95,7 +95,7 @@
     grid.style.display = 'grid'; dealer.style.display = 'none';
     const tb = $('#tourBar'), tt = agg.totals.tour;
     tb.style.display = game === 'tour' ? 'grid' : 'none';
-    if (game === 'tour') tb.innerHTML = `<div><span>総エントリー</span><b>${tt.e + tt.re}</b></div><div><span>残り</span><b>${tt.active}<small>人</small></b></div><div><span>プール</span><b>${tt.in}<small>万</small></b></div>`;
+    if (game === 'tour') tb.innerHTML = `<div><span>総エントリー</span><b>${tt.e + tt.re}</b></div><div><span>残り</span><b>${tt.active}<small>人</small></b></div>`;
     // 設定で名前を登録した人だけ表示(登録を消しても、このゲームに入力がある人は残す)
     const nos = new Set(state.players.map(p => Number(p.no)));
     state.txs.forEach(t => { if (t.game === game && t.no !== '' && t.no != null) nos.add(Number(t.no)); });
@@ -149,6 +149,14 @@
       </div>`).join('') : '<div class="empty">まだ入力はありません</div>';
   }
 
+  // 遊んだゲームだけ並べる(0万のゲームは出さない)
+  function sumParts(p) {
+    const parts = [];
+    if (p.bac.in || p.bac.out) parts.push(`バカラ IN ${K.fmtPt(p.bac.in)} ${K.signedPt(p.bac.pl)}`);
+    if (p.cash.in || p.cash.out) parts.push(`リング IN ${K.fmtPt(p.cash.in)} ${K.signedPt(p.cash.pl)}`);
+    if (p.tour.e + p.tour.re) parts.push(`T ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b>` : ''} ${K.signedPt(p.tour.pl)}`);
+    return parts.join(' ／ ') || 'まだ入力なし';
+  }
   function renderSum() {
     const t = agg.totals;
     $('#sumStat').innerHTML = `
@@ -161,7 +169,7 @@
     const list = agg.players.filter(p => p.name || p.bac.in || p.cash.in || p.tour.in || p.bac.out || p.cash.out || p.tour.out);
     $('#sumList').innerHTML = list.length ? list.map(p => `
       <div class="row"><small class="num">${p.no}</small>
-        <div>${esc(p.name || '(未登録)')}<i>バカラ ${p.bac.in}万 ${K.signedPt(p.bac.pl)} ／ リング ${p.cash.in}万 ${K.signedPt(p.cash.pl)} ／ T ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b> 賞金${K.fmtPt(p.tour.out)}` : ''} ${K.signedPt(p.tour.pl)}</i></div>
+        <div>${esc(p.name || '(未登録)')}<i>${sumParts(p)}</i></div>
         <b class="num ${cls(p.total)}">${K.signedPt(p.total)}</b></div>`).join('') : '<div class="empty">まだ入力はありません</div>';
   }
 
@@ -406,6 +414,7 @@
     document.querySelectorAll('#nav button').forEach(x => x.classList.toggle('on', x === b));
     ['input', 'log', 'sum', 'set'].forEach(k => $('#tab-' + k).classList.toggle('hide', k !== tab));
     if (tab !== 'sum') $('#preview').innerHTML = '';
+    window.scrollTo(0, 0); // タブを押したら一番上から
     refresh();
   });
   $('#setDate').addEventListener('change', e => { date = e.target.value || K.todayJST(); localStorage.setItem('kt.date2', JSON.stringify({ date, on: K.todayJST() })); rosterSig = null; refresh(); doSync(true); });
@@ -520,6 +529,7 @@
   });
   $('#setTourFee').addEventListener('click', () => askFee('tourFee', 'エントリー 1 回の金額'));
   $('#setReFee').addEventListener('click', () => askFee('reentryFee', 'リエントリー 1 回の金額'));
+  $('#lockNow').addEventListener('click', () => { if (window.KashitakuLock) KashitakuLock.lock(); });
   $('#clearDay').addEventListener('click', async () => {
     if (!confirm(`${date} のデータをすべて消去します。元に戻せません。よろしいですか?`)) return;
     if (!confirm('本当に消去しますか?')) return;
