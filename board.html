@@ -94,7 +94,7 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const cls = v => v > 0 ? 'plus' : v < 0 ? 'minus' : 'zero';
   const n = v => v.toLocaleString('ja-JP');
-  const sp = v => (v > 0 ? '+' : '') + n(v);
+  const sp = v => (v > 0 ? '+' : '') + n(v || 0);
   const qs = new URLSearchParams(location.search);
   let date = qs.get('date') || K.todayJST();
   let state = null, agg = null, lastIds = new Set(), firstLoad = true;

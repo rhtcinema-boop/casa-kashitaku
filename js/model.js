@@ -62,7 +62,7 @@
     return { players: list, dealer, totals, config: config || {} };
   }
 
-  function fmtPt(pt) { return (pt < 0 ? '-' : '') + Math.abs(pt).toLocaleString('ja-JP') + '万'; }
+  function fmtPt(pt) { pt = pt || 0; return (pt < 0 ? '-' : '') + Math.abs(pt).toLocaleString('ja-JP') + '万'; }
   function fmtYen(pt, pointYen) { const y = pt * (pointYen || 10000); return (y < 0 ? '-' : '') + '¥' + Math.abs(y).toLocaleString('ja-JP'); }
   function signedPt(pt) { return (pt > 0 ? '+' : '') + fmtPt(pt); }
   function signedYen(pt, py) { return (pt > 0 ? '+' : '') + fmtYen(pt, py); }

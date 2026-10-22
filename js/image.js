@@ -8,7 +8,7 @@
     opts = opts || {};
     const players = agg.players.filter(p => p.bac.in || p.bac.out || p.cash.in || p.cash.out || p.tour.in || p.tour.out || p.name);
     const scale = 2;
-    const W = 1080;
+    const W = 1200;
     const rowH = 54, headH = 150, footH = 200;
     const H = headH + rowH * (players.length + 2) + footH;
     const c = document.createElement('canvas');
@@ -42,7 +42,7 @@
     cols.forEach(cl => { x.fillStyle = cl.col || '#cfd6cc'; x.textAlign = cl.a; x.fillText(cl.t, colX(cl), y); });
     y += 20 + rowH / 2;
     const fp = v => v.toLocaleString('ja-JP');
-    const sp = v => (v > 0 ? '+' : '') + fp(v);
+    const sp = v => (v > 0 ? '+' : '') + fp(v || 0);
     const colorOf = v => v > 0 ? '#7ee0a0' : v < 0 ? '#ff7a6b' : '#9aa89c';
     players.forEach((p, i) => {
       if (i % 2) { x.fillStyle = 'rgba(255,255,255,.03)'; x.fillRect(40, y - rowH / 2, W - 80, rowH); }
