@@ -14,15 +14,16 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=202610222323">
-<script src="js/lock.js?v=202610222323"></script>
+<link rel="stylesheet" href="css/style.css?v=202610222357">
+<script src="js/lock.js?v=202610222357"></script>
 <style>
-  body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+  body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; overflow-wrap: anywhere; }
   .wrap { margin: 0 auto; padding: calc(var(--sat) + 12px) 16px calc(var(--sab) + 120px); }
   #tab-log, #tab-sum, #tab-set { max-width: 900px; margin: 0 auto; }
 
   /* ヘッダー(大きなタイトル) */
-  header { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; margin-bottom: 12px; }
+  header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-bottom: 12px; }
+  header > div:first-child { min-width: 0; }
   h1 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text2); text-transform: uppercase; }
   .date { font-size: clamp(21px, 4.4vw, 36px); font-weight: 700; letter-spacing: -.02em; margin-top: 0; white-space: nowrap; }
   .status { font-size: 12px; color: var(--text2); text-align: right; }
@@ -30,7 +31,7 @@
   .sheetbtn { background: var(--fill); color: var(--blue); border-radius: 999px; padding: 13px 20px; font-size: 18px; font-weight: 600; text-decoration: none; }
   .syncbtn { display: flex; flex-direction: column; align-items: center; border: 0; background: var(--fill); color: var(--blue); border-radius: 16px; padding: 8px 16px; min-width: 100px; }
   .syncbtn b { font-size: 19px; font-weight: 600; }
-  .syncbtn small { font-size: 11px; color: var(--text2); margin-top: 1px; white-space: nowrap; }
+  .syncbtn small { font-size: 11px; color: var(--text2); margin-top: 1px; }
   .syncbtn.dirty { background: var(--blue); color: #fff; }
   .syncbtn.dirty small { color: rgba(255, 255, 255, .85); font-weight: 600; }
   .syncbtn.spin { opacity: .55; }
@@ -38,27 +39,29 @@
   .syncbtn.err small { color: rgba(255, 255, 255, .9); font-weight: 600; }
 
   /* ゲーム選択(iOS のセグメント) */
-  .games { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 3px; margin-bottom: 12px; background: var(--fill); border-radius: 12px; }
+  .games { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; margin-bottom: 12px; background: var(--fill); border-radius: 12px; }
   .games button { word-break: keep-all; }
   .games button { border: 0; background: transparent; border-radius: 9px; padding: 15px 4px; font-size: clamp(15px, 2.4vw, 21px); font-weight: 600; color: var(--text); transition: background .2s; }
   .games button.on { background: var(--card); color: var(--c); box-shadow: 0 3px 8px rgba(0, 0, 0, .12), 0 3px 1px rgba(0, 0, 0, .04); }
 
   /* 番号グリッド(1行5人) */
   .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-rows: 110px; gap: 10px; }
-  .cell { position: relative; border: 0; background: var(--card); border-radius: 18px; padding: 8px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-width: 0; box-shadow: var(--shadow); transition: transform .1s; }
+  .cell { position: relative; border: 0; background: var(--card); border-radius: 18px; padding: 6px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3em; min-width: 0; overflow: hidden; box-shadow: var(--shadow); transition: transform .1s; font-size: clamp(13px, 2.6vw, 24px); }
   .cell:active { transform: scale(.96); }
-  .cell .n { font-size: clamp(28px, 6vw, 58px); font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--text); }
-  .cell .nm { font-size: clamp(13px, 2.6vw, 24px); color: var(--text); font-weight: 500; max-width: 100%; line-height: 1.15; word-break: break-all; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .cell .st { font-size: clamp(12px, 2.2vw, 20px); color: var(--c); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .cell .n { font-size: 2.3em; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--text); }
+  .cell .nm { font-size: 1em; color: var(--text); font-weight: 500; max-width: 100%; line-height: 1.15; overflow-wrap: anywhere; }
+  .cell .st { font-size: .85em; color: var(--c); max-width: 100%; line-height: 1.15; overflow-wrap: anywhere; font-weight: 600; }
   .cell.act { box-shadow: inset 0 0 0 2.5px var(--c), var(--shadow); }
   .cell.out { opacity: .42; box-shadow: none; background: var(--fill); }
   .cell.out.act { box-shadow: inset 0 0 0 1.5px var(--c); }
   .cell.empty .nm { color: var(--text2); }
+  .cell .n.dl { font-size: 1.15em; letter-spacing: 0; }
+  .dealer-cell { background: var(--blue-tint); }
   .nogrid { grid-column: 1 / -1; text-align: center; color: var(--text2); font-size: 19px; line-height: 2.4; padding: 50px 10px; }
   .tourbar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
-  .tourbar div { background: var(--card); border-radius: 16px; padding: 10px; text-align: center; box-shadow: var(--shadow); }
+  .tourbar div { background: var(--card); border-radius: 16px; padding: 10px; text-align: center; box-shadow: var(--shadow); min-width: 0; }
   .tourbar span { display: block; font-size: 14px; color: var(--text2); font-weight: 500; }
-  .tourbar b { font-size: clamp(28px, 4.8vw, 42px); color: var(--indigo); font-weight: 700; letter-spacing: -.02em; }
+  .tourbar b { display: block; white-space: nowrap; font-size: clamp(28px, 4.8vw, 42px); color: var(--indigo); font-weight: 700; letter-spacing: -.02em; }
   .tourbar small { font-size: 15px; color: var(--text2); font-weight: 500; margin-left: 2px; }
 
   /* 下のタブバー(すりガラス) */
@@ -75,13 +78,13 @@
   @keyframes rise { from { transform: translateY(40px); opacity: .4; } }
   .sheet .panel { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 760px; max-height: 94%; overflow: auto; background: var(--bg); border-radius: 22px 22px 0 0; padding: 20px 18px calc(var(--sab) + 20px); animation: rise .25s cubic-bezier(.2, .9, .3, 1); }
   .sheet .panel::before { content: ''; position: absolute; top: 7px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: var(--fill2); }
-  .panel h2 { margin: 0; font-size: clamp(26px, 4.2vw, 36px); font-weight: 700; letter-spacing: -.02em; display: flex; align-items: center; gap: 10px; padding-right: 44px; }
+  .panel h2 { margin: 0; font-size: clamp(26px, 4.2vw, 36px); font-weight: 700; letter-spacing: -.02em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding-right: 44px; overflow-wrap: anywhere; }
   .panel h2 small { font-size: 16px; color: var(--text2); font-weight: 500; }
   .panel .close { position: absolute; right: 16px; top: 18px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--fill); color: var(--text2); font-size: 16px; font-weight: 700; }
   .stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
-  .stat div { background: var(--card); border-radius: 16px; padding: 12px 8px; text-align: center; box-shadow: var(--shadow); }
+  .stat div { background: var(--card); border-radius: 16px; padding: 12px 8px; text-align: center; box-shadow: var(--shadow); min-width: 0; }
   .stat span { display: block; font-size: 14px; color: var(--text2); font-weight: 500; }
-  .stat b { display: block; font-size: clamp(24px, 4.6vw, 38px); font-weight: 700; margin-top: 2px; letter-spacing: -.02em; }
+  .stat b { display: block; font-size: clamp(24px, 4.6vw, 38px); font-weight: 700; margin-top: 2px; letter-spacing: -.02em; white-space: nowrap; }
   .stat b small { font-size: 15px; color: var(--text2); font-weight: 500; }
   .sub { font-size: 13px; color: var(--text2); text-align: center; margin-top: -6px; margin-bottom: 10px; }
 
@@ -142,7 +145,7 @@
   .log.mini { margin-top: 4px; max-height: 40vh; overflow: auto; }
   .log.mini .row { padding: 10px 16px; }
   .empty { padding: 28px; text-align: center; color: var(--text2); font-size: 16px; }
-  .set .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 13px 16px; border-top: .5px solid var(--sep); }
+  .set .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 13px 16px; border-top: .5px solid var(--sep); }
   .set .row:first-child { border-top: 0; }
   .set .row span { font-size: 17px; } .set .row span i { display: block; font-style: normal; font-size: 14px; color: var(--text2); }
   .set .row b { font-size: 18px; }
@@ -155,7 +158,7 @@
   .roster .r input { width: 100%; min-width: 0; border: 0; background: var(--fill); color: var(--text); border-radius: 10px; padding: 9px 10px; font: inherit; font-size: 17px; }
   .roster .r input.saved { background: var(--blue-tint); }
   .prize-r { display: grid; grid-template-columns: 56px 1fr auto; gap: 8px; align-items: center; padding: 10px 16px; border-top: .5px solid var(--sep); }
-  .prize-r .jump { font-size: 14px; font-weight: 600; color: var(--blue); text-align: right; white-space: nowrap; }
+  .prize-r .jump { font-size: 14px; font-weight: 600; color: var(--blue); text-align: right; min-width: 0; }
   .prize-r .jump.neg { color: var(--red); }
   .prize-r:first-child { border-top: 0; }
   .prize-r b { font-size: 19px; }
@@ -168,7 +171,7 @@
   .btn.big { padding: 15px; font-size: 18px; }
   .pc-warn { color: var(--red) !important; }
   .summary-tab .stat b { font-size: clamp(20px, 3.6vw, 30px); }
-  .summary-tab .list .row { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; padding: 12px 16px; border-top: .5px solid var(--sep); }
+  .summary-tab .list .row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 16px; border-top: .5px solid var(--sep); }
   .summary-tab .list .row:first-child { border-top: 0; }
   .summary-tab .list .row i { display: block; font-style: normal; font-size: 13px; color: var(--text2); margin-top: 2px; }
   .summary-tab .list .row b { font-size: 19px; }
@@ -205,18 +208,9 @@
       <button data-game="bac" class="g-bac on">バカラ</button>
       <button data-game="cash" class="g-cash">リング</button>
       <button data-game="tour" class="g-tour">トーナメント</button>
-      <button data-game="dealer" class="g-dealer">バカラ<wbr>ディーラー</button>
     </div>
     <div class="tourbar" id="tourBar" style="display:none"></div>
     <div class="grid" id="grid"></div>
-    <div class="card" id="dealerBox" style="display:none; padding: 14px;">
-      <div style="font-size:13px;color:var(--dim);margin-bottom:8px;">バカラディーラーの手元チップの増減を記録します。補充(+)・回収(-)、マイナス入力も可。</div>
-      <div class="acts">
-        <button class="btn in" data-dealer="bac" data-type="in">チップ 補充</button>
-        <button class="btn out" data-dealer="bac" data-type="out">チップ 回収</button>
-      </div>
-      <div id="dealerStat" class="others"></div>
-    </div>
   </section>
 
   <!-- 履歴タブ -->
@@ -297,10 +291,11 @@
 
 <div class="toast" id="toast"><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=202610222323"></script>
-<script src="js/model.js?v=202610222323"></script>
-<script src="js/api.js?v=202610222323"></script>
-<script src="js/image.js?v=202610222323"></script>
-<script src="js/phone.js?v=202610222323"></script>
+<script src="config.js?v=202610222357"></script>
+<script src="js/fit.js?v=202610222357"></script>
+<script src="js/model.js?v=202610222357"></script>
+<script src="js/api.js?v=202610222357"></script>
+<script src="js/image.js?v=202610222357"></script>
+<script src="js/phone.js?v=202610222357"></script>
 </body>
 </html>

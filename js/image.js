@@ -22,9 +22,9 @@
     const font = (sz, w) => `${w || 400} ${sz}px -apple-system, "Hiragino Sans", "Helvetica Neue", sans-serif`;
     // タイトル
     x.fillStyle = '#007aff'; x.font = font(24, 700); x.textAlign = 'left';
-    x.fillText(opts.title || 'casa 貸卓  収支一覧', 40, 44);
+    fitFill(x, opts.title || 'casa 貸卓  収支一覧', 40, 44, W - 80);
     x.fillStyle = '#8e8e93'; x.font = font(18);
-    x.fillText(`${date}   ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} 現在   単位: 万円`, 40, 74);
+    fitFill(x, `${date}   ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} 現在   単位: 万円`, 40, 74, W - 80);
     // 列
     const cols = [
       { k: 'no', t: 'No', w: 60, a: 'center' }, { k: 'name', t: '名前', w: 200, a: 'left' },
@@ -39,7 +39,7 @@
     let y = headH - 30;
     x.fillStyle = 'rgba(120,120,128,.1)'; x.fillRect(40, y - 20, W - 80, 40);
     x.font = font(15, 700);
-    cols.forEach(cl => { x.fillStyle = cl.col || '#3c3c43'; x.textAlign = cl.a; x.fillText(cl.t, colX(cl), y); });
+    cols.forEach(cl => { x.fillStyle = cl.col || '#3c3c43'; x.textAlign = cl.a; fitFill(x, cl.t, colX(cl), y, cl.w - 8); });
     y += 20 + rowH / 2;
     const fp = v => v.toLocaleString('ja-JP');
     const sp = v => (v > 0 ? '+' : '') + fp(v || 0);
@@ -54,7 +54,7 @@
         x.fillStyle = /Pl|total/.test(cl.k) ? colorOf(p[cl.k === 'total' ? 'total' : cl.k.replace('Pl', '')].pl ?? p.total) : '#000000';
         if (cl.k === 'total') x.fillStyle = colorOf(p.total);
         if ((cl.k === 'bacIn' && !p.bac.in) || (cl.k === 'cashIn' && !p.cash.in) || (cl.k === 'tourIn' && !p.tour.in) || (cl.k === 'tourE' && !(p.tour.e + p.tour.re))) x.fillStyle = 'rgba(60,60,67,.25)';
-        x.fillText(String(vals[cl.k]), colX(cl), y);
+        fitFill(x, String(vals[cl.k]), colX(cl), y, cl.w - 12);
       });
       y += rowH;
     });
@@ -63,19 +63,28 @@
     x.fillStyle = 'rgba(0,122,255,.08)'; x.fillRect(40, y - rowH / 2, W - 80, rowH);
     x.font = font(19, 700); x.fillStyle = '#007aff';
     const tv = { no: '', name: 'プレイヤー合計', bacIn: fp(t.bac.in), bacPl: sp(t.bac.pl), cashIn: fp(t.cash.in), cashPl: sp(t.cash.pl), tourE: t.tour.e + t.tour.re, tourIn: fp(t.tour.in), tourPl: sp(t.tour.pl), total: sp(t.players) };
-    cols.forEach(cl => { x.textAlign = cl.a; x.fillText(String(tv[cl.k]), colX(cl), y); });
+    cols.forEach(cl => { x.textAlign = cl.a; fitFill(x, String(tv[cl.k]), colX(cl), y, cl.w - 12); });
     y += rowH;
     // フッター: 店側
     const d = agg.dealer;
     const house = -t.players;
     x.textAlign = 'left'; x.font = font(16); x.fillStyle = '#8e8e93';
-    x.fillText(`店側収支   バカラ ${sp(-t.bac.pl)}   リング ${sp(-t.cash.pl)}   トーナメント ${sp(-t.tour.pl)}`, 40, y + 20);
-    x.fillText(`バカラディーラー チップ   補充 ${fp(d.bac.in)} / 回収 ${fp(d.bac.out)}   差 ${sp(d.bac.in - d.bac.out)}`, 40, y + 50);
+    fitFill(x, `店側収支   バカラ ${sp(-t.bac.pl)}   リング ${sp(-t.cash.pl)}   トーナメント ${sp(-t.tour.pl)}`, 40, y + 20, W - 80);
+    fitFill(x, `バカラディーラー チップ   補充 ${fp(d.bac.in)} / 回収 ${fp(d.bac.out)}   差 ${sp(d.bac.in - d.bac.out)}`, 40, y + 50, W - 80);
     const pz = K.parsePrizes(agg.config);
-    if (pz.length) x.fillText(`プライズ   ${pz.map((v, i) => `${K.rankLabel(i)} ${fp(v)}`).join('   ')}   (計 ${fp(pz.reduce((a, b) => a + b, 0))} / プール ${fp(t.tour.in)})`, 40, y + 76);
+    if (pz.length) fitFill(x, `プライズ   ${pz.map((v, i) => `${K.rankLabel(i)} ${fp(v)}`).join('   ')}   (計 ${fp(pz.reduce((a, b) => a + b, 0))} / プール ${fp(t.tour.in)})`, 40, y + 76, W - 80);
     x.font = font(30, 700); x.fillStyle = colorOf(house);
-    x.fillText(`店側合計 ${sp(house)}万  (${K.signedYen(house, PY)})`, 40, y + 120);
+    fitFill(x, `店側合計 ${sp(house)}万  (${K.signedYen(house, PY)})`, 40, y + 120, W - 80);
     return c;
+  }
+
+  // maxW に収まるまで文字を小さくして描く(列からはみ出さない)
+  function fitFill(x, text, px, py, maxW) {
+    const base = x.font, m = base.match(/(\d+(?:\.\d+)?)px/);
+    let size = m ? parseFloat(m[1]) : 16;
+    while (size > 8 && x.measureText(text).width > maxW) { size -= 1; x.font = base.replace(/\d+(?:\.\d+)?px/, size + 'px'); }
+    x.fillText(text, px, py);
+    x.font = base;
   }
 
   async function shareCanvas(canvas, filename) {

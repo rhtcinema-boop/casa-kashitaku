@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#f2f2f7">
 <title>casa 貸卓 — ボード</title>
 <link rel="icon" href="icon-180.png" type="image/png">
-<link rel="stylesheet" href="css/style.css?v=202610222323">
-<script src="js/lock.js?v=202610222323"></script>
+<link rel="stylesheet" href="css/style.css?v=202610222357">
+<script src="js/lock.js?v=202610222357"></script>
 <style>
-  body { padding: 22px 26px 34px; }
+  body { padding: 22px 26px 34px; overflow-wrap: anywhere; }
   header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 18px; }
   h1 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .02em; }
   .date { font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin-top: 0; }
@@ -19,7 +19,7 @@
   .tools select { border: 0; background: var(--fill); color: var(--text); border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 16px; }
 
   .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 18px; }
-  .tile { background: var(--card); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .tile { background: var(--card); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); min-width: 0; overflow-wrap: anywhere; }
   .tile span { display: block; font-size: 13px; color: var(--text2); font-weight: 500; }
   .tile b { display: block; font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tile b small { font-size: 15px; color: var(--text2); font-weight: 500; margin-left: 2px; }
@@ -39,7 +39,7 @@
   td.c, th.c { text-align: center; color: var(--text2); }
   td.sep, th.sep { border-left: .5px solid var(--sep); }
   td.name { font-weight: 600; font-size: 17px; }
-  td.ins { color: var(--text2); font-size: 13px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  td.ins { color: var(--text2); font-size: 13px; min-width: 90px; max-width: 220px; white-space: normal; overflow-wrap: anywhere; text-align: left; }
   td.dimv { color: var(--fill2); }
   td.total { font-weight: 700; font-size: 18px; }
   td.rk { color: var(--indigo); font-weight: 700; }
@@ -101,10 +101,11 @@
   </aside>
 </div>
 
-<script src="config.js?v=202610222323"></script>
-<script src="js/model.js?v=202610222323"></script>
-<script src="js/api.js?v=202610222323"></script>
-<script src="js/image.js?v=202610222323"></script>
+<script src="config.js?v=202610222357"></script>
+<script src="js/fit.js?v=202610222357"></script>
+<script src="js/model.js?v=202610222357"></script>
+<script src="js/api.js?v=202610222357"></script>
+<script src="js/image.js?v=202610222357"></script>
 <script>
 (() => {
   const K = Kashitaku, API = KashitakuAPI, CFG = KASHITAKU_CONFIG, PY = CFG.POINT_YEN || 10000;
@@ -181,6 +182,7 @@
       <td class="sep"></td><td></td><td></td><td></td><td class="${cls(-t.tour.pl)}">${sp(-t.tour.pl)}</td></tr>`;
     html += '</tbody></table>';
     $('#tablewrap').innerHTML = html;
+    fitAll('.tile b', { min: 14 }); // 大きい数字が枠に入らないときは縮める
     lastIds = newIds; firstLoad = false;
 
     // フィード
@@ -192,6 +194,7 @@
 
   $('#dateSel').addEventListener('change', e => { date = e.target.value; firstLoad = true; history.replaceState(null, '', `?date=${date}`); refresh(); });
   $('#hideEmpty').addEventListener('change', render);
+  window.addEventListener('resize', () => fitAll('.tile b', { min: 14 }));
   $('#makeImage').addEventListener('click', async () => {
     const c = KashitakuImage.renderSummary(agg, date);
     $('#preview').innerHTML = ''; $('#preview').appendChild(c);

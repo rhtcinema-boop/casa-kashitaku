@@ -72,6 +72,15 @@
   const nameOf = no => (state.players.find(p => Number(p.no) === no) || {}).name || '';
   const isReg = no => state.players.some(p => Number(p.no) === no);
 
+  // ---------- 文字が見切れないように縮める ----------
+  function fitScreen() {
+    fitText($('#hDate'), { min: 14 });
+    fitAll('.cell', { min: 8 });
+    fitAll('.tourbar b, .stat b', { min: 12 });
+  }
+  function fitPanel() { fitAll('#panel .stat b, #panel .ranks .rank b, #panel .pad .disp b', { min: 12 }); }
+  window.addEventListener('resize', () => { fitScreen(); fitPanel(); });
+
   // ---------- 描画 ----------
   function render() {
     { const [y, m, d] = date.split('-').map(Number), wd = '日月火水木金土'[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; $('#hDate').textContent = `${m}月${d}日(${wd})` + (date === K.todayJST() ? '' : ' 別の日'); }
@@ -81,18 +90,13 @@
     renderLog();
     renderSum();
     renderSet();
-    if (openNo != null && openNo !== 0 && $('#sheet').classList.contains('show')) renderPanel(); // 0 = ディーラーの入力中(作り直さない)
+    if (openNo != null && $('#sheet').classList.contains('show')) { if (openNo !== 0) renderPanel(); else if (!pad) renderDealer(); } // 0 = ディーラー(テンキー入力中は作り直さない)
+    fitScreen();
   }
 
   function renderGrid() {
-    const grid = $('#grid'), dealer = $('#dealerBox');
-    if (game === 'dealer') {
-      grid.style.display = 'none'; dealer.style.display = 'block';
-      const d = agg.dealer;
-      $('#dealerStat').innerHTML = `補充 合計 <b>${K.fmtPt(d.bac.in)}</b> ／ 回収 合計 <b>${K.fmtPt(d.bac.out)}</b> ／ 手元差 <b>${K.signedPt(d.bac.in - d.bac.out)}</b>${d.bac.ins.length ? `<div class="ins">${d.bac.ins.map(v => `<span class="${v < 0 ? 'neg' : ''}">${v}</span>`).join('')}</div>` : ''}`;
-      return;
-    }
-    grid.style.display = 'grid'; dealer.style.display = 'none';
+    const grid = $('#grid');
+    grid.style.display = 'grid';
     const tb = $('#tourBar'), tt = agg.totals.tour;
     tb.style.display = game === 'tour' ? 'grid' : 'none';
     if (game === 'tour') tb.innerHTML = `<div><span>総エントリー</span><b>${tt.e + tt.re}</b></div><div><span>残り</span><b>${tt.active}<small>人</small></b></div>`;
@@ -100,12 +104,21 @@
     const nos = new Set(state.players.map(p => Number(p.no)));
     state.txs.forEach(t => { if (t.game === game && t.no !== '' && t.no != null) nos.add(Number(t.no)); });
     const list = [...nos].filter(n => n > 0).sort((a, b) => a - b);
+    // バカラは先頭に「ディーラー」のマス(チップの補充・回収)
+    let html = '';
+    if (game === 'bac') {
+      const d = agg.dealer.bac, used = d.in || d.out;
+      html += `<button class="cell g-dealer dealer-cell ${used ? 'act' : ''}" data-dealer-open>
+        <div class="n dl">ディーラー</div>
+        <div class="st">${used ? `手元 ${K.signedPt(K.round1(d.in - d.out))}` : 'チップ'}</div>
+      </button>`;
+    }
     if (!list.length) {
-      grid.innerHTML = `<div class="nogrid">まだ誰も登録されていません<br><button class="btn gold" data-goto="set">設定で会計札と名前を登録</button></div>`;
+      grid.innerHTML = html + `<div class="nogrid">まだ誰も登録されていません<br><button class="btn gold" data-goto="set">設定で会計札と名前を登録</button></div>`;
       grid.style.gridAutoRows = '';
+      if (game === 'bac') fitGrid(1);
       return;
     }
-    let html = '';
     for (const no of list) {
       const p = playerOf(no), reg = isReg(no);
       const s = p[game];
@@ -121,7 +134,7 @@
       </button>`;
     }
     grid.innerHTML = html;
-    fitGrid(list.length);
+    fitGrid(list.length + (game === 'bac' ? 1 : 0));
   }
 
   // 1行5人で、画面の残りの高さいっぱいに広げる(多いときはスクロール)
@@ -243,6 +256,7 @@
     el.innerHTML = `<button class="close" data-close>✕</button>
       <h2 class="g-${game}">${no} ${esc(p.name)} <small><span class="tag">${K.GAMES[game]}</span></small></h2>
       ${statHtml}${pad ? (pad.type === 'rank' ? renderRanks() : renderPad(p)) : actsHtml + hist}`;
+    fitPanel();
   }
 
   // 賞金: 順位を押すだけ。すでに出た順位は「済」で押せない
@@ -320,17 +334,33 @@
   $('#games').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; game = b.dataset.game; pad = null; render(); });
   $('#grid').addEventListener('click', e => {
     const g = e.target.closest('[data-goto]'); if (g) return document.querySelector(`#nav [data-tab="${g.dataset.goto}"]`).click();
+    if (e.target.closest('[data-dealer-open]')) { pad = null; return openDealer(); }
     const c = e.target.closest('.cell'); if (c) { pad = null; openSheet(Number(c.dataset.no)); }
   });
-  $('#dealerBox').addEventListener('click', e => {
-    const b = e.target.closest('[data-dealer]'); if (!b) return;
-    openNo = 0; pad = { type: b.dataset.type === 'in' ? 'dealerIn' : 'dealerOut', table: b.dataset.dealer, value: '', allowNeg: true, neg: false };
-    $('#sheet').classList.add('show');
-    $('#panel').innerHTML = `<button class="close" data-close>✕</button><h2 class="g-dealer">バカラディーラー チップ <small><span class="tag">${b.dataset.type === 'in' ? '補充' : '回収'}</span></small></h2>${renderPad(null)}`;
-  });
+  // ---------- バカラディーラー(チップの補充・回収) ----------
+  function openDealer() { openNo = 0; pad = null; $('#sheet').classList.add('show'); renderDealer(); }
+  function renderDealer() {
+    const d = agg.dealer.bac;
+    const mine = state.txs.filter(t => t.game === 'dealer').sort((a, b) => b.ts - a.ts);
+    const hist = mine.length ? `<div class="card log mini">${mine.map(t => `<div class="row"><div class="t">${t.type === 'in' ? '補充' : '回収'} <b>${K.signedPt(t.pt)}</b> <i style="display:inline;margin-left:6px">${new Date(t.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</i></div><button data-del="${t.id}">削除</button></div>`).join('')}</div>` : '';
+    $('#panel').innerHTML = `<button class="close" data-close>✕</button>
+      <h2 class="g-dealer">バカラディーラー</h2>
+      <div class="stat">
+        <div><span>補充 合計</span><b>${K.fmtPt(d.in)}</b></div>
+        <div><span>回収 合計</span><b>${K.fmtPt(d.out)}</b></div>
+        <div><span>手元差</span><b>${K.signedPt(K.round1(d.in - d.out))}</b></div></div>
+      <div class="acts"><button class="btn in" data-dealer="bac" data-type="in">チップ 補充</button><button class="btn out" data-dealer="bac" data-type="out">チップ 回収</button></div>${hist}`;
+    fitPanel();
+  }
   $('#sheet').addEventListener('click', async e => {
     const t = e.target;
     if (t.closest('[data-close]')) return closeSheet();
+    const db = t.closest('[data-dealer]');
+    if (db) {
+      pad = { type: db.dataset.type === 'in' ? 'dealerIn' : 'dealerOut', table: 'bac', value: '', allowNeg: true, neg: false };
+      $('#panel').innerHTML = `<button class="close" data-close>✕</button><h2 class="g-dealer">バカラディーラー <small><span class="tag">チップ${db.dataset.type === 'in' ? '補充' : '回収'}</span></small></h2>${renderPad(null)}`;
+      return fitPanel();
+    }
     const act = t.closest('[data-act]');
     if (act) {
       const a = act.dataset.act;
@@ -368,7 +398,7 @@
     }
     const q = t.closest('[data-q]');
     if (q && pad) { pad.value = String(Number(pad.value || 0) + Number(q.dataset.q)); return openNo === 0 ? rerenderDealerPad() : renderPanel(); }
-    if (t.closest('[data-padcancel]')) { pad = null; return openNo === 0 ? closeSheet() : renderPanel(); }
+    if (t.closest('[data-padcancel]')) { pad = null; return openNo === 0 ? renderDealer() : renderPanel(); }
     if (t.closest('[data-padok]') && pad) {
       const n = Number(pad.value || 0) * (pad.neg ? -1 : 1);
       if (!n) return;
