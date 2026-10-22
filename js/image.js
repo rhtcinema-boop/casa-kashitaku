@@ -8,7 +8,7 @@
     opts = opts || {};
     const players = agg.players.filter(p => p.bac.in || p.bac.out || p.cash.in || p.cash.out || p.tour.in || p.tour.out || p.name);
     const scale = 2;
-    const W = 1200;
+    const W = 1240;
     const rowH = 54, headH = 150, footH = 200;
     const H = headH + rowH * (players.length + 2) + footH;
     const c = document.createElement('canvas');
@@ -31,7 +31,7 @@
       { k: 'total', t: '合計収支', w: 130, a: 'right' }, // 名前のすぐ右に合計
       { k: 'bacIn', t: 'バカラ IN', w: 110, a: 'right', col: '#007aff' }, { k: 'bacPl', t: '収支', w: 100, a: 'right' },
       { k: 'cashIn', t: 'リング IN', w: 110, a: 'right', col: '#30b0c7' }, { k: 'cashPl', t: '収支', w: 100, a: 'right' },
-      { k: 'tourE', t: 'トナメ 回数・順位', w: 130, a: 'right', col: '#5856d6' }, { k: 'tourIn', t: 'トナメ IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
+      { k: 'tourE', t: 'トナメ 回数', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourRank', t: '順位', w: 70, a: 'center', col: '#5856d6' }, { k: 'tourIn', t: 'トナメ IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
     ];
     let cx = 40; cols.forEach(cl => { cl.x = cx; cx += cl.w; });
     const colX = cl => cl.a === 'right' ? cl.x + cl.w - 8 : cl.a === 'center' ? cl.x + cl.w / 2 : cl.x + 8;
@@ -47,13 +47,13 @@
     players.forEach((p, i) => {
       if (i % 2) { x.fillStyle = 'rgba(0,0,0,.025)'; x.fillRect(40, y - rowH / 2, W - 80, rowH); }
       x.strokeStyle = 'rgba(60,60,67,.12)'; x.beginPath(); x.moveTo(40, y + rowH / 2); x.lineTo(W - 40, y + rowH / 2); x.stroke();
-      const vals = { no: p.no, name: p.name || '(未登録)', bacIn: fp(p.bac.in), bacPl: sp(p.bac.pl), cashIn: fp(p.cash.in), cashPl: sp(p.cash.pl), tourE: (p.tour.e + p.tour.re) + (p.tour.rank ? ' ' + p.tour.rank : ''), tourIn: fp(p.tour.in), tourPl: sp(p.tour.pl), total: sp(p.total) };
+      const vals = { no: p.no, name: p.name || '(未登録)', bacIn: fp(p.bac.in), bacPl: sp(p.bac.pl), cashIn: fp(p.cash.in), cashPl: sp(p.cash.pl), tourE: p.tour.e + p.tour.re, tourRank: p.tour.rank || (p.tour.e + p.tour.re && !p.tour.alive ? '-' : ''), tourIn: fp(p.tour.in), tourPl: sp(p.tour.pl), total: sp(p.total) };
       cols.forEach(cl => {
         x.textAlign = cl.a;
         x.font = font(cl.k === 'total' ? 22 : 19, cl.k === 'total' || cl.k === 'name' ? 700 : 400);
         x.fillStyle = /Pl|total/.test(cl.k) ? colorOf(p[cl.k === 'total' ? 'total' : cl.k.replace('Pl', '')].pl ?? p.total) : '#000000';
         if (cl.k === 'total') x.fillStyle = colorOf(p.total);
-        if ((cl.k === 'bacIn' && !p.bac.in) || (cl.k === 'cashIn' && !p.cash.in) || (cl.k === 'tourIn' && !p.tour.in) || (cl.k === 'tourE' && !(p.tour.e + p.tour.re))) x.fillStyle = 'rgba(60,60,67,.25)';
+        if ((cl.k === 'bacIn' && !p.bac.in) || (cl.k === 'cashIn' && !p.cash.in) || (cl.k === 'tourIn' && !p.tour.in) || (cl.k === 'tourE' && !(p.tour.e + p.tour.re)) || (cl.k === 'tourRank' && !(p.tour.e + p.tour.re))) x.fillStyle = 'rgba(60,60,67,.25)';
         fitFill(x, String(vals[cl.k]), colX(cl), y, cl.w - 12);
       });
       y += rowH;
@@ -63,7 +63,7 @@
     x.fillStyle = 'rgba(0,122,255,.08)'; x.fillRect(40, y - rowH / 2, W - 80, rowH);
     x.font = font(19, 700); x.fillStyle = '#007aff';
     const dl = agg.dealer.bac;
-    const tv = { no: '', name: '差額(全員+ディーラー)', bacIn: fp(Math.round((t.bac.in + dl.in) * 10) / 10), bacPl: sp(t.bacDiff), cashIn: fp(t.cash.in), cashPl: sp(t.cash.pl), tourE: t.tour.e + t.tour.re, tourIn: fp(t.tour.in), tourPl: sp(t.tour.pl), total: sp(t.allDiff) };
+    const tv = { no: '', name: '差額(全員+ディーラー)', bacIn: fp(Math.round((t.bac.in + dl.in) * 10) / 10), bacPl: sp(t.bacDiff), cashIn: fp(t.cash.in), cashPl: sp(t.cash.pl), tourE: t.tour.e + t.tour.re, tourRank: '', tourIn: fp(t.tour.in), tourPl: sp(t.tour.pl), total: sp(t.allDiff) };
     cols.forEach(cl => { x.textAlign = cl.a; fitFill(x, String(tv[cl.k]), colX(cl), y, cl.w - 12); });
     y += rowH;
     // フッター: 店側

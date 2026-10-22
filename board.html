@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#f2f2f7">
 <title>casa 貸卓 — ボード</title>
 <link rel="icon" href="icon-180.png" type="image/png">
-<link rel="stylesheet" href="css/style.css?v=202610230110">
-<script src="js/lock.js?v=202610230110"></script>
+<link rel="stylesheet" href="css/style.css?v=202610230113">
+<script src="js/lock.js?v=202610230113"></script>
 <style>
   body { padding: 22px 26px 34px; overflow-wrap: anywhere; }
   header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 18px; }
@@ -102,11 +102,11 @@
   </aside>
 </div>
 
-<script src="config.js?v=202610230110"></script>
-<script src="js/fit.js?v=202610230110"></script>
-<script src="js/model.js?v=202610230110"></script>
-<script src="js/api.js?v=202610230110"></script>
-<script src="js/image.js?v=202610230110"></script>
+<script src="config.js?v=202610230113"></script>
+<script src="js/fit.js?v=202610230113"></script>
+<script src="js/model.js?v=202610230113"></script>
+<script src="js/api.js?v=202610230113"></script>
+<script src="js/image.js?v=202610230113"></script>
 <script>
 (() => {
   const K = Kashitaku, API = KashitakuAPI, CFG = KASHITAKU_CONFIG, PY = CFG.POINT_YEN || 10000;
@@ -165,7 +165,7 @@
       <td class="sep total ${cls(p.total)}">${sp(p.total)}</td>
       <td class="sep ins">${insTxt(p.bac.ins)}</td><td class="${p.bac.in ? '' : 'dimv'}">${n(p.bac.in)}</td><td class="${p.bac.out ? '' : 'dimv'}">${n(p.bac.out)}</td><td class="${cls(p.bac.pl)}">${sp(p.bac.pl)}</td>
       <td class="sep ins">${insTxt(p.cash.ins)}</td><td class="${p.cash.in ? '' : 'dimv'}">${n(p.cash.in)}</td><td class="${p.cash.out ? '' : 'dimv'}">${n(p.cash.out)}</td><td class="${cls(p.cash.pl)}">${sp(p.cash.pl)}</td>
-      <td class="sep ${p.tour.e + p.tour.re ? '' : 'dimv'}">${p.tour.e + p.tour.re}${p.tour.re ? `<small style="color:var(--dim)"> (再${p.tour.re})</small>` : ''}</td><td class="${p.tour.in ? '' : 'dimv'}">${n(p.tour.in)}</td><td class="c rk">${p.tour.rank || (p.tour.e + p.tour.re && !p.tour.alive ? '飛び' : '')}</td><td class="${p.tour.out ? '' : 'dimv'}">${n(p.tour.out)}</td><td class="${cls(p.tour.pl)}">${sp(p.tour.pl)}</td>
+      <td class="sep ${p.tour.e + p.tour.re ? '' : 'dimv'}">${p.tour.e + p.tour.re}${p.tour.re ? `<small style="color:var(--dim)"> (再${p.tour.re})</small>` : ''}</td><td class="${p.tour.in ? '' : 'dimv'}">${n(p.tour.in)}</td><td class="c rk">${p.tour.rank || (p.tour.e + p.tour.re && !p.tour.alive ? '-' : '')}</td><td class="${p.tour.out ? '' : 'dimv'}">${n(p.tour.out)}</td><td class="${cls(p.tour.pl)}">${sp(p.tour.pl)}</td>
     </tr>`).join('');
     if (!rows.length) html += `<tr><td colspan="16" class="empty">まだ入力はありません</td></tr>`;
     const dealerTotal = d.bac.pl;

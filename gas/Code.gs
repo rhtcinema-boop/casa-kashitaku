@@ -187,7 +187,7 @@ function renderDay(date) {
   var yen = function (pt) { return Math.round(pt * 10000); };
   var ins = function (arr) { var out = []; for (var k = 0; k < MAX_INS; k++) out.push(k < arr.length ? arr[k] : ''); if (arr.length > MAX_INS) { out[MAX_INS - 1] = arr.slice(MAX_INS - 1).reduce(function (a, b) { return a + b; }, 0); } return out; };
   agg.players.forEach(function (p) {
-    var r = [p.no, p.name, '', yen(p.total), '', p.no].concat(ins(p.bac.ins), [yen(p.bac.in), yen(p.bac.out), yen(p.bac.pl), '', p.no], ins(p.cash.ins), [yen(p.cash.in), yen(p.cash.out), yen(p.cash.pl), '', p.no, p.tour.e + p.tour.re, yen(p.tour.in), yen(p.tour.out), yen(p.tour.pl), p.tour.rank || (p.tour.e + p.tour.re && !p.tour.alive ? '飛び' : '')]);
+    var r = [p.no, p.name, '', yen(p.total), '', p.no].concat(ins(p.bac.ins), [yen(p.bac.in), yen(p.bac.out), yen(p.bac.pl), '', p.no], ins(p.cash.ins), [yen(p.cash.in), yen(p.cash.out), yen(p.cash.pl), '', p.no, p.tour.e + p.tour.re, yen(p.tour.in), yen(p.tour.out), yen(p.tour.pl), p.tour.rank || (p.tour.e + p.tour.re && !p.tour.alive ? '-' : '')]);
     rows.push(r);
   });
   // ディーラー行(バカラ卓・リング卓の補充/回収)

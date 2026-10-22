@@ -347,7 +347,7 @@ test('飛びで順位を選ぶと賞金が入り、シートの日付タブに�
   await c.API.sync(D);
   const day = gas.mock.ss.getSheetByName(D).rows;
   assert.strictEqual(day[1][44], '順位');
-  assert.strictEqual(day[2][44], '1st'); assert.strictEqual(day[3][44], '2nd'); assert.strictEqual(day[4][44], '飛び');
+  assert.strictEqual(day[2][44], '1st'); assert.strictEqual(day[3][44], '2nd'); assert.strictEqual(day[4][44], '-');
   assert.strictEqual(day[2][42], 1668000, '賞金は円で正確に');
 });
 
