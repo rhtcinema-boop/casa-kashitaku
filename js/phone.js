@@ -440,21 +440,36 @@
       <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div><!-- ディーラーから見て 左: バンカー / 右: プレイヤー -->
       ${res}
       ${announce(r) ? `<div class="bd-say"><span>アナウンス</span>${announce(r)}</div>` : ''}
+      ${drawTable(r)}
       ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<span></span><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
-      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>
-      <details class="bd-rule"><summary>引く条件の早見表</summary>
-        <table><tr><th>プレイヤー</th><td>0〜5 → 引く ／ 6・7 → 引かない ／ 8・9 → ナチュラル</td></tr>
-        <tr><th>バンカー(プレイヤーが引かない)</th><td>0〜5 → 引く ／ 6・7 → 引かない</td></tr>
-        <tr><th>バンカー 0〜2</th><td>いつも引く</td></tr>
-        <tr><th>バンカー 3</th><td>プレイヤーの3枚目が 8 以外なら引く</td></tr>
-        <tr><th>バンカー 4</th><td>プレイヤーの3枚目が 2〜7 なら引く</td></tr>
-        <tr><th>バンカー 5</th><td>プレイヤーの3枚目が 4〜7 なら引く</td></tr>
-        <tr><th>バンカー 6</th><td>プレイヤーの3枚目が 6・7 なら引く</td></tr>
-        <tr><th>バンカー 7</th><td>引かない</td></tr>
-        <tr><th>点数</th><td>A=1、10・J・Q・K=0、合計の下1桁</td></tr></table>
-      </details>`;
+      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>`;
     fitPanel();
   }
+  // 場面ごとの条件を文章で(いつも全部表示)。いまの場面の行を光らせる
+  function drawTable(r) {
+    const { pt, bt } = draw;
+    const list = ns => ns.length ? ns.join('・') : 'なし';
+    const lines = [];
+    // プレイヤーが3枚目を引いたときのバンカー(0〜7)
+    const playerDrew = pt != null && pt <= 5 && bt != null && !r.natural;
+    lines.push({ text: 'バンカー0〜2:プレイヤーの3枚目が何でもバンカー引く', on: playerDrew && bt <= 2 });
+    for (let b = 3; b <= 7; b++) {
+      const yes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(c => K.bacBankerDraws(b, c));
+      const no = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(c => !K.bacBankerDraws(b, c));
+      const text = !no.length ? `バンカー${b}:プレイヤーの3枚目が何でもバンカー引く`
+        : !yes.length ? `バンカー${b}:プレイヤーの3枚目が何でもバンカー引かない`
+        : `バンカー${b}:プレイヤーの3枚目が ${list(yes)} ならバンカー引く(${list(no)} は引かない)`;
+      lines.push({ text, on: playerDrew && bt === b });
+    }
+    // プレイヤーが引かない場面
+    const pStand = pt != null && (pt === 6 || pt === 7) && bt != null && !r.natural;
+    lines.push({ text: 'プレイヤーが6・7で引かないとき:バンカーは 0〜5 なら引く(6・7 は引かない)', on: pStand });
+    const nat = !!r.natural;
+    lines.push({ text: 'どちらかが2枚で 8・9:ナチュラル、どちらも引かない', on: nat });
+    lines.push({ text: 'プレイヤーは 0〜5 なら引く(6・7 は引かない)', on: pt != null && pt <= 5 && !nat && draw.p3 == null && bt != null });
+    return `<div class="bd-table"><div class="bd-table-h">場面ごとの条件</div>${lines.map(x => `<p class="${x.on ? 'on' : ''}">${x.text}</p>`).join('')}</div>`;
+  }
+
   // ディーラーが言う一言(引く/引かない・勝ち)
   function announce(r) {
     const { pt, bt, p3, b3 } = draw;

@@ -129,6 +129,15 @@
   // 配る順: P1 → B1 → P2 → B2 → (P3) → (B3)
   // 戻り値: { need: 'p'|'b'|null, step: 次に入れるカードの説明, reasons: [判定の理由], done, pt, bt, winner, banker6, natural }
   const bacTotal = cards => cards.reduce((a, c) => a + c, 0) % 10;
+  // プレイヤーが3枚目を引いたとき、バンカー(2枚の合計 bt)が引くか。p3 はプレイヤーの3枚目の数字
+  function bacBankerDraws(bt, p3) {
+    if (bt <= 2) return true;
+    if (bt === 3) return p3 !== 8;
+    if (bt === 4) return p3 >= 2 && p3 <= 7;
+    if (bt === 5) return p3 >= 4 && p3 <= 7;
+    if (bt === 6) return p3 === 6 || p3 === 7;
+    return false;
+  }
   function bacNext(p, b) {
     const r = { need: null, step: '', reasons: [], done: false, pt: bacTotal(p), bt: bacTotal(b), winner: '', banker6: false, natural: false };
     if (p.length < 1) return Object.assign(r, { need: 'p', step: 'プレイヤー 1枚目' });
@@ -151,12 +160,10 @@
     // バンカー
     let bDraw, why;
     if (p3 === null) { bDraw = bt2 <= 5; why = bDraw ? '(プレイヤーが引かないとき、0〜5 は引く)' : '(プレイヤーが引かないとき、6・7 は引かない)'; }
-    else if (bt2 <= 2) { bDraw = true; why = '(0〜2 はいつも引く)'; }
-    else if (bt2 === 3) { bDraw = p3 !== 8; why = '(3 はプレイヤーの3枚目が 8 以外なら引く)'; }
-    else if (bt2 === 4) { bDraw = p3 >= 2 && p3 <= 7; why = '(4 はプレイヤーの3枚目が 2〜7 なら引く)'; }
-    else if (bt2 === 5) { bDraw = p3 >= 4 && p3 <= 7; why = '(5 はプレイヤーの3枚目が 4〜7 なら引く)'; }
-    else if (bt2 === 6) { bDraw = p3 === 6 || p3 === 7; why = '(6 はプレイヤーの3枚目が 6・7 なら引く)'; }
-    else { bDraw = false; why = '(7 は引かない)'; }
+    else {
+      bDraw = bacBankerDraws(bt2, p3);
+      why = ['(0〜2 はいつも引く)', '(0〜2 はいつも引く)', '(0〜2 はいつも引く)', '(3 はプレイヤーの3枚目が 8 以外なら引く)', '(4 はプレイヤーの3枚目が 2〜7 なら引く)', '(5 はプレイヤーの3枚目が 4〜7 なら引く)', '(6 はプレイヤーの3枚目が 6・7 なら引く)', '(7 は引かない)'][bt2];
+    }
     r.reasons.push(`バンカー ${bt2}${p3 !== null ? `・プレイヤーの3枚目 ${p3}` : ''} → ${bDraw ? '引く' : '引かない'}${why}`);
     if (bDraw && b.length < 3) return Object.assign(r, { need: 'b', step: 'バンカー 3枚目' });
     return finish(r, p.slice(0, p3 === null ? 2 : 3), b.slice(0, bDraw ? 3 : 2));
@@ -179,5 +186,5 @@
     return r;
   }
 
-  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel, calcPrizes, round1, bacNext, bacNext2, bacTotal };
+  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel, calcPrizes, round1, bacNext, bacNext2, bacTotal, bacBankerDraws };
 })(typeof window !== 'undefined' ? window : globalThis);
