@@ -175,6 +175,7 @@
       || '<div class="prize-r" style="color:var(--text2);font-size:15px;grid-template-columns:1fr">まだ確定していません。上の「自動計算」から作れます。</div>';
     const ptotal = K.round1(prizes.reduce((a, b) => a + b, 0));
     $('#prizeTotal').textContent = K.fmtPt(ptotal);
+    $('#prizeTextRow').classList.toggle('hide', !prizes.length);
     $('#prizeInfo').textContent = prizes.length ? `プール ${K.fmtPt(pool)} ／ 差 ${K.signedPt(K.round1(pool - ptotal))}` : '';
     renderCalcHead();
     // 会計札と名前
@@ -469,6 +470,28 @@
         toast('プライズを確定しました', vals.map((v, i) => `${K.rankLabel(i)} ${v}`).join(' ／ '));
       });
     }
+  });
+  // ---------- プライズをテキストで出す(LINE などに貼る用) ----------
+  // 1位から順に、金額の数字だけを1行ずつ(順位・単位・見出しなし)
+  function prizeText(list) {
+    return list.map(v => String(K.round1(v))).join('\n');
+  }
+  async function shareText(text) {
+    if (navigator.share) {
+      try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(text); toast('コピーしました', 'LINE などに貼り付けできます'); return; } catch (e) { }
+    // どちらも使えないときは選択できる形で出す
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;left:8px;right:8px;top:30%;height:40%;z-index:60;font-size:16px;border-radius:12px;padding:12px';
+    document.body.appendChild(ta); ta.select(); setTimeout(() => ta.remove(), 15000);
+    toast('長押しでコピーしてください', '', false);
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-prize-text]'); if (!b) return;
+    const draft = b.dataset.prizeText === 'draft';
+    const list = draft ? (pc.draft || []).map(v => Number(v) || 0) : K.parsePrizes(state.config);
+    if (!list.length) return toast('プライズがまだありません', '自動計算してから出せます', true);
+    shareText(prizeText(list));
   });
   $('#prizeCalc').addEventListener('input', e => {
     const inp = e.target.closest('input[data-pi]'); if (!inp || !pc.draft) return;
