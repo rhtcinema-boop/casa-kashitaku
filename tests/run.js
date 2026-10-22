@@ -381,6 +381,74 @@ test('通信が返ってこなくても同期は止まり続けず、あとで�
   assert.strictEqual(c.API.view(D).pendingTotal, 0);
 });
 
+test('バカラ 3枚目の判定: 標準ルールの全パターンと一致する', async () => {
+  const { K } = loadClient(loadGas());
+  // 公式の表を素直に書いた参照用の判定(バンカーが引くか)
+  const ref = (bt, p3) => {
+    if (p3 === null) return bt <= 5;
+    if (bt <= 2) return true;
+    if (bt === 3) return p3 !== 8;
+    if (bt === 4) return [2, 3, 4, 5, 6, 7].includes(p3);
+    if (bt === 5) return [4, 5, 6, 7].includes(p3);
+    if (bt === 6) return [6, 7].includes(p3);
+    return false;
+  };
+  let checked = 0;
+  for (let p1 = 0; p1 <= 9; p1++) for (let p2 = 0; p2 <= 9; p2++) for (let b1 = 0; b1 <= 9; b1++) for (let b2 = 0; b2 <= 9; b2++) {
+    const pt = (p1 + p2) % 10, bt = (b1 + b2) % 10;
+    let r = K.bacNext([p1, p2], [b1, b2]);
+    if (pt >= 8 || bt >= 8) { assert.ok(r.done && r.natural, 'ナチュラルで終わる'); checked++; continue; }
+    if (pt <= 5) {
+      assert.strictEqual(r.need, 'p', 'プレイヤー 0〜5 は引く');
+      for (let p3 = 0; p3 <= 9; p3++) {
+        const r2 = K.bacNext([p1, p2, p3], [b1, b2]);
+        if (ref(bt, p3)) {
+          assert.strictEqual(r2.need, 'b', `バンカー ${bt} / P3 ${p3} は引く`);
+          const r3 = K.bacNext([p1, p2, p3], [b1, b2, 5]);
+          assert.ok(r3.done); assert.strictEqual(r3.pt, (pt + p3) % 10); assert.strictEqual(r3.bt, (bt + 5) % 10);
+        } else {
+          assert.ok(r2.done, `バンカー ${bt} / P3 ${p3} は引かない`); assert.strictEqual(r2.bt, bt);
+        }
+        checked++;
+      }
+    } else {
+      if (bt <= 5) assert.strictEqual(r.need, 'b', 'プレイヤーが引かないとき バンカー 0〜5 は引く');
+      else assert.ok(r.done, 'プレイヤーが引かないとき バンカー 6・7 は引かない');
+      checked++;
+    }
+  }
+  assert.ok(checked > 10000);
+  // 勝ちとバンカー6
+  const w = K.bacNext([3, 3], [4, 2]); // P6 B6 → どちらも引かない → タイ
+  assert.ok(w.done); assert.strictEqual(w.winner, 'tie');
+  const b6 = K.bacNext([0, 5, 0], [3, 3]); // P5 引いて 0 → P5、B6 は P3=0 なので引かない → B6 勝ち
+  assert.ok(b6.done); assert.strictEqual(b6.winner, 'banker'); assert.strictEqual(b6.banker6, true);
+  const nat = K.bacNext([4, 5], [3, 3]); assert.ok(nat.natural); assert.strictEqual(nat.winner, 'player');
+  // 配る順
+  assert.strictEqual(K.bacNext([], []).step, 'プレイヤー 1枚目');
+  assert.strictEqual(K.bacNext([1], []).step, 'バンカー 1枚目');
+  assert.strictEqual(K.bacNext([1], [2]).step, 'プレイヤー 2枚目');
+  assert.strictEqual(K.bacNext([1, 2], [2]).step, 'バンカー 2枚目');
+});
+
+test('バカラ 3枚目の判定(合計入力版): 2枚は合計、3枚目は数字', async () => {
+  const { K } = loadClient(loadGas());
+  assert.strictEqual(K.bacNext2(null, null).need, 'pt');
+  assert.strictEqual(K.bacNext2(5, null).need, 'bt');
+  assert.strictEqual(K.bacNext2(5, 4).need, 'p3', 'プレイヤー5は引く');
+  assert.strictEqual(K.bacNext2(5, 4, 7).need, 'b3', 'バンカー4・P3=7は引く');
+  const r = K.bacNext2(5, 4, 7, 5); assert.ok(r.done); assert.strictEqual(r.pt, 2); assert.strictEqual(r.bt, 9); assert.strictEqual(r.winner, 'banker');
+  assert.ok(K.bacNext2(5, 4, 8).done, 'バンカー4・P3=8は引かない');
+  assert.ok(K.bacNext2(9, 3).natural, 'ナチュラル');
+  assert.strictEqual(K.bacNext2(6, 5).need, 'b3', 'プレイヤーが引かずバンカー5は引く');
+  const b6 = K.bacNext2(5, 6, 0); assert.ok(b6.done); assert.strictEqual(b6.banker6, true, 'バンカー6勝ち');
+  // 全パターンで 1 枚ずつ版と同じ結果
+  for (let pt = 0; pt <= 9; pt++) for (let bt = 0; bt <= 9; bt++) for (let p3 = 0; p3 <= 9; p3++) for (let b3 = 0; b3 <= 9; b3++) {
+    const a = K.bacNext([pt, 0, p3], [bt, 0, b3]), b = K.bacNext2(pt, bt, p3, b3);
+    assert.strictEqual(a.winner, b.winner); assert.strictEqual(a.pt, b.pt); assert.strictEqual(a.bt, b.bt);
+  }
+});
+
 test('取り消しの id は自分の入力を指す', async () => {
   const gas = loadGas(); const c = loadClient(gas);
   const st = await c.API.addTx(D, { no: 1, game: 'bac', type: 'in', pt: 10 });

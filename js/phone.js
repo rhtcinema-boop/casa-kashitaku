@@ -91,7 +91,7 @@
     renderSum();
     renderPlayers();
     renderSet();
-    if (openNo != null && $('#sheet').classList.contains('show')) { if (openNo !== 0) renderPanel(); else if (!pad) renderDealer(); } // 0 = ディーラー(テンキー入力中は作り直さない)
+    if (openNo != null && $('#sheet').classList.contains('show')) { if (openNo > 0) renderPanel(); else if (openNo === 0 && !pad) renderDealer(); } // 0 = ディーラー(テンキー入力中は作り直さない)、-1 = 3枚目判定
     fitScreen();
   }
 
@@ -112,12 +112,16 @@
       html += `<button class="cell g-dealer dealer-cell ${used ? 'act' : ''}" data-dealer-open>
         <div class="n dl">ディーラー</div>
         <div class="st">${used ? `手元 ${K.signedPt(K.round1(d.in - d.out))}` : 'チップ'}</div>
+      </button>
+      <button class="cell g-dealer draw-cell" data-draw-open>
+        <div class="n dl">3枚目</div>
+        <div class="st">判定</div>
       </button>`;
     }
     if (!list.length) {
       grid.innerHTML = html + `<div class="nogrid">まだ誰も登録されていません<br><button class="btn gold" data-goto="set">設定で会計札と名前を登録</button></div>`;
       grid.style.gridAutoRows = '';
-      if (game === 'bac') fitGrid(1);
+      if (game === 'bac') fitGrid(2);
       return;
     }
     for (const no of list) {
@@ -135,7 +139,7 @@
       </button>`;
     }
     grid.innerHTML = html;
-    fitGrid(list.length + (game === 'bac' ? 1 : 0));
+    fitGrid(list.length + (game === 'bac' ? 2 : 0));
   }
 
   // 1行5人で、画面の残りの高さいっぱいに広げる(多いときはスクロール)
@@ -405,8 +409,59 @@
   $('#grid').addEventListener('click', e => {
     const g = e.target.closest('[data-goto]'); if (g) return document.querySelector(`#nav [data-tab="${g.dataset.goto}"]`).click();
     if (e.target.closest('[data-dealer-open]')) { pad = null; return openDealer(); }
+    if (e.target.closest('[data-draw-open]')) { pad = null; return openDraw(); }
     const c = e.target.closest('.cell'); if (c) { pad = null; openSheet(Number(c.dataset.no)); }
   });
+  // ---------- バカラ 3枚目の判定(ディーラー補助) ----------
+  // 最初の2枚は合計(0〜9)だけ、3枚目からは引いたカードの数字をテンキーで入れる。サイドベットなし、バンカー6は配当半分。
+  const draw = { pt: null, bt: null, p3: null, b3: null, order: [] }; // order: 入れた順(1枚戻す用)
+  function openDraw() { openNo = -1; pad = null; $('#sheet').classList.add('show'); renderDraw(); }
+  function renderDraw() {
+    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+    const box = (v, key) => v != null ? `<b class="bd-v">${v}</b>` : `<b class="bd-v empty ${r.need === key ? 'next' : ''}">${r.need === key ? '?' : '—'}</b>`;
+    const hand = (side, name) => {
+      const two = side === 'p' ? draw.pt : draw.bt, third = side === 'p' ? draw.p3 : draw.b3;
+      const total = two == null ? '' : (two + (third || 0)) % 10;
+      const turn = r.need === (side === 'p' ? 'pt' : 'bt') || r.need === side + '3';
+      const win = r.done && r.winner === (side === 'p' ? 'player' : 'banker');
+      return `<div class="bd-hand ${side} ${turn ? 'turn' : ''} ${win ? 'win' : ''}">
+        <div class="bd-name">${name}</div>
+        <div class="bd-row"><span>2枚の合計</span>${box(two, side === 'p' ? 'pt' : 'bt')}</div>
+        <div class="bd-row"><span>3枚目</span>${box(third, side + '3')}</div>
+        <b class="bd-total">${total}</b></div>`;
+    };
+    const res = !r.done ? `<div class="bd-msg">${r.need === 'p3' || r.need === 'b3' ? '引く → ' : ''}<b>${r.step}</b> を入力</div>`
+      : r.winner === 'tie' ? `<div class="bd-msg done tie">タイ <small>${r.pt} 対 ${r.bt}</small></div>`
+      : r.winner === 'player' ? `<div class="bd-msg done player">プレイヤーの勝ち <small>${r.pt} 対 ${r.bt}</small></div>`
+      : `<div class="bd-msg done banker">バンカーの勝ち <small>${r.bt} 対 ${r.pt}</small>${r.banker6 ? '<em>バンカー6 → 配当は半分</em>' : ''}</div>`;
+    const third = r.need === 'p3' || r.need === 'b3';
+    $('#panel').innerHTML = `<button class="close" data-close>✕</button>
+      <h2 class="g-dealer">3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
+      <div class="bd-hands">${hand('p', 'プレイヤー')}${hand('b', 'バンカー')}</div>
+      ${res}
+      ${r.reasons.length ? `<ul class="bd-why">${r.reasons.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+      ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<span></span><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
+      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>
+      <details class="bd-rule"><summary>引く条件の早見表</summary>
+        <table><tr><th>プレイヤー</th><td>0〜5 → 引く ／ 6・7 → 引かない ／ 8・9 → ナチュラル</td></tr>
+        <tr><th>バンカー(プレイヤーが引かない)</th><td>0〜5 → 引く ／ 6・7 → 引かない</td></tr>
+        <tr><th>バンカー 0〜2</th><td>いつも引く</td></tr>
+        <tr><th>バンカー 3</th><td>プレイヤーの3枚目が 8 以外なら引く</td></tr>
+        <tr><th>バンカー 4</th><td>プレイヤーの3枚目が 2〜7 なら引く</td></tr>
+        <tr><th>バンカー 5</th><td>プレイヤーの3枚目が 4〜7 なら引く</td></tr>
+        <tr><th>バンカー 6</th><td>プレイヤーの3枚目が 6・7 なら引く</td></tr>
+        <tr><th>バンカー 7</th><td>引かない</td></tr>
+        <tr><th>点数</th><td>A=1、10・J・Q・K=0、合計の下1桁</td></tr></table>
+      </details>`;
+    fitPanel();
+  }
+  function drawNum(n) {
+    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+    if (r.done || !r.need) return;
+    draw[r.need] = n; draw.order.push(r.need);
+    renderDraw();
+  }
+
   // ---------- バカラディーラー(チップの補充・回収) ----------
   function openDealer() { openNo = 0; pad = null; $('#sheet').classList.add('show'); renderDealer(); }
   function renderDealer() {
@@ -429,6 +484,9 @@
   $('#sheet').addEventListener('click', async e => {
     const t = e.target;
     if (t.closest('[data-close]')) return closeSheet();
+    const dn = t.closest('[data-draw-n]'); if (dn) return drawNum(Number(dn.dataset.drawN));
+    if (t.closest('[data-draw-undo]')) { const k = draw.order.pop(); if (k) draw[k] = null; return renderDraw(); }
+    if (t.closest('[data-draw-reset]')) { draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = []; return renderDraw(); }
     const db = t.closest('[data-dealer]');
     if (db) {
       pad = { type: db.dataset.type === 'in' ? 'dealerIn' : 'dealerOut', table: 'bac', value: '', allowNeg: true, neg: false };

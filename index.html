@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=202610230150">
-<script src="js/lock.js?v=202610230150"></script>
+<link rel="stylesheet" href="css/style.css?v=202610230336">
+<script src="js/lock.js?v=202610230336"></script>
 <style>
   body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; overflow-wrap: anywhere; }
   .wrap { margin: 0 auto; padding: calc(var(--sat) + 12px) 16px calc(var(--sab) + 120px); }
@@ -57,6 +57,37 @@
   .cell.empty .nm { color: var(--text2); }
   .cell .n.dl { font-size: 1.15em; letter-spacing: 0; }
   .dealer-cell { background: var(--blue-tint); }
+  .draw-cell { background: var(--indigo-tint); }
+  .draw-cell .n.dl { color: var(--indigo); }
+  /* 3枚目の判定 */
+  .bd-hands { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 10px; }
+  .bd-hand { background: var(--card); border-radius: 16px; padding: 10px; text-align: center; box-shadow: var(--shadow); min-width: 0; }
+  .bd-hand.p .bd-name { color: var(--blue); } .bd-hand.b .bd-name { color: var(--red); }
+  .bd-hand.turn { box-shadow: inset 0 0 0 2.5px var(--indigo), var(--shadow); }
+  .bd-hand.win { background: var(--blue-tint); }
+  .bd-hand.b.win { background: var(--red-tint); }
+  .bd-name { font-size: 17px; font-weight: 700; }
+  .bd-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 8px; font-size: 14px; color: var(--text2); }
+  .bd-v { min-width: 44px; padding: 4px 8px; border-radius: 10px; background: var(--bg); color: var(--text); font-size: clamp(20px, 5vw, 26px); text-align: center; }
+  .bd-v.empty { color: var(--text2); background: transparent; box-shadow: inset 0 0 0 1.5px var(--sep); }
+  .bd-v.next { color: var(--indigo); box-shadow: inset 0 0 0 2.5px var(--indigo); }
+  .bd-total { font-size: clamp(30px, 7vw, 44px); font-weight: 700; display: block; min-height: 1.1em; }
+  .bd-msg { text-align: center; font-size: 19px; padding: 10px; border-radius: 14px; background: var(--fill); margin-bottom: 8px; }
+  .bd-msg b { color: var(--indigo); }
+  .bd-msg.done { font-size: 26px; font-weight: 700; }
+  .bd-msg.done small { display: block; font-size: 16px; font-weight: 500; color: var(--text2); }
+  .bd-msg.done em { display: block; font-style: normal; font-size: 17px; color: var(--red); margin-top: 4px; }
+  .bd-msg.player { background: var(--blue-tint); color: var(--blue); } .bd-msg.banker { background: var(--red-tint); color: var(--red); } .bd-msg.tie { background: var(--fill2); }
+  .bd-why { margin: 0 0 10px; padding-left: 1.2em; font-size: 15px; color: var(--text2); line-height: 1.6; }
+  .bd-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .bd-keys button { border: 0; background: var(--card); border-radius: 14px; padding: 16px 0; font-size: clamp(26px, 5vw, 36px); font-weight: 600; box-shadow: var(--shadow); min-width: 0; line-height: 1.1; }
+  .bd-keys button small { display: block; font-size: 12px; color: var(--text2); font-weight: 500; }
+  .bd-keys button:active { background: var(--fill2); }
+  .bd-rule { margin-top: 6px; font-size: 14px; }
+  .bd-rule summary { color: var(--blue); font-weight: 600; padding: 8px 2px; cursor: pointer; }
+  .bd-rule table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+  .bd-rule th, .bd-rule td { text-align: left; padding: 8px 10px; border-top: .5px solid var(--sep); vertical-align: top; }
+  .bd-rule th { color: var(--text2); font-weight: 600; width: 38%; }
   .nogrid { grid-column: 1 / -1; text-align: center; color: var(--text2); font-size: 19px; line-height: 2.4; padding: 50px 10px; }
   .tourbar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
   .tourbar div { background: var(--card); border-radius: 16px; padding: 10px; text-align: center; box-shadow: var(--shadow); min-width: 0; }
@@ -321,11 +352,11 @@
 
 <div class="toast" id="toast"><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=202610230150"></script>
-<script src="js/fit.js?v=202610230150"></script>
-<script src="js/model.js?v=202610230150"></script>
-<script src="js/api.js?v=202610230150"></script>
-<script src="js/image.js?v=202610230150"></script>
-<script src="js/phone.js?v=202610230150"></script>
+<script src="config.js?v=202610230336"></script>
+<script src="js/fit.js?v=202610230336"></script>
+<script src="js/model.js?v=202610230336"></script>
+<script src="js/api.js?v=202610230336"></script>
+<script src="js/image.js?v=202610230336"></script>
+<script src="js/phone.js?v=202610230336"></script>
 </body>
 </html>

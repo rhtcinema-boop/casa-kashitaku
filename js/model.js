@@ -124,5 +124,60 @@
   // 万の小数(0.1 = 1,000円)を見やすく
   const round1 = v => Math.round(v * 10) / 10;
 
-  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel, calcPrizes, round1 };
+  // ---------- バカラ 3枚目の判定(標準ルール・サイドベットなし) ----------
+  // p, b: プレイヤー/バンカーのカードの点(A=1, 2〜9, 10・J・Q・K=0)を配った順に
+  // 配る順: P1 → B1 → P2 → B2 → (P3) → (B3)
+  // 戻り値: { need: 'p'|'b'|null, step: 次に入れるカードの説明, reasons: [判定の理由], done, pt, bt, winner, banker6, natural }
+  const bacTotal = cards => cards.reduce((a, c) => a + c, 0) % 10;
+  function bacNext(p, b) {
+    const r = { need: null, step: '', reasons: [], done: false, pt: bacTotal(p), bt: bacTotal(b), winner: '', banker6: false, natural: false };
+    if (p.length < 1) return Object.assign(r, { need: 'p', step: 'プレイヤー 1枚目' });
+    if (b.length < 1) return Object.assign(r, { need: 'b', step: 'バンカー 1枚目' });
+    if (p.length < 2) return Object.assign(r, { need: 'p', step: 'プレイヤー 2枚目' });
+    if (b.length < 2) return Object.assign(r, { need: 'b', step: 'バンカー 2枚目' });
+    const pt2 = bacTotal(p.slice(0, 2)), bt2 = bacTotal(b.slice(0, 2));
+    if (pt2 >= 8 || bt2 >= 8) {
+      r.natural = true;
+      r.reasons.push(`ナチュラル(${pt2 >= 8 ? 'プレイヤー ' + pt2 : ''}${pt2 >= 8 && bt2 >= 8 ? '・' : ''}${bt2 >= 8 ? 'バンカー ' + bt2 : ''})→ どちらも引かない`);
+      return finish(r, p.slice(0, 2), b.slice(0, 2));
+    }
+    // プレイヤー: 0〜5 は引く、6・7 は引かない
+    let p3 = null;
+    if (pt2 <= 5) {
+      r.reasons.push(`プレイヤー ${pt2} → 引く(0〜5 は引く)`);
+      if (p.length < 3) return Object.assign(r, { need: 'p', step: 'プレイヤー 3枚目' });
+      p3 = p[2];
+    } else r.reasons.push(`プレイヤー ${pt2} → 引かない(6・7 は引かない)`);
+    // バンカー
+    let bDraw, why;
+    if (p3 === null) { bDraw = bt2 <= 5; why = bDraw ? '(プレイヤーが引かないとき、0〜5 は引く)' : '(プレイヤーが引かないとき、6・7 は引かない)'; }
+    else if (bt2 <= 2) { bDraw = true; why = '(0〜2 はいつも引く)'; }
+    else if (bt2 === 3) { bDraw = p3 !== 8; why = '(3 はプレイヤーの3枚目が 8 以外なら引く)'; }
+    else if (bt2 === 4) { bDraw = p3 >= 2 && p3 <= 7; why = '(4 はプレイヤーの3枚目が 2〜7 なら引く)'; }
+    else if (bt2 === 5) { bDraw = p3 >= 4 && p3 <= 7; why = '(5 はプレイヤーの3枚目が 4〜7 なら引く)'; }
+    else if (bt2 === 6) { bDraw = p3 === 6 || p3 === 7; why = '(6 はプレイヤーの3枚目が 6・7 なら引く)'; }
+    else { bDraw = false; why = '(7 は引かない)'; }
+    r.reasons.push(`バンカー ${bt2}${p3 !== null ? `・プレイヤーの3枚目 ${p3}` : ''} → ${bDraw ? '引く' : '引かない'}${why}`);
+    if (bDraw && b.length < 3) return Object.assign(r, { need: 'b', step: 'バンカー 3枚目' });
+    return finish(r, p.slice(0, p3 === null ? 2 : 3), b.slice(0, bDraw ? 3 : 2));
+  }
+  function finish(r, p, b) {
+    r.done = true; r.pt = bacTotal(p); r.bt = bacTotal(b);
+    r.winner = r.pt > r.bt ? 'player' : r.bt > r.pt ? 'banker' : 'tie';
+    r.banker6 = r.winner === 'banker' && r.bt === 6; // バンカー6 で勝ち → 配当は半分
+    return r;
+  }
+
+  // 入れ方を簡単にした版: 最初の2枚は「合計(0〜9)」だけ、3枚目からは引いたカードの数字(0〜9)
+  // pt, bt: 2枚の合計、p3, b3: 3枚目の数字(未入力は null)
+  function bacNext2(pt, bt, p3, b3) {
+    if (pt == null) return { need: 'pt', step: 'プレイヤー 2枚の合計', reasons: [], done: false };
+    if (bt == null) return { need: 'bt', step: 'バンカー 2枚の合計', reasons: [], done: false };
+    const r = bacNext([pt, 0].concat(p3 == null ? [] : [p3]), [bt, 0].concat(b3 == null ? [] : [b3]));
+    if (r.need === 'p') { r.need = 'p3'; r.step = 'プレイヤーが引いた3枚目の数字'; }
+    if (r.need === 'b') { r.need = 'b3'; r.step = 'バンカーが引いた3枚目の数字'; }
+    return r;
+  }
+
+  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel, calcPrizes, round1, bacNext, bacNext2, bacTotal };
 })(typeof window !== 'undefined' ? window : globalThis);
