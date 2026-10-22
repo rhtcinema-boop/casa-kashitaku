@@ -440,39 +440,10 @@
       <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div><!-- ディーラーから見て 左: バンカー / 右: プレイヤー -->
       ${res}
       ${announce(r) ? `<div class="bd-say"><span>アナウンス</span>${announce(r)}</div>` : ''}
-      ${drawTable(r)}
       ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<span></span><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
       <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>`;
     fitPanel();
   }
-  // いまの場面を判定して、当てはまる条件だけを文章で出す
-  function drawTable(r) {
-    const { pt, bt } = draw;
-    const list = ns => ns.length ? ns.join('・') : 'なし';
-    const lines = [];
-    // プレイヤーが3枚目を引いたときのバンカー(0〜7)
-    const playerDrew = pt != null && pt <= 5 && bt != null && !r.natural;
-    lines.push({ text: 'バンカー0〜2:プレイヤーの3枚目が何でもバンカー引く', on: playerDrew && bt <= 2 });
-    for (let b = 3; b <= 7; b++) {
-      const yes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(c => K.bacBankerDraws(b, c));
-      const no = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(c => !K.bacBankerDraws(b, c));
-      const text = !no.length ? `バンカー${b}:プレイヤーの3枚目が何でもバンカー引く`
-        : !yes.length ? `バンカー${b}:プレイヤーの3枚目が何でもバンカー引かない`
-        : `バンカー${b}:プレイヤーの3枚目が ${list(yes)} ならバンカー引く(${list(no)} は引かない)`;
-      lines.push({ text, on: playerDrew && bt === b });
-    }
-    // プレイヤーが引かない場面
-    const pStand = pt != null && (pt === 6 || pt === 7) && bt != null && !r.natural;
-    lines.push({ text: 'プレイヤーが6・7で引かないとき:バンカーは 0〜5 なら引く(6・7 は引かない)', on: pStand });
-    const nat = !!r.natural;
-    lines.push({ text: 'どちらかが2枚で 8・9:ナチュラル、どちらも引かない', on: nat });
-    lines.unshift({ text: 'プレイヤーは 0〜5 なら引く(6・7 は引かない)', on: pt != null && pt <= 5 && !nat && draw.p3 == null && bt != null });
-    // いまの場面に当てはまる条件だけを出す
-    const now = lines.filter(x => x.on);
-    if (!now.length) return '';
-    return `<div class="bd-table"><div class="bd-table-h">この場面の条件</div>${now.map(x => `<p class="on">${x.text}</p>`).join('')}</div>`;
-  }
-
   // ディーラーが言う一言(引く/引かない・勝ち)
   function announce(r) {
     const { pt, bt, p3, b3 } = draw;
