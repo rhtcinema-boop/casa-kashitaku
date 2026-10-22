@@ -445,7 +445,7 @@
       <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>`;
     fitPanel();
   }
-  // 場面ごとの条件を文章で(いつも全部表示)。いまの場面の行を光らせる
+  // いまの場面を判定して、当てはまる条件だけを文章で出す
   function drawTable(r) {
     const { pt, bt } = draw;
     const list = ns => ns.length ? ns.join('・') : 'なし';
@@ -466,8 +466,11 @@
     lines.push({ text: 'プレイヤーが6・7で引かないとき:バンカーは 0〜5 なら引く(6・7 は引かない)', on: pStand });
     const nat = !!r.natural;
     lines.push({ text: 'どちらかが2枚で 8・9:ナチュラル、どちらも引かない', on: nat });
-    lines.push({ text: 'プレイヤーは 0〜5 なら引く(6・7 は引かない)', on: pt != null && pt <= 5 && !nat && draw.p3 == null && bt != null });
-    return `<div class="bd-table"><div class="bd-table-h">場面ごとの条件</div>${lines.map(x => `<p class="${x.on ? 'on' : ''}">${x.text}</p>`).join('')}</div>`;
+    lines.unshift({ text: 'プレイヤーは 0〜5 なら引く(6・7 は引かない)', on: pt != null && pt <= 5 && !nat && draw.p3 == null && bt != null });
+    // いまの場面に当てはまる条件だけを出す
+    const now = lines.filter(x => x.on);
+    if (!now.length) return '';
+    return `<div class="bd-table"><div class="bd-table-h">この場面の条件</div>${now.map(x => `<p class="on">${x.text}</p>`).join('')}</div>`;
   }
 
   // ディーラーが言う一言(引く/引かない・勝ち)
