@@ -30,7 +30,7 @@
       { k: 'no', t: 'No', w: 60, a: 'center' }, { k: 'name', t: '名前', w: 200, a: 'left' },
       { k: 'bacIn', t: 'バカラ IN', w: 110, a: 'right', col: '#007aff' }, { k: 'bacPl', t: '収支', w: 100, a: 'right' },
       { k: 'cashIn', t: 'リング IN', w: 110, a: 'right', col: '#30b0c7' }, { k: 'cashPl', t: '収支', w: 100, a: 'right' },
-      { k: 'tourE', t: 'T 回数・順位', w: 110, a: 'right', col: '#5856d6' }, { k: 'tourIn', t: 'T IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
+      { k: 'tourE', t: 'トナメ 回数・順位', w: 110, a: 'right', col: '#5856d6' }, { k: 'tourIn', t: 'トナメ IN', w: 90, a: 'right', col: '#5856d6' }, { k: 'tourPl', t: '収支', w: 100, a: 'right' },
       { k: 'total', t: '合計収支', w: 130, a: 'right' },
     ];
     let cx = 40; cols.forEach(cl => { cl.x = cx; cx += cl.w; });

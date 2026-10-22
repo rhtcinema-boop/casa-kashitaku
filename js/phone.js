@@ -168,7 +168,7 @@
     const parts = [];
     if (p.bac.in || p.bac.out) parts.push(`バカラ IN ${K.fmtPt(p.bac.in)} ${K.signedPt(p.bac.pl)}`);
     if (p.cash.in || p.cash.out) parts.push(`リング IN ${K.fmtPt(p.cash.in)} ${K.signedPt(p.cash.pl)}`);
-    if (p.tour.e + p.tour.re) parts.push(`T ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b>` : ''} ${K.signedPt(p.tour.pl)}`);
+    if (p.tour.e + p.tour.re) parts.push(`トナメ ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b>` : ''} ${K.signedPt(p.tour.pl)}`);
     return parts.join(' ／ ') || 'まだ入力なし';
   }
   // ---------- プレイヤー一覧(全ゲーム終了ボタン付き) ----------
@@ -191,7 +191,7 @@
       const pend = pendingGames(p), chips = [];
       if (p.bac.in || p.bac.out) chips.push(`<span class="g-bac ${p.bac.done ? '' : 'live'}">バカラ ${p.bac.done ? '終了' : 'プレイ中'} ${K.signedPt(p.bac.pl)}</span>`);
       if (p.cash.in || p.cash.out) chips.push(`<span class="g-cash ${p.cash.done ? '' : 'live'}">リング ${p.cash.done ? '終了' : 'プレイ中'} ${K.signedPt(p.cash.pl)}</span>`);
-      if (p.tour.e + p.tour.re) chips.push(`<span class="g-tour ${p.tour.alive ? 'live' : ''}">T ${p.tour.alive ? 'プレイ中' : (p.tour.rank || '飛び')} ${K.signedPt(p.tour.pl)}</span>`);
+      if (p.tour.e + p.tour.re) chips.push(`<span class="g-tour ${p.tour.alive ? 'live' : ''}">トナメ ${p.tour.alive ? 'プレイ中' : (p.tour.rank || '飛び')} ${K.signedPt(p.tour.pl)}</span>`);
       const any = chips.length;
       return `<div class="pl ${p.home ? 'gone' : ''}">
         <div class="no">${p.no}</div>
@@ -210,17 +210,16 @@
   function renderSum() {
     const t = agg.totals;
     $('#sumStat').innerHTML = `
-      <div><span>T エントリー</span><b>${t.tour.e + t.tour.re}<small> 回</small></b></div>
+      <div><span>トナメ エントリー</span><b>${t.tour.e + t.tour.re}<small> 回</small></b></div>
       <div><span>プライズプール</span><b>${t.tour.in}<small> 万</small></b></div>
       <div><span>店側合計</span><b class="${cls(t.house)}">${K.signedPt(t.house)}</b></div>
       <div><span>バカラ 店側</span><b class="${cls(-t.bac.pl)}">${K.signedPt(-t.bac.pl)}</b></div>
       <div><span>リング 店側</span><b class="${cls(-t.cash.pl)}">${K.signedPt(-t.cash.pl)}</b></div>
-      <div><span>T 店側</span><b class="${cls(-t.tour.pl)}">${K.signedPt(-t.tour.pl)}</b></div>`;
+      <div><span>トナメ 店側</span><b class="${cls(-t.tour.pl)}">${K.signedPt(-t.tour.pl)}</b></div>`;
     const list = agg.players.filter(p => p.name || p.bac.in || p.cash.in || p.tour.in || p.bac.out || p.cash.out || p.tour.out);
     $('#sumList').innerHTML = list.length ? list.map(p => `
       <div class="row"><small class="num">${p.no}</small>
-        <div>${esc(p.name || '(未登録)')}<i>${sumParts(p)}</i></div>
-        <b class="num ${cls(p.total)}">${K.signedPt(p.total)}</b></div>`).join('') : '<div class="empty">まだ入力はありません</div>';
+        <div><span class="sum-nm">${esc(p.name || '(未登録)')}</span><b class="num sum-tot ${cls(p.total)}">${K.signedPt(p.total)}</b><i>${sumParts(p)}</i></div></div>`).join('') : '<div class="empty">まだ入力はありません</div>';
   }
 
   function renderSet() {
