@@ -218,7 +218,7 @@
 
   // ---------- プレイヤーシート ----------
   function openSheet(no) { openNo = no; $('#sheet').classList.add('show'); renderPanel(); }
-  function closeSheet() { $('#sheet').classList.remove('show'); openNo = null; pad = null; }
+  function closeSheet() { $('#sheet').classList.remove('show'); openNo = null; pad = null; home = null; }
 
   let pad = null; // { type:'in'|'out'|'prize'|'entry'|'reentry', dealerTable?, value:'' }
   function renderPanel() {
@@ -232,9 +232,11 @@
       setTimeout(() => { const i = document.querySelector('#nameInput'); if (i) i.focus(); }, 50);
       return;
     }
-    const s = p[game];
+    const g = (pad && pad.game) || game; // 帰宅の途中は、いま終了させているゲーム
+    const s = p[g];
     let statHtml, actsHtml;
-    if (game === 'tour') {
+    const homeBtn = `<button class="btn home full" data-act="home">帰宅(全ゲームを終了)</button>`;
+    if (g === 'tour') {
       statHtml = `<div class="stat">
         <div><span>回数</span><b>${s.e + s.re}<small> 回</small></b></div>
         <div><span>合計 IN</span><b>${s.in}<small> 万</small></b></div>
@@ -242,19 +244,20 @@
       actsHtml = `<div class="acts">
         <button class="btn in" data-act="entry">エントリー<br><small>${state.config.tourFee ?? 20}万</small></button>
         <button class="btn re" data-act="reentry">リエントリー<br><small>${state.config.reentryFee ?? state.config.tourFee ?? 20}万</small></button>
-        <button class="btn bust full" data-act="bust" ${s.alive ? '' : 'disabled'}>${s.rank ? `${s.rank} で終了` : '飛び(順位を選ぶ)'}</button></div>`;
+        <button class="btn bust full" data-act="bust" ${s.alive ? '' : 'disabled'}>${s.rank ? `${s.rank} で終了` : '飛び(順位を選ぶ)'}</button>${homeBtn}</div>`;
     } else {
       statHtml = `<div class="stat">
         <div><span>合計 IN</span><b>${s.in}<small> 万</small></b></div>
         <div><span>OUT</span><b>${s.out}<small> 万</small></b></div>
         <div><span>収支</span><b class="${cls(s.pl)}">${K.signedPt(s.pl)}</b></div></div>`;
-      actsHtml = `<div class="acts"><button class="btn in" data-act="in">IN</button><button class="btn out" data-act="out">OUT</button></div>`;
+      actsHtml = `<div class="acts"><button class="btn in" data-act="in">IN</button><button class="btn out" data-act="out">OUT</button>${homeBtn}</div>`;
     }
     // この人・このゲームの入力履歴(2回タップで削除)
-    const mine = state.txs.filter(t => Number(t.no) === no && t.game === game).sort((a, b) => b.ts - a.ts);
+    const mine = state.txs.filter(t => Number(t.no) === no && t.game === g).sort((a, b) => b.ts - a.ts);
     const hist = mine.length ? `<div class="card log mini">${mine.map(t => `<div class="row"><div class="t">${t.type === 'prize' && t.table ? t.table + ' ' : ''}${(K.TYPES[t.type] || t.type)} ${t.type === 'bust' ? '' : `<b>${t.pt}万</b>`} <i style="display:inline;margin-left:6px">${new Date(t.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</i></div><button data-del="${t.id}">削除</button></div>`).join('')}</div>` : '';
     el.innerHTML = `<button class="close" data-close>✕</button>
-      <h2 class="g-${game}">${no} ${esc(p.name)} <small><span class="tag">${K.GAMES[game]}</span></small></h2>
+      <h2 class="g-${g}">${no} ${esc(p.name)} <small><span class="tag">${K.GAMES[g]}</span></small></h2>
+      ${home ? `<div class="pick-h home-h">帰宅: ${K.GAMES[g]}を終了<small>あと ${home.queue.length} ゲーム(${home.queue.map(x => K.GAMES[x]).join('・')})</small></div>` : ''}
       ${statHtml}${pad ? (pad.type === 'rank' ? renderRanks() : renderPad(p)) : actsHtml + hist}`;
     fitPanel();
   }
@@ -275,10 +278,10 @@
   }
 
   function renderPad(p) {
-    const label = { in: 'IN', out: 'OUT', prize: '賞金', dealerIn: '補充', dealerOut: '回収' }[pad.type] || pad.type;
+    const label = (pad.home ? K.GAMES[pad.game] + ' ' : '') + ({ in: 'IN', out: 'OUT', prize: '賞金', dealerIn: '補充', dealerOut: '回収' }[pad.type] || pad.type);
     const v = pad.value;
     const n = Number(v || 0) * (pad.neg ? -1 : 1);
-    const s = p ? p[game] : null;
+    const s = p ? p[pad.game || game] : null;
     let after = '';
     if (s && pad.type === 'in') after = `合計 IN → ${s.in + n}万`;
     if (s && (pad.type === 'out' || pad.type === 'prize')) after = `収支 → ${K.signedPt(s.out + n - s.in)}`;
@@ -290,9 +293,41 @@
         ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(k => `<button data-k="${k}">${k}</button>`).join('')}
         <button class="fn" data-k="neg">${pad.allowNeg ? '±' : ''}</button><button data-k="0">0</button><button class="fn" data-k="bs">⌫</button>
       </div>
-      <div class="confirm"><button class="btn" data-padcancel>戻る</button><button class="btn gold" data-padok ${n === 0 ? 'disabled' : ''}>${label} ${n ? n + '万' : ''} 確定</button></div>
+      <div class="confirm"><button class="btn" data-padcancel>戻る</button><button class="btn gold" data-padok ${n === 0 && !pad.allowZero ? 'disabled' : ''}>${label} ${n || pad.allowZero ? n + '万' : ''} 確定</button></div>
     </div>`;
   }
+
+  // ---------- 帰宅: 終わっていないゲームを順番に終了させる ----------
+  // バカラ・リング: IN があって OUT がまだ → OUT を入力(0 でも可)。トーナメント: 続行中 → 順位か圏外。
+  let home = null; // { no, queue: ['bac','cash','tour'] }
+  function startHome() {
+    const p = playerOf(openNo), q = [];
+    if (p.bac.in && !p.bac.done) q.push('bac');
+    if (p.cash.in && !p.cash.done) q.push('cash');
+    if (p.tour.e + p.tour.re && p.tour.alive) q.push('tour');
+    if (!q.length) return toast('終了していないゲームはありません', `No.${p.no} ${esc(p.name)} はすべて終了しています`);
+    home = { no: openNo, queue: q };
+    nextHome();
+  }
+  async function nextHome() {
+    if (!home) return;
+    if (!home.queue.length) {
+      const p = playerOf(home.no); home = null; pad = null; closeSheet();
+      return toast(`No.${p.no} ${esc(p.name)} 帰宅しました`, `合計収支 ${K.signedPt(p.total)}`);
+    }
+    const g = home.queue[0];
+    if (g === 'tour') {
+      if (!K.parsePrizes(state.config).length) { // プライズ未確定ならそのまま飛び
+        await send({ no: home.no, game: 'tour', type: 'bust', pt: 0 }, 'トーナメント 飛び(帰宅)');
+        home.queue.shift(); return nextHome();
+      }
+      pad = { type: 'rank', game: 'tour', home: true };
+    } else {
+      pad = { type: 'out', game: g, value: '', allowNeg: false, neg: false, allowZero: true, home: true };
+    }
+    renderPanel();
+  }
+  async function homeDone(tx, label) { await send(tx, label); home.queue.shift(); nextHome(); }
 
   // ---------- 送信 ----------
   // 追加系(エントリー・飛び・順位など)はパネルを閉じてから記録
@@ -373,13 +408,15 @@
         if (!K.parsePrizes(state.config).length) return sendClose({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び');
         pad = { type: 'rank' }; return renderPanel();
       }
-      if (a === 'bustOut') { pad = null; return sendClose({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び(圏外)'); }
+      if (a === 'home') { pad = null; return startHome(); }
+      if (a === 'bustOut') { pad = null; if (home) return homeDone({ no: home.no, game: 'tour', type: 'bust', pt: 0 }, 'トーナメント 飛び(圏外)'); return sendClose({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び(圏外)'); }
       pad = { type: a, value: '', allowNeg: false, neg: false }; return renderPanel();
     }
     const rk = t.closest('[data-rank]');
     if (rk) {
       const i = Number(rk.dataset.rank), pt = K.parsePrizes(state.config)[i], label = K.rankLabel(i);
       pad = null;
+      if (home) return homeDone({ no: home.no, game: 'tour', type: 'prize', pt, table: label }, `${label} で終了 賞金 ${K.fmtPt(pt)}`);
       return sendClose({ no: openNo, game: 'tour', type: 'prize', pt, table: label }, `${label} で終了 賞金 ${K.fmtPt(pt)}`);
     }
     if (t.closest('[data-rename]')) {
@@ -398,11 +435,12 @@
     }
     const q = t.closest('[data-q]');
     if (q && pad) { pad.value = String(Number(pad.value || 0) + Number(q.dataset.q)); return openNo === 0 ? rerenderDealerPad() : renderPanel(); }
-    if (t.closest('[data-padcancel]')) { pad = null; return openNo === 0 ? renderDealer() : renderPanel(); }
+    if (t.closest('[data-padcancel]')) { pad = null; home = null; return openNo === 0 ? renderDealer() : renderPanel(); }
     if (t.closest('[data-padok]') && pad) {
       const n = Number(pad.value || 0) * (pad.neg ? -1 : 1);
-      if (!n) return;
+      if (!n && !pad.allowZero) return;
       const p = pad; pad = null;
+      if (p.home && home) return homeDone({ no: home.no, game: p.game, type: 'out', pt: n }, `${K.GAMES[p.game]} OUT ${n}万(帰宅)`);
       if (openNo === 0) {
         closeSheet();
         return send({ game: 'dealer', table: 'bac', type: p.type === 'dealerIn' ? 'in' : 'out', pt: n }, `バカラディーラー チップ${p.type === 'dealerIn' ? '補充' : '回収'} ${K.signedPt(n)}`);
