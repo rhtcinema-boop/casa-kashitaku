@@ -439,7 +439,7 @@
       <h2 class="g-dealer">3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
       <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div><!-- ディーラーから見て 左: バンカー / 右: プレイヤー -->
       ${res}
-      ${r.reasons.length ? `<ul class="bd-why">${r.reasons.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+      ${announce(r) ? `<div class="bd-say"><span>アナウンス</span>${announce(r)}</div>` : ''}
       ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<span></span><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
       <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>
       <details class="bd-rule"><summary>引く条件の早見表</summary>
@@ -454,6 +454,36 @@
         <tr><th>点数</th><td>A=1、10・J・Q・K=0、合計の下1桁</td></tr></table>
       </details>`;
     fitPanel();
+  }
+  // ディーラーが言う一言(引く/引かない・勝ち)
+  function announce(r) {
+    const { pt, bt, p3, b3 } = draw;
+    if (pt == null || bt == null) return '';
+    const lines = [];
+    if (r.natural) {
+      lines.push(`ナチュラル${Math.max(pt, bt)}。どちらも引きません。`);
+    } else {
+      if (pt <= 5) {
+        lines.push('プレイヤー引きます。');
+        if (p3 != null) {
+          if (r.need === 'b3' || b3 != null) lines.push(`プレイヤーの3枚目が${p3}なので、バンカー引きます。`);
+          else if (r.done) lines.push(`プレイヤーの3枚目が${p3}なので、バンカー引きません。`);
+        }
+      } else {
+        lines.push('プレイヤー引きません。');
+        if (r.need === 'b3' || b3 != null) lines.push('バンカー引きます。');
+        else if (r.done) lines.push('バンカー引きません。');
+      }
+      if (r.done) lines.push('もう引きません。');
+    }
+    if (r.done) {
+      if (r.winner === 'tie') lines.push(`${r.pt}対${r.bt}、タイです。`);
+      else if (r.winner === 'player') lines.push(`${r.pt}対${r.bt}で、プレイヤーの勝ちです。`);
+      else lines.push(`${r.bt}対${r.pt}で、バンカーの勝ちです。${r.banker6 ? 'バンカー6、配当は半分です。' : ''}`);
+    }
+    // いま言う一言を大きく、それまでの分は小さく(終わったときは「もう引きません」以降をまとめて大きく)
+    const nowFrom = r.done ? Math.max(0, lines.findIndex(x => x.startsWith('もう引きません') || x.startsWith('ナチュラル'))) : lines.length - 1;
+    return lines.map((x, i) => `<p class="${i >= nowFrom ? 'now' : 'past'}">${x}</p>`).join('');
   }
   function drawNum(n) {
     const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
