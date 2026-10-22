@@ -69,8 +69,10 @@
   function fmtYen(pt, pointYen) { const y = pt * (pointYen || 10000); return (y < 0 ? '-' : '') + '¥' + Math.abs(y).toLocaleString('ja-JP'); }
   function signedPt(pt) { return (pt > 0 ? '+' : '') + fmtPt(pt); }
   function signedYen(pt, py) { return (pt > 0 ? '+' : '') + fmtYen(pt, py); }
-  function todayJST() {
-    const d = new Date(Date.now() + 9 * 3600 * 1000);
+  // 営業日(日本時間)。朝6時までは前の日として扱う(深夜0時をまたいでも同じ日)
+  const DAY_CUTOFF_HOUR = 6;
+  function todayJST(now) {
+    const d = new Date((now || Date.now()) + (9 - DAY_CUTOFF_HOUR) * 3600 * 1000);
     return d.toISOString().slice(0, 10);
   }
   function describeTx(t) {

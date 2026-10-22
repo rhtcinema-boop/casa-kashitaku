@@ -72,17 +72,18 @@ function loadClient(gas, opts = {}) {
     KASHITAKU_CONFIG: { GAS_URL: opts.local ? '' : 'https://gas.example/exec', MAX_NO: 50, POINT_YEN: 10000 },
     localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
   };
-  let fail = false, delay = 0;
+  let fail = false, delay = 0, loseReply = false;
   win.fetch = async (url, init) => {
     if (fail) throw new Error('offline');
     if (delay) await new Promise(r => setTimeout(r, delay));
     const body = init && init.method === 'POST' ? gas.call.post(JSON.parse(init.body)) : gas.call.get(new URL(url).searchParams.get('date'));
+    if (loseReply) throw new Error('reply lost'); // シートには届いたが返事が途切れた
     return { ok: true, json: async () => body };
   };
   const ctx = vm.createContext({ window: win, localStorage: win.localStorage, fetch: (...a) => win.fetch(...a), URL, Date, JSON, Math, Object, Number, String, Set, Promise, setTimeout, console });
   ctx.globalThis = ctx;
   for (const f of ['js/model.js', 'js/api.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
-  return { K: win.Kashitaku || ctx.Kashitaku, API: win.KashitakuAPI, store, setFail: v => { fail = v; }, setDelay: v => { delay = v; } };
+  return { K: win.Kashitaku || ctx.Kashitaku, API: win.KashitakuAPI, store, setFail: v => { fail = v; }, setDelay: v => { delay = v; }, setLoseReply: v => { loseReply = v; } };
 }
 
 // ---------- テスト ----------
@@ -280,6 +281,36 @@ test('別の日付の未同期分も同期で送られる', async () => {
   await c.API.sync(D);
   assert.strictEqual(gas.call.get('2099-02-02').txs.length, 1);
   assert.strictEqual(c.API.view(D).pendingTotal, 0);
+});
+
+test('返事が途切れた同期のあとで削除しても、シートからも消える', async () => {
+  const gas = loadGas(); const c = loadClient(gas);
+  const st = await c.API.addTx(D, { no: 1, game: 'bac', type: 'in', pt: 10 });
+  c.setLoseReply(true);
+  await assert.rejects(c.API.sync(D));
+  c.setLoseReply(false);
+  assert.strictEqual(gas.call.get(D).txs.length, 1, 'シートには届いている');
+  await c.API.undo(D, st._lastId);
+  assert.strictEqual(c.API.view(D).txs.length, 0);
+  await c.API.sync(D);
+  assert.strictEqual(gas.call.get(D).txs.length, 0, '削除がシートにも届く');
+  assert.strictEqual(c.API.view(D).txs.length, 0, '同期後も復活しない');
+});
+
+test('返事が途切れた入力を再送しても二重にならない', async () => {
+  const gas = loadGas(); const c = loadClient(gas);
+  await c.API.addTx(D, { no: 1, game: 'bac', type: 'in', pt: 10 });
+  c.setLoseReply(true); await assert.rejects(c.API.sync(D)); c.setLoseReply(false);
+  await c.API.sync(D);
+  assert.strictEqual(gas.call.get(D).txs.length, 1);
+});
+
+test('営業日は朝6時で切り替わる(深夜0時をまたいでも同じ日)', async () => {
+  const { K } = loadClient(loadGas());
+  const jst = s => Date.parse(s + '+09:00');
+  assert.strictEqual(K.todayJST(jst('2099-05-01T23:30:00')), '2099-05-01');
+  assert.strictEqual(K.todayJST(jst('2099-05-02T02:00:00')), '2099-05-01');
+  assert.strictEqual(K.todayJST(jst('2099-05-02T06:00:00')), '2099-05-02');
 });
 
 test('取り消しの id は自分の入力を指す', async () => {

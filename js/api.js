@@ -111,6 +111,11 @@
             d.pending = d.pending.filter(o => !sent.has(o.opId));
             takeServer(date, s);
             save();
+          } catch (e) {
+            // 届いたかどうか分からない(返事だけ途切れた可能性)→ 印を付けて、削除時は必ず取り消しも送る
+            ops.forEach(o => { o.maybeSent = true; });
+            save();
+            throw e;
           } finally { ops.forEach(o => inFlight.delete(o.opId)); }
         }
         if (HAS_GAS && !dates.includes(current)) { takeServer(current, await gasGet(current)); save(); }
@@ -152,8 +157,12 @@
     undo: async (date, id) => {
       const d = day(date);
       const i = d.pending.findIndex(o => o.op === 'tx' && o.tx.id === id && !inFlight.has(o.opId));
-      if (i >= 0) { d.pending.splice(i, 1); save(); return view(date); } // 未送信ならキューから消すだけ
-      return push(date, { op: 'undo', id });
+      if (i >= 0) {
+        const wasMaybeSent = d.pending[i].maybeSent;
+        d.pending.splice(i, 1); save();                 // 未送信ならキューから消すだけ
+        if (!wasMaybeSent) return view(date);
+      }
+      return push(date, { op: 'undo', id });            // 送信済み(かもしれない)ものはシートでも取り消す
     },
     setConfig: async (date, config) => push(date, { op: 'config', config }),
     // 全消去はすぐに実行(テスト後の片付け用)

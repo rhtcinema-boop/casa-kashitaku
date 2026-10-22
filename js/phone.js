@@ -6,7 +6,11 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const cls = v => v > 0 ? 'plus' : v < 0 ? 'minus' : 'zero';
 
-  let date = localStorage.getItem('kt.date') || K.todayJST();
+  // 日付: 基本は今日(営業日)。設定で変えた日付は、その営業日のあいだだけ有効
+  let date = (() => {
+    try { const s = JSON.parse(localStorage.getItem('kt.date2') || 'null'); if (s && s.on === K.todayJST() && s.date) return s.date; } catch (e) { }
+    return K.todayJST();
+  })();
   let game = 'bac';
   let state = null, agg = null;
   let tab = 'input';
@@ -23,17 +27,21 @@
     render();
   }
   // 同期: 未同期分をまとめてシートへ送り、最新を取り込む
+  let syncAgain = false;
   async function doSync(quiet) {
-    if (API.isSyncing()) return;
+    if (API.isSyncing()) { syncAgain = true; return; } // 終わったらもう一度(日付を変えた時など)
+    const d0 = date;
     const promise = API.sync(date);
     setStatus();
     try {
-      await refresh(await promise);
+      await promise;
+      refresh(); // 同期中に日付が変わっても、今の日付を表示する
       if (!quiet) toast('同期しました', 'シートと同じ状態です');
     } catch (e) {
       refresh();
       toast('同期できませんでした', '入力は端末に残っています。電波を確認してもう一度押してください', true);
     }
+    if (syncAgain || date !== d0) { syncAgain = false; doSync(true); }
   }
   const hm = t => new Date(t).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
   function setStatus() {
@@ -56,7 +64,7 @@
     renderLog();
     renderSum();
     renderSet();
-    if (openNo != null && $('#sheet').classList.contains('show')) renderPanel();
+    if (openNo != null && openNo !== 0 && $('#sheet').classList.contains('show')) renderPanel(); // 0 = ディーラーの入力中(作り直さない)
   }
 
   function renderGrid() {
@@ -154,7 +162,7 @@
         <h2>No.${no} <small>未登録</small></h2>
         <div class="sub" style="text-align:left;margin-top:10px">この会計札のお客さんの名前を登録してください。</div>
         <form class="nameform" id="nameForm"><input id="nameInput" placeholder="名前" autocomplete="off" autocapitalize="off"><button class="btn gold" type="submit">登録</button></form>`;
-      setTimeout(() => $('#nameInput').focus(), 50);
+      setTimeout(() => { const i = document.querySelector('#nameInput'); if (i) i.focus(); }, 50);
       return;
     }
     const s = p[game];
@@ -225,8 +233,8 @@
       const st = await API.addTx(date, tx);
       await refresh(st);
       const p = tx.game === 'dealer' ? null : playerOf(Number(tx.no));
-      // 自分が今送った入力(取り消し用)
-      lastTx = st.txs.find(t => t.id === st._lastId) || null;
+      // 自分が今記録した入力(取り消し用)
+      const mineTx = st.txs.find(t => t.id === st._lastId) || null;
       let t2 = '';
       if (p) {
         const s = p[tx.game];
@@ -236,18 +244,20 @@
         const d = agg.dealer[tx.table || 'bac'];
         t2 = `補充 ${d.in}万 ／ 回収 ${d.out}万`;
       }
-      toast(`${p ? `No.${p.no} ${esc(p.name)} ` : ''}${label}`, t2);
+      toast(`${p ? `No.${p.no} ${esc(p.name)} ` : ''}${label}`, t2, false, mineTx);
     } catch (e) { toast('記録できませんでした', e.message, true); }
     finally { busy = false; }
   }
 
   let toastTimer;
-  function toast(t1, t2, err) {
+  // undoTx を渡したときだけ「取り消し」を出す(他のお知らせで古い入力を消さないため)
+  function toast(t1, t2, err, undoTx) {
+    lastTx = (!err && undoTx) ? { id: undoTx.id, date } : null;
     const el = $('#toast');
     $('#toastT1').innerHTML = t1; $('#toastT2').textContent = t2;
     el.classList.toggle('err', !!err); el.classList.add('show');
     $('#toastUndo').style.display = err || !lastTx ? 'none' : '';
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 6000);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), err ? 8000 : 4000);
   }
 
   // ---------- イベント ----------
@@ -282,7 +292,7 @@
       const cur = nameOf(openNo);
       $('#panel').innerHTML = `<button class="close" data-close>✕</button><h2>No.${openNo} <small>名前の変更</small></h2>
         <form class="nameform" id="nameForm"><input id="nameInput" value="${esc(cur)}" autocomplete="off"><button class="btn gold" type="submit">保存</button></form>`;
-      setTimeout(() => $('#nameInput').focus(), 50); return;
+      setTimeout(() => { const i = document.querySelector('#nameInput'); if (i) i.focus(); }, 50); return;
     }
     const k = t.closest('[data-k]');
     if (k && pad) {
@@ -318,8 +328,8 @@
   });
   $('#toastUndo').addEventListener('click', async () => {
     if (!lastTx) return;
-    const id = lastTx.id; lastTx = null; $('#toast').classList.remove('show');
-    try { await refresh(await API.undo(date, id)); toast('取り消しました', ''); } catch (e) { toast('取り消せませんでした', e.message, true); }
+    const { id, date: d } = lastTx; lastTx = null; $('#toast').classList.remove('show');
+    try { await API.undo(d, id); refresh(); toast('取り消しました', ''); } catch (e) { toast('取り消せませんでした', e.message, true); }
   });
   // 削除: 1回目で「消す?」に変わり、3秒以内にもう1回で削除
   async function delTap(b) {
@@ -342,7 +352,7 @@
     if (tab !== 'sum') $('#preview').innerHTML = '';
     refresh();
   });
-  $('#setDate').addEventListener('change', e => { date = e.target.value || K.todayJST(); localStorage.setItem('kt.date', date); rosterSig = null; refresh(); doSync(true); });
+  $('#setDate').addEventListener('change', e => { date = e.target.value || K.todayJST(); localStorage.setItem('kt.date2', JSON.stringify({ date, on: K.todayJST() })); rosterSig = null; refresh(); doSync(true); });
   async function askFee(key, label) {
     const cur = state.config[key] ?? 20;
     const v = prompt(`${label}(万)`, cur);
@@ -373,7 +383,7 @@
     const no = Number(inp.dataset.no), name = inp.value.trim();
     if (name === nameOf(no)) return;
     if (!name && !isReg(no)) return;
-    try { const st = await API.register(date, no, name); state = st; agg = K.aggregate(st.players, st.txs, st.config); inp.classList.toggle('saved', !!name); }
+    try { const st = await API.register(date, no, name); state = st; agg = K.aggregate(st.players, st.txs, st.config); inp.classList.toggle('saved', !!name); setStatus(); }
     catch (err) { toast('保存できませんでした', err.message, true); }
   });
   $('#rosterRows').addEventListener('keydown', e => {
@@ -397,6 +407,8 @@
   });
 
   $('#syncBtn').addEventListener('click', () => doSync(false));
+  // お知らせはタップで閉じる(取り消しボタン以外)
+  $('#toast').addEventListener('click', e => { if (!e.target.closest('#toastUndo')) $('#toast').classList.remove('show'); });
   // 開いたときに1回だけ同期(他のスマホの入力を取り込む)
   refresh();
   doSync(true);
