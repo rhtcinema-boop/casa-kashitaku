@@ -190,13 +190,13 @@
   // ---------- 送信 ----------
   async function send(tx, label) {
     if (busy) return; busy = true;
+    lastTx = null; toast('送信中…', label);
     try {
       const st = await API.addTx(date, tx);
       await refresh(st);
       const p = tx.game === 'dealer' ? null : playerOf(Number(tx.no));
-      lastTx = st.txs.find(t => t.id === (st.txs[st.txs.length - 1] || {}).id) || null;
-      // 直近の自分の送信を特定(ts 最大)
-      lastTx = [...st.txs].sort((a, b) => b.ts - a.ts)[0] || null;
+      // 自分が今送った入力(取り消し用)
+      lastTx = st.txs.find(t => t.id === st._lastId) || null;
       let t2 = '';
       if (p) {
         const s = p[tx.game];

@@ -33,7 +33,7 @@
           if (i >= 0) d.players[i].name = body.name; else d.players.push({ no: Number(body.no), name: body.name });
           break;
         }
-        case 'tx': d.txs.push({ ...body.tx, id: uid(), ts: Date.now(), by: deviceId }); break;
+        case 'tx': { const id = uid(); d.txs.push({ ...body.tx, id, ts: Date.now(), by: deviceId }); lsSave(db); const st = lsState(db, body.date); st._lastId = id; return st; }
         case 'undo': { const t = d.txs.find(t => t.id === body.id); if (t) t.deleted = true; break; }
         case 'config': Object.assign(d.config, body.config); break;
         case 'newDay': break;
@@ -62,6 +62,7 @@
       const j = await r.json();
       if (j.error) throw new Error(j.error);
       j.mode = 'gas';
+      if (body.op === 'tx') j._lastId = body.tx.id;
       return j;
     },
   };
