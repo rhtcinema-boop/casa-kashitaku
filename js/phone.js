@@ -142,48 +142,42 @@
       return;
     }
     const s = p[game];
-    let statHtml, actsHtml, insHtml = '';
+    let statHtml, actsHtml;
     if (game === 'tour') {
-      const n = s.e + s.re;
       statHtml = `<div class="stat">
-        <div><span>エントリー</span><b>${n}<small> 回</small></b></div>
+        <div><span>回数</span><b>${s.e + s.re}<small> 回</small></b></div>
         <div><span>合計 IN</span><b>${s.in}<small> 万</small></b></div>
-        <div><span>収支</span><b class="${cls(s.pl)}">${K.signedPt(s.pl)}</b></div></div>
-        <div class="sub">エントリー ${s.e} 回 ／ リエントリー ${s.re} 回 ／ 賞金 ${s.out} 万 ／ ${K.fmtYen(s.in, PY)} IN</div>`;
+        <div><span>収支</span><b class="${cls(s.pl)}">${K.signedPt(s.pl)}</b></div></div>`;
       actsHtml = `<div class="acts">
-        <button class="btn in" data-act="entry">エントリー +1<br><small>${state.config.tourFee ?? 20}万</small></button>
-        <button class="btn in" data-act="reentry">リエントリー +1<br><small>${state.config.reentryFee ?? state.config.tourFee ?? 20}万</small></button>
-        <button class="btn out full" data-act="prize">賞金 OUT を入力</button></div>`;
+        <button class="btn in" data-act="entry">エントリー<br><small>${state.config.tourFee ?? 20}万</small></button>
+        <button class="btn in" data-act="reentry">リエントリー<br><small>${state.config.reentryFee ?? state.config.tourFee ?? 20}万</small></button>
+        <button class="btn out full" data-act="prize">賞金</button></div>`;
     } else {
       statHtml = `<div class="stat">
         <div><span>合計 IN</span><b>${s.in}<small> 万</small></b></div>
         <div><span>OUT</span><b>${s.out}<small> 万</small></b></div>
-        <div><span>収支</span><b class="${cls(s.pl)}">${K.signedPt(s.pl)}</b></div></div>
-        <div class="sub">${K.fmtYen(s.in, PY)} IN ／ ${K.fmtYen(s.out, PY)} OUT ／ ${s.ins.length} 回</div>`;
-      actsHtml = `<div class="acts"><button class="btn in" data-act="in">追加 IN</button><button class="btn out" data-act="out">OUT(精算)</button></div>`;
-      if (s.ins.length) insHtml = `<div class="ins">${s.ins.map(v => `<span class="${v < 0 ? 'neg' : ''}">${v}</span>`).join('')}</div>`;
+        <div><span>収支</span><b class="${cls(s.pl)}">${K.signedPt(s.pl)}</b></div></div>`;
+      actsHtml = `<div class="acts"><button class="btn in" data-act="in">IN</button><button class="btn out" data-act="out">OUT</button></div>`;
     }
-    const others = `<div class="others">
-      <b>バカラ</b> ${p.bac.in}万 IN → ${K.signedPt(p.bac.pl)} ／ <b>リング</b> ${p.cash.in}万 IN → ${K.signedPt(p.cash.pl)}<br>
-      <b>トーナメント</b> ${p.tour.e + p.tour.re}回 ${p.tour.in}万 IN → ${K.signedPt(p.tour.pl)} ／ <b>合計収支</b> <span class="${cls(p.total)}">${K.signedPt(p.total)}</span>
-      <div style="margin-top:6px"><button class="btn ghost" data-rename style="padding:6px 10px;font-size:12px">名前を変更</button></div></div>`;
+    // この人・このゲームの入力履歴(2回タップで削除)
+    const mine = state.txs.filter(t => Number(t.no) === no && t.game === game).sort((a, b) => b.ts - a.ts);
+    const hist = mine.length ? `<div class="card log mini">${mine.map(t => `<div class="row"><div class="t">${(K.TYPES[t.type] || t.type)} <b>${t.pt}万</b> <i style="display:inline;margin-left:6px">${new Date(t.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</i></div><button data-del="${t.id}">削除</button></div>`).join('')}</div>` : '';
     el.innerHTML = `<button class="close" data-close>✕</button>
-      <h2 class="g-${game}">No.${no} ${esc(p.name)} <small><span class="tag">${K.GAMES[game]}</span></small></h2>
-      ${statHtml}${insHtml}${pad ? renderPad(p) : actsHtml}${pad ? '' : others}`;
+      <h2 class="g-${game}">${no} ${esc(p.name)} <small><span class="tag">${K.GAMES[game]}</span></small></h2>
+      ${statHtml}${pad ? renderPad(p) : actsHtml + hist}`;
   }
 
   function renderPad(p) {
-    const label = { in: '追加 IN', out: 'OUT(精算)', prize: '賞金 OUT', dealerIn: '補充', dealerOut: '回収' }[pad.type] || pad.type;
+    const label = { in: 'IN', out: 'OUT', prize: '賞金', dealerIn: '補充', dealerOut: '回収' }[pad.type] || pad.type;
     const v = pad.value;
     const n = Number(v || 0) * (pad.neg ? -1 : 1);
     const s = p ? p[game] : null;
     let after = '';
-    if (s && pad.type === 'in') after = `→ 合計 IN ${s.in + n}万`;
-    if (s && pad.type === 'out') after = `→ OUT 合計 ${s.out + n}万 ／ 収支 ${K.signedPt(s.out + n - s.in)}`;
-    if (s && pad.type === 'prize') after = `→ 賞金 合計 ${s.out + n}万 ／ 収支 ${K.signedPt(s.out + n - s.in)}`;
+    if (s && pad.type === 'in') after = `合計 IN → ${s.in + n}万`;
+    if (s && (pad.type === 'out' || pad.type === 'prize')) after = `収支 → ${K.signedPt(s.out + n - s.in)}`;
     const quick = pad.type === 'in' || pad.type === 'dealerIn' ? [10, 20, 30, 50, 100] : [50, 100, 200, 300, 500];
     return `<div class="pad show">
-      <div class="disp"><div><div class="lbl">${label}</div><b class="num">${pad.neg ? '-' : ''}${v || 0}<small> 万</small></b></div><small>${K.fmtYen(n, PY)}<br>${after}</small></div>
+      <div class="disp"><div><div class="lbl">${label}</div><b class="num">${pad.neg ? '-' : ''}${v || 0}<small> 万</small></b></div><small>${after}</small></div>
       <div class="quick">${quick.map(q => `<button data-q="${q}">+${q}</button>`).join('')}</div>
       <div class="keys">
         ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(k => `<button data-k="${k}">${k}</button>`).join('')}
@@ -274,7 +268,7 @@
       }
       const no = openNo;
       closeSheet();
-      const label = { in: `追加 IN ${n}万`, out: `OUT ${n}万`, prize: `賞金 ${n}万` }[p.type];
+      const label = { in: `IN ${n}万`, out: `OUT ${n}万`, prize: `賞金 ${n}万` }[p.type];
       return send({ no, game, type: p.type === 'prize' ? 'prize' : p.type, pt: n }, label);
     }
   });
@@ -290,12 +284,19 @@
     const id = lastTx.id; lastTx = null; $('#toast').classList.remove('show');
     try { await refresh(await API.undo(date, id)); toast('取り消しました', ''); } catch (e) { toast('取り消せませんでした', e.message, true); }
   });
-  $('#logList').addEventListener('click', async e => {
-    const b = e.target.closest('[data-del]'); if (!b) return;
-    const t = state.txs.find(x => x.id === b.dataset.del);
-    if (!confirm(`削除しますか?\n${t ? (t.no ? `No.${t.no} ` : '') + K.describeTx(t) : ''}`)) return;
-    try { await refresh(await API.undo(date, b.dataset.del)); } catch (err) { toast('削除できませんでした', err.message, true); }
-  });
+  // 削除: 1回目で「消す?」に変わり、3秒以内にもう1回で削除
+  async function delTap(b) {
+    if (!b.classList.contains('arm')) {
+      document.querySelectorAll('[data-del].arm').forEach(x => { x.classList.remove('arm'); x.textContent = '削除'; });
+      b.classList.add('arm'); b.textContent = '消す?';
+      setTimeout(() => { if (b.isConnected) { b.classList.remove('arm'); b.textContent = '削除'; } }, 3000);
+      return;
+    }
+    b.disabled = true;
+    try { await refresh(await API.undo(date, b.dataset.del)); toast('削除しました', ''); } catch (err) { toast('削除できませんでした', err.message, true); }
+  }
+  $('#logList').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) delTap(b); });
+  $('#sheet').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { e.stopPropagation(); delTap(b); } }, true);
   $('#nav').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     tab = b.dataset.tab;
