@@ -171,7 +171,7 @@
     // 適用中のプライズ
     const prizes = K.parsePrizes(state.config);
     const pool = agg.totals.tour.in;
-    $('#prizeRows').innerHTML = prizes.map((v, i) => `<div class="prize-r"><span class="lbl">${K.rankLabel(i)}</span><span></span><b class="num">${K.fmtPt(v)}</b></div>`).join('')
+    $('#prizeRows').innerHTML = prizes.map((v, i) => `<div class="prize-r"><span class="lbl">${K.rankLabel(i)}</span>${jumpHtml(prizes, i)}<b class="num">${K.fmtPt(v)}</b></div>`).join('')
       || '<div class="prize-r" style="color:var(--text2);font-size:15px;grid-template-columns:1fr">まだ確定していません。上の「自動計算」から作れます。</div>';
     const ptotal = K.round1(prizes.reduce((a, b) => a + b, 0));
     $('#prizeTotal').textContent = K.fmtPt(ptotal);
@@ -437,10 +437,14 @@
   function renderDraft() {
     $('#pcDraft').classList.toggle('hide', !pc.draft);
     if (!pc.draft) return;
-    $('#pcRows').innerHTML = pc.draft.map((v, i) => `<div class="prize-r"><span class="lbl">${K.rankLabel(i)}</span><span></span><input data-pi="${i}" inputmode="decimal" value="${v}"></div>`).join('');
+    $('#pcRows').innerHTML = pc.draft.map((v, i) => `<div class="prize-r"><span class="lbl">${K.rankLabel(i)}</span><span data-jump="${i}"></span><input data-pi="${i}" inputmode="decimal" value="${v}"></div>`).join('');
     renderDraftSum();
   }
+  // プライズジャンプ = 1つ下の順位との差(1つ上がるといくら増えるか)
+  function jumpOf(list, i) { return i < list.length - 1 ? K.round1((Number(list[i]) || 0) - (Number(list[i + 1]) || 0)) : null; }
+  function jumpHtml(list, i) { const j = jumpOf(list, i); return `<span class="jump ${j != null && j < 0 ? 'neg' : ''}">${j == null ? '' : `ジャンプ ${K.signedPt(j)}`}</span>`; }
   function renderDraftSum() {
+    document.querySelectorAll('#pcRows [data-jump]').forEach(el => { const i = Number(el.dataset.jump), j = jumpOf(pc.draft, i); el.className = 'jump' + (j != null && j < 0 ? ' neg' : ''); el.textContent = j == null ? '' : `ジャンプ ${K.signedPt(j)}`; });
     const sum = K.round1(pc.draft.reduce((a, b) => a + (Number(b) || 0), 0)), pool = agg.totals.tour.in, diff = K.round1(pool - sum);
     $('#pcSum').textContent = K.fmtPt(sum);
     $('#pcDiff').textContent = diff === 0 ? 'プールとぴったり' : `プールとの差 ${K.signedPt(diff)}`;
