@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f2f2f7">
 <title>casa 貸卓 — ボード</title>
 <link rel="icon" href="icon-180.png" type="image/png">
-<link rel="stylesheet" href="css/style.css?v=202610222222">
+<link rel="stylesheet" href="css/style.css?v=202610222233">
 <style>
   body { padding: 22px 26px 34px; }
   header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; margin-bottom: 18px; }
@@ -100,10 +100,10 @@
   </aside>
 </div>
 
-<script src="config.js?v=202610222222"></script>
-<script src="js/model.js?v=202610222222"></script>
-<script src="js/api.js?v=202610222222"></script>
-<script src="js/image.js?v=202610222222"></script>
+<script src="config.js?v=202610222233"></script>
+<script src="js/model.js?v=202610222233"></script>
+<script src="js/api.js?v=202610222233"></script>
+<script src="js/image.js?v=202610222233"></script>
 <script>
 (() => {
   const K = Kashitaku, API = KashitakuAPI, CFG = KASHITAKU_CONFIG, PY = CFG.POINT_YEN || 10000;
@@ -137,7 +137,7 @@
     $('#tiles').innerHTML = `
       <div class="tile tour"><span>トーナメント 総エントリー ／ 残り</span><b>${t.tour.e + t.tour.re}<small>回</small> ／ ${t.tour.active}<small>人</small></b><i>エントリー ${t.tour.e} ／ リエントリー ${t.tour.re} ／ 1回 ${state.config.tourFee ?? 20}万</i></div>
       <div class="tile tour"><span>プライズプール</span><b>${n(t.tour.in)}<small>万</small></b><i>${(() => { const pz = K.parsePrizes(state.config); return pz.length ? pz.map((v, i) => `${K.rankLabel(i)} ${n(v)}`).join(' ／ ') + ` ／ 計 ${n(pz.reduce((a, b) => a + b, 0))}` : `${K.fmtYen(t.tour.in, PY)} ／ 賞金済 ${n(t.tour.out)}万`; })()}</i></div>
-      <div class="tile bac"><span>バカラ 店側</span><b class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}<small>万</small></b><i>IN ${n(t.bac.in)} ／ OUT ${n(t.bac.out)} ／ ディーラー 補充${n(d.bac.in)} 回収${n(d.bac.out)}</i></div>
+      <div class="tile bac"><span>バカラ 店側</span><b class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}<small>万</small></b><i>IN ${n(t.bac.in)} ／ OUT ${n(t.bac.out)} ／ バカラディーラー 補充${n(d.bac.in)} 回収${n(d.bac.out)}</i></div>
       <div class="tile cash"><span>リング 店側</span><b class="${cls(-t.cash.pl)}">${sp(-t.cash.pl)}<small>万</small></b><i>IN ${n(t.cash.in)} ／ OUT ${n(t.cash.out)}</i></div>
       <div class="tile tour"><span>トーナメント 店側</span><b class="${cls(-t.tour.pl)}">${sp(-t.tour.pl)}<small>万</small></b><i>IN ${n(t.tour.in)} ／ OUT ${n(t.tour.out)}</i></div>
       <div class="tile gold"><span>店側 合計</span><b>${sp(t.house)}<small>万</small></b><i>${K.signedYen(t.house, PY)} ／ 参加 ${agg.players.filter(p => p.name).length} 名</i></div>`;
@@ -166,7 +166,7 @@
     </tr>`).join('');
     if (!rows.length) html += `<tr><td colspan="16" class="empty">まだ入力はありません</td></tr>`;
     const dealerTotal = d.bac.pl;
-    html += `<tr class="dealer"><td></td><td class="l name">バカラ ディーラー</td><td class="sep total ${cls(dealerTotal)}">${sp(dealerTotal)}</td>
+    html += `<tr class="dealer"><td></td><td class="l name">バカラディーラー</td><td class="sep total ${cls(dealerTotal)}">${sp(dealerTotal)}</td>
       <td class="sep ins">${insTxt(d.bac.ins)}</td><td>${n(d.bac.in)}</td><td>${n(d.bac.out)}</td><td class="${cls(d.bac.pl)}">${sp(d.bac.pl)}</td>
       <td class="sep"></td><td></td><td></td><td></td>
       <td class="sep"></td><td></td><td></td><td></td><td></td></tr>`;

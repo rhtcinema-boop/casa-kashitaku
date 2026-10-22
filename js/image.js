@@ -70,7 +70,7 @@
     const house = -t.players;
     x.textAlign = 'left'; x.font = font(16); x.fillStyle = '#8e8e93';
     x.fillText(`店側収支   バカラ ${sp(-t.bac.pl)}   リング ${sp(-t.cash.pl)}   トーナメント ${sp(-t.tour.pl)}`, 40, y + 20);
-    x.fillText(`バカラ ディーラー チップ   補充 ${fp(d.bac.in)} / 回収 ${fp(d.bac.out)}   差 ${sp(d.bac.in - d.bac.out)}`, 40, y + 50);
+    x.fillText(`バカラディーラー チップ   補充 ${fp(d.bac.in)} / 回収 ${fp(d.bac.out)}   差 ${sp(d.bac.in - d.bac.out)}`, 40, y + 50);
     const pz = K.parsePrizes(agg.config);
     if (pz.length) x.fillText(`プライズ   ${pz.map((v, i) => `${K.rankLabel(i)} ${fp(v)}`).join('   ')}   (計 ${fp(pz.reduce((a, b) => a + b, 0))} / プール ${fp(t.tour.in)})`, 40, y + 76);
     x.font = font(30, 700); x.fillStyle = colorOf(house);

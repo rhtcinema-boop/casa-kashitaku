@@ -2,7 +2,7 @@
 // tx: { id, ts, date, no, game: 'bac'|'cash'|'tour'|'dealer', type: 'in'|'out'|'entry'|'reentry'|'prize', pt(万), by }
 // 1万 = 1万円。IN は買い込み/エントリー、OUT は精算/賞金。ディーラーは game='dealer' で IN=補充(+/-)、OUT=回収。
 (function (g) {
-  const GAMES = { bac: 'バカラ', cash: 'リング', tour: 'トーナメント', dealer: 'ディーラー' };
+  const GAMES = { bac: 'バカラ', cash: 'リング', tour: 'トーナメント', dealer: 'バカラディーラー' };
   const TYPES = { in: 'IN', out: 'OUT', entry: 'エントリー', reentry: 'リエントリー', prize: '賞金', bust: '飛び' };
 
   function emptyPlayer(no, name) {
@@ -76,7 +76,7 @@
   }
   function describeTx(t) {
     const g = GAMES[t.game] || t.game;
-    if (t.game === 'dealer') return `ディーラー チップ${t.type === 'in' ? '補充' : '回収'} ${signedPt(t.pt)}`;
+    if (t.game === 'dealer') return `バカラディーラー チップ${t.type === 'in' ? '補充' : '回収'} ${signedPt(t.pt)}`;
     if (t.type === 'bust') return `${g} 飛び`;
     if (t.type === 'prize' && t.table) return `${g} ${t.table} 賞金 ${fmtPt(t.pt)}`;
     return `${g} ${TYPES[t.type] || t.type} ${fmtPt(t.pt)}`;

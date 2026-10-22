@@ -316,7 +316,7 @@
     const b = e.target.closest('[data-dealer]'); if (!b) return;
     openNo = 0; pad = { type: b.dataset.type === 'in' ? 'dealerIn' : 'dealerOut', table: b.dataset.dealer, value: '', allowNeg: true, neg: false };
     $('#sheet').classList.add('show');
-    $('#panel').innerHTML = `<button class="close" data-close>✕</button><h2 class="g-dealer">ディーラー チップ <small><span class="tag">${b.dataset.type === 'in' ? '補充' : '回収'}</span></small></h2>${renderPad(null)}`;
+    $('#panel').innerHTML = `<button class="close" data-close>✕</button><h2 class="g-dealer">バカラディーラー チップ <small><span class="tag">${b.dataset.type === 'in' ? '補充' : '回収'}</span></small></h2>${renderPad(null)}`;
   });
   $('#sheet').addEventListener('click', async e => {
     const t = e.target;
@@ -365,7 +365,7 @@
       const p = pad; pad = null;
       if (openNo === 0) {
         closeSheet();
-        return send({ game: 'dealer', table: 'bac', type: p.type === 'dealerIn' ? 'in' : 'out', pt: n }, `ディーラー チップ${p.type === 'dealerIn' ? '補充' : '回収'} ${K.signedPt(n)}`);
+        return send({ game: 'dealer', table: 'bac', type: p.type === 'dealerIn' ? 'in' : 'out', pt: n }, `バカラディーラー チップ${p.type === 'dealerIn' ? '補充' : '回収'} ${K.signedPt(n)}`);
       }
       const no = openNo;
       closeSheet();
