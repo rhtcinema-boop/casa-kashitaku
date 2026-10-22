@@ -3,8 +3,10 @@
 ## URL
 - スマホ入力: https://rhtcinema-boop.github.io/casa-kashitaku/
 - PC ボード: https://rhtcinema-boop.github.io/casa-kashitaku/board.html
+- 反映先シート「casa 貸卓 収支」: https://docs.google.com/spreadsheets/d/1kX57NeQ3TtNA83BpIjmS61Wfb91kuN3PeOxjig0fYSY/edit
+- Apps Script(上のシートに付属): シートの「拡張機能 → Apps Script」。デプロイ済み(全員アクセス)
 
-## Google シート接続(1回だけ)
+## Google シート接続(済み。作り直す場合)
 1. スプレッドシート →「拡張機能」→「Apps Script」に `gas/Code.gs` を貼り付けて保存
 2. 「デプロイ」→「新しいデプロイ」→ 種類「ウェブアプリ」
    - 次のユーザーとして実行: 自分
