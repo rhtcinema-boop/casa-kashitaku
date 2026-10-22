@@ -99,6 +99,28 @@
   .log .row:first-child { border-top: 0; }
   .log .row .t { font-size: 15px; } .log .row .t i { display: block; font-style: normal; font-size: 12px; color: var(--dim); margin-top: 2px; }
   .log .row button { border: 1px solid #6a2a20; background: #2a120f; color: #ffb3a8; border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+  .hright { display: flex; align-items: center; gap: 8px; }
+  .syncbtn { display: flex; flex-direction: column; align-items: center; border: 1px solid #3a3320; background: #15120a; color: #cfd6cc; border-radius: 10px; padding: 5px 12px; min-width: 76px; }
+  .syncbtn b { font-size: 14px; }
+  .syncbtn small { font-size: 10px; color: var(--dim); margin-top: 1px; white-space: nowrap; }
+  .syncbtn.dirty { background: linear-gradient(180deg, #ffe9a8, #c9a03e); color: #1a1408; border-color: #c9a03e; }
+  .syncbtn.dirty small { color: #3a2a08; font-weight: 700; }
+  .syncbtn.spin { opacity: .6; pointer-events: none; }
+  .sheetbtn { border: 1px solid #2f4a2a; background: #11190f; color: #b9f0b0; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 700; text-decoration: none; }
+  .tourbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+  .tourbar div { background: rgba(199, 125, 255, .1); border: 1px solid #5a3a7a; border-radius: 12px; padding: 8px; text-align: center; }
+  .tourbar span { display: block; font-size: 11px; color: var(--dim); }
+  .tourbar b { font-size: 24px; color: #e4c8ff; }
+  .tourbar small { font-size: 12px; color: var(--dim); font-weight: 400; margin-left: 2px; }
+  .acts .btn.re { background: #16213a; border-color: #2a4a7a; color: #b0ccf0; }
+  .acts .btn.bust { background: #1a1a1a; border-color: #444; color: #ccc; }
+  .acts .btn.bust[disabled] { opacity: .35; }
+  .ranks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+  .ranks .rank { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 4px; background: #2a1c16; border-color: #6a3a2a; color: #f0c8b0; }
+  .ranks .rank span { font-size: 13px; color: var(--dim); }
+  .ranks .rank b { font-size: 20px; }
+  .ranks .rank i { font-style: normal; font-size: 11px; color: var(--dim); }
+  .ranks .rank[disabled] { opacity: .35; }
   .log .row button.arm { background: #c0392b; color: #fff; border-color: #c0392b; }
   .log.mini { margin-top: 4px; max-height: 40vh; overflow: auto; }
   .log.mini .row { padding: 8px 12px; }
@@ -134,7 +156,7 @@
 <div class="wrap">
   <header>
     <div><h1>casa 貸卓</h1><div class="date" id="hDate"></div></div>
-    <div class="status" id="status">…</div>
+    <div class="hright"><div class="status" id="status"></div><a class="sheetbtn" id="hSheet" target="_blank" rel="noopener">シート</a><button class="syncbtn" id="syncBtn"><b>⟳ 同期</b><small id="syncCount"></small></button></div>
   </header>
 
   <!-- 入力タブ -->
@@ -145,6 +167,7 @@
       <button data-game="tour" class="g-tour">トーナメント</button>
       <button data-game="dealer" class="g-dealer">ディーラー</button>
     </div>
+    <div class="tourbar" id="tourBar" style="display:none"></div>
     <div class="grid" id="grid"></div>
     <div class="card" id="dealerBox" style="display:none; padding: 14px;">
       <div style="font-size:13px;color:var(--dim);margin-bottom:8px;">バカラ卓のディーラー手元チップの増減を記録します。補充(+)・回収(-)、マイナス入力も可。</div>

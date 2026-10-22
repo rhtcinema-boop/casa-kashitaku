@@ -101,7 +101,7 @@
 
   async function refresh() {
     try {
-      state = await API.getState(date);
+      state = await API.fetchState(date);
       agg = K.aggregate(state.players, state.txs, state.config);
       $('#status').innerHTML = `<b>${API.mode === 'gas' ? 'シート接続中' : 'テストモード'}</b><br>${new Date().toLocaleTimeString('ja-JP')} 更新`;
       render();
@@ -118,7 +118,7 @@
     sel.innerHTML = dates.map(x => `<option value="${x}" ${x === date ? 'selected' : ''}>${x}</option>`).join('');
     // タイル
     $('#tiles').innerHTML = `
-      <div class="tile tour"><span>トーナメント エントリー</span><b>${t.tour.e + t.tour.re}<small>回</small></b><i>エントリー ${t.tour.e} ／ リエントリー ${t.tour.re} ／ 1回 ${state.config.tourFee ?? 20}万</i></div>
+      <div class="tile tour"><span>トーナメント 総エントリー ／ 残り</span><b>${t.tour.e + t.tour.re}<small>回</small> ／ ${t.tour.active}<small>人</small></b><i>エントリー ${t.tour.e} ／ リエントリー ${t.tour.re} ／ 1回 ${state.config.tourFee ?? 20}万</i></div>
       <div class="tile tour"><span>プライズプール</span><b>${n(t.tour.in)}<small>万</small></b><i>${(() => { const pz = K.parsePrizes(state.config); return pz.length ? pz.map((v, i) => `${K.rankLabel(i)} ${n(v)}`).join(' ／ ') + ` ／ 計 ${n(pz.reduce((a, b) => a + b, 0))}` : `${K.fmtYen(t.tour.in, PY)} ／ 賞金済 ${n(t.tour.out)}万`; })()}</i></div>
       <div class="tile bac"><span>バカラ 店側</span><b class="${cls(-t.bac.pl)}">${sp(-t.bac.pl)}<small>万</small></b><i>IN ${n(t.bac.in)} ／ OUT ${n(t.bac.out)} ／ ディーラー 補充${n(d.bac.in)} 回収${n(d.bac.out)}</i></div>
       <div class="tile cash"><span>リング 店側</span><b class="${cls(-t.cash.pl)}">${sp(-t.cash.pl)}<small>万</small></b><i>IN ${n(t.cash.in)} ／ OUT ${n(t.cash.out)}</i></div>
@@ -179,7 +179,7 @@
     $('#preview').innerHTML = ''; $('#preview').appendChild(c);
     await KashitakuImage.shareCanvas(c, `casa貸卓_${date}.png`);
   });
-  setInterval(() => { if (!document.hidden) refresh(); }, API.mode === 'gas' ? 5000 : 2000);
+  setInterval(() => { if (!document.hidden) refresh(); }, API.mode === 'gas' ? 8000 : 2000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   refresh();
 })();

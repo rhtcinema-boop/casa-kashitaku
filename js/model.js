@@ -3,14 +3,14 @@
 // 1万 = 1万円。IN は買い込み/エントリー、OUT は精算/賞金。ディーラーは game='dealer' で IN=補充(+/-)、OUT=回収。
 (function (g) {
   const GAMES = { bac: 'バカラ', cash: 'リング', tour: 'トーナメント', dealer: 'ディーラー' };
-  const TYPES = { in: 'IN', out: 'OUT', entry: 'エントリー', reentry: 'リエントリー', prize: '賞金' };
+  const TYPES = { in: 'IN', out: 'OUT', entry: 'エントリー', reentry: 'リエントリー', prize: '賞金', bust: '飛び' };
 
   function emptyPlayer(no, name) {
     return {
       no, name: name || '',
       bac: { ins: [], in: 0, out: 0, pl: 0 },
       cash: { ins: [], in: 0, out: 0, pl: 0 },
-      tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0 },
+      tour: { e: 0, re: 0, ins: [], in: 0, out: 0, pl: 0, alive: false },
       total: 0,
     };
   }
@@ -32,9 +32,10 @@
       if (!map.has(no)) map.set(no, emptyPlayer(no, ''));
       const p = map.get(no);
       if (t.game === 'tour') {
-        if (t.type === 'entry') { p.tour.e += 1; p.tour.ins.push(pt); p.tour.in += pt; }
-        else if (t.type === 'reentry') { p.tour.re += 1; p.tour.ins.push(pt); p.tour.in += pt; }
-        else if (t.type === 'prize' || t.type === 'out') p.tour.out += pt;
+        if (t.type === 'entry') { p.tour.e += 1; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
+        else if (t.type === 'reentry') { p.tour.re += 1; p.tour.ins.push(pt); p.tour.in += pt; p.tour.alive = true; }
+        else if (t.type === 'bust') p.tour.alive = false;
+        else if (t.type === 'prize' || t.type === 'out') { p.tour.out += pt; p.tour.alive = false; }
       } else if (t.game === 'bac' || t.game === 'cash') {
         const s = p[t.game];
         if (t.type === 'in') { s.ins.push(pt); s.in += pt; } else if (t.type === 'out') s.out += pt;
@@ -59,6 +60,8 @@
     totals.players = totals.bac.pl + totals.cash.pl + totals.tour.pl;
     totals.house = -totals.players; // 店側
     totals.tourPool = totals.tour.in; // プライズプール(万)
+    totals.tour.active = list.filter(p => p.tour.alive).length; // 残り人数
+    totals.tour.players = list.filter(p => p.tour.e + p.tour.re > 0).length;
     return { players: list, dealer, totals, config: config || {} };
   }
 
@@ -73,6 +76,8 @@
   function describeTx(t) {
     const g = GAMES[t.game] || t.game;
     if (t.game === 'dealer') return `ディーラー チップ${t.type === 'in' ? '補充' : '回収'} ${signedPt(t.pt)}`;
+    if (t.type === 'bust') return `${g} 飛び`;
+    if (t.type === 'prize' && t.table) return `${g} ${t.table} 賞金 ${fmtPt(t.pt)}`;
     return `${g} ${TYPES[t.type] || t.type} ${fmtPt(t.pt)}`;
   }
 

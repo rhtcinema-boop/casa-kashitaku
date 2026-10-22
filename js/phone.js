@@ -17,19 +17,31 @@
 
   // ---------- 読み込み ----------
   async function refresh(st) {
+    state = st || API.view(date);
+    agg = K.aggregate(state.players, state.txs, state.config);
+    setStatus();
+    render();
+  }
+  // 同期: 未同期分をまとめてシートへ送り、最新を取り込む
+  async function doSync(quiet) {
+    if (API.isSyncing()) return;
+    const promise = API.sync(date);
+    setStatus();
     try {
-      state = st || await API.getState(date);
-      agg = K.aggregate(state.players, state.txs, state.config);
-      setStatus(true);
-      render();
+      await refresh(await promise);
+      if (!quiet) toast('同期しました', 'シートと同じ状態です');
     } catch (e) {
-      setStatus(false, e.message);
+      refresh();
+      toast('同期できませんでした', '入力は端末に残っています。電波を確認してもう一度押してください', true);
     }
   }
-  function setStatus(ok, msg) {
-    $('#status').innerHTML = ok
-      ? `<b>${API.mode === 'gas' ? 'シート接続中' : 'テストモード'}</b><br>${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} 更新`
-      : `<b class="off">接続エラー</b><br>${esc(msg || '')}`;
+  const hm = t => new Date(t).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  function setStatus() {
+    const n = state.pendingTotal || 0, btn = $('#syncBtn');
+    btn.classList.toggle('dirty', n > 0);
+    btn.classList.toggle('spin', API.isSyncing());
+    $('#syncCount').textContent = API.isSyncing() ? '同期中…' : n ? `未同期 ${n}` : (state.syncedAt ? `${hm(state.syncedAt)} 済` : '未同期');
+    $('#status').textContent = API.mode === 'gas' ? '' : 'テストモード';
   }
   const playerOf = no => agg.players.find(p => p.no === no) || K.emptyPlayer(no, (state.players.find(p => Number(p.no) === no) || {}).name);
   const nameOf = no => (state.players.find(p => Number(p.no) === no) || {}).name || '';
@@ -38,6 +50,7 @@
   // ---------- 描画 ----------
   function render() {
     $('#hDate').textContent = date + (date === K.todayJST() ? '(今日)' : '');
+    $('#hSheet').href = CFG.SHEET_URL || '#';
     document.querySelectorAll('#games button').forEach(b => b.classList.toggle('on', b.dataset.game === game));
     renderGrid();
     renderLog();
@@ -55,12 +68,15 @@
       return;
     }
     grid.style.display = 'grid'; dealer.style.display = 'none';
+    const tb = $('#tourBar'), tt = agg.totals.tour;
+    tb.style.display = game === 'tour' ? 'grid' : 'none';
+    if (game === 'tour') tb.innerHTML = `<div><span>総エントリー</span><b>${tt.e + tt.re}</b></div><div><span>残り</span><b>${tt.active}<small>人</small></b></div><div><span>プール</span><b>${tt.in}<small>万</small></b></div>`;
     let html = '';
     for (let no = 1; no <= CFG.MAX_NO; no++) {
       const p = playerOf(no), reg = isReg(no);
       const s = p[game];
       let st = '';
-      if (game === 'tour') { const n = s.e + s.re; if (n) st = `${n}回 ${s.in}万`; }
+      if (game === 'tour') { const n = s.e + s.re; if (n) st = s.alive ? `${n}回 ${s.in}万` : (s.out ? `賞金 ${s.out}万` : '飛び'); }
       else if (s.in || s.out) st = `${s.in}万${s.out ? ` → ${s.out}` : ''}`;
       const act = !!st;
       html += `<button class="cell g-${game} ${reg ? 'reg' : 'empty'} ${act ? 'act' : ''}" data-no="${no}">
@@ -150,8 +166,9 @@
         <div><span>収支</span><b class="${cls(s.pl)}">${K.signedPt(s.pl)}</b></div></div>`;
       actsHtml = `<div class="acts">
         <button class="btn in" data-act="entry">エントリー<br><small>${state.config.tourFee ?? 20}万</small></button>
-        <button class="btn in" data-act="reentry">リエントリー<br><small>${state.config.reentryFee ?? state.config.tourFee ?? 20}万</small></button>
-        <button class="btn out full" data-act="prize">賞金</button></div>`;
+        <button class="btn re" data-act="reentry">リエントリー<br><small>${state.config.reentryFee ?? state.config.tourFee ?? 20}万</small></button>
+        <button class="btn bust" data-act="bust" ${s.alive ? '' : 'disabled'}>飛び</button>
+        <button class="btn out" data-act="prize">賞金</button></div>`;
     } else {
       statHtml = `<div class="stat">
         <div><span>合計 IN</span><b>${s.in}<small> 万</small></b></div>
@@ -161,10 +178,24 @@
     }
     // この人・このゲームの入力履歴(2回タップで削除)
     const mine = state.txs.filter(t => Number(t.no) === no && t.game === game).sort((a, b) => b.ts - a.ts);
-    const hist = mine.length ? `<div class="card log mini">${mine.map(t => `<div class="row"><div class="t">${(K.TYPES[t.type] || t.type)} <b>${t.pt}万</b> <i style="display:inline;margin-left:6px">${new Date(t.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</i></div><button data-del="${t.id}">削除</button></div>`).join('')}</div>` : '';
+    const hist = mine.length ? `<div class="card log mini">${mine.map(t => `<div class="row"><div class="t">${t.type === 'prize' && t.table ? t.table + ' ' : ''}${(K.TYPES[t.type] || t.type)} ${t.type === 'bust' ? '' : `<b>${t.pt}万</b>`} <i style="display:inline;margin-left:6px">${new Date(t.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</i></div><button data-del="${t.id}">削除</button></div>`).join('')}</div>` : '';
     el.innerHTML = `<button class="close" data-close>✕</button>
       <h2 class="g-${game}">${no} ${esc(p.name)} <small><span class="tag">${K.GAMES[game]}</span></small></h2>
-      ${statHtml}${pad ? renderPad(p) : actsHtml + hist}`;
+      ${statHtml}${pad ? (pad.type === 'rank' ? renderRanks() : renderPad(p)) : actsHtml + hist}`;
+  }
+
+  // 賞金: 順位を押すだけ。すでに出た順位は「済」で押せない
+  function renderRanks() {
+    const prizes = K.parsePrizes(state.config);
+    if (!prizes.length) return `<div class="empty">設定タブでプライズ(順位ごとの賞金)を入れてください</div>
+      <div class="confirm" style="grid-template-columns:1fr"><button class="btn" data-padcancel>戻る</button></div>`;
+    const done = {};
+    state.txs.filter(t => t.game === 'tour' && t.type === 'prize' && t.table).forEach(t => { done[t.table] = t.no; });
+    return `<div class="ranks">${prizes.map((v, i) => {
+      const label = K.rankLabel(i), who = done[label];
+      return `<button class="btn rank" data-rank="${i}" ${who != null ? 'disabled' : ''}><span>${label}</span><b>${v}万</b>${who != null ? `<i>済 ${who}番</i>` : ''}</button>`;
+    }).join('')}</div>
+      <div class="confirm" style="grid-template-columns:1fr"><button class="btn" data-padcancel>戻る</button></div>`;
   }
 
   function renderPad(p) {
@@ -190,7 +221,6 @@
   // ---------- 送信 ----------
   async function send(tx, label) {
     if (busy) return; busy = true;
-    lastTx = null; toast('送信中…', label);
     try {
       const st = await API.addTx(date, tx);
       await refresh(st);
@@ -207,7 +237,7 @@
         t2 = `補充 ${d.in}万 ／ 回収 ${d.out}万`;
       }
       toast(`${p ? `No.${p.no} ${esc(p.name)} ` : ''}${label}`, t2);
-    } catch (e) { toast('送信できませんでした', e.message, true); }
+    } catch (e) { toast('記録できませんでした', e.message, true); }
     finally { busy = false; }
   }
 
@@ -239,7 +269,14 @@
         const fee = a === 'entry' ? (state.config.tourFee ?? 20) : (state.config.reentryFee ?? state.config.tourFee ?? 20);
         return send({ no: openNo, game: 'tour', type: a, pt: Number(fee) }, `${a === 'entry' ? 'エントリー' : 'リエントリー'} +1(${fee}万)`);
       }
-      pad = { type: a, value: '', allowNeg: false, neg: false }; return renderPanel();
+      if (a === 'bust') return send({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び');
+      pad = a === 'prize' ? { type: 'rank' } : { type: a, value: '', allowNeg: false, neg: false }; return renderPanel();
+    }
+    const rk = t.closest('[data-rank]');
+    if (rk) {
+      const i = Number(rk.dataset.rank), pt = K.parsePrizes(state.config)[i], label = K.rankLabel(i);
+      pad = null;
+      return send({ no: openNo, game: 'tour', type: 'prize', pt, table: label }, `${label} 賞金 ${pt}万`);
     }
     if (t.closest('[data-rename]')) {
       const cur = nameOf(openNo);
@@ -305,7 +342,7 @@
     if (tab !== 'sum') $('#preview').innerHTML = '';
     refresh();
   });
-  $('#setDate').addEventListener('change', e => { date = e.target.value || K.todayJST(); localStorage.setItem('kt.date', date); refresh(); });
+  $('#setDate').addEventListener('change', e => { date = e.target.value || K.todayJST(); localStorage.setItem('kt.date', date); rosterSig = null; refresh(); doSync(true); });
   async function askFee(key, label) {
     const cur = state.config[key] ?? 20;
     const v = prompt(`${label}(万)`, cur);
@@ -350,7 +387,7 @@
   $('#clearDay').addEventListener('click', async () => {
     if (!confirm(`${date} のデータをすべて消去します。元に戻せません。よろしいですか?`)) return;
     if (!confirm('本当に消去しますか?')) return;
-    try { await refresh(await API.clearDay(date)); toast('消去しました', ''); } catch (e) { toast('消去できませんでした', e.message, true); }
+    try { await refresh(await API.clearDay(date)); rosterSig = null; refresh(); toast('消去しました', ''); } catch (e) { toast('消去できませんでした', e.message, true); }
   });
   $('#makeImage').addEventListener('click', async () => {
     const c = KashitakuImage.renderSummary(agg, date);
@@ -359,8 +396,8 @@
     if (r === 'downloaded') toast('画像を保存しました', '写真/ダウンロードを確認してください');
   });
 
-  // 定期更新(他のスマホの入力を拾う)
-  setInterval(() => { if (!document.hidden && !busy && !$('#sheet').classList.contains('show')) refresh(); }, API.mode === 'gas' ? 15000 : 3000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  $('#syncBtn').addEventListener('click', () => doSync(false));
+  // 開いたときに1回だけ同期(他のスマホの入力を取り込む)
   refresh();
+  doSync(true);
 })();

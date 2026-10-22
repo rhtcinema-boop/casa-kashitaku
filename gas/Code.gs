@@ -36,6 +36,7 @@ function doPost(e) {
       case 'config': setConfig(date, body.config || {}); break;
       case 'newDay': ensureDaySheet(date); break;
       case 'clearDay': clearDay(date); break;
+      case 'batch': batch(date, body.ops || [], body.by); break;
       default: return json({ error: 'unknown op: ' + body.op });
     }
     if (body.op !== "clearDay") renderDay(date);
@@ -71,9 +72,44 @@ function register(date, no, name) {
   var sh = sheet(SpreadsheetApp.getActive(), '名簿', ROSTER_HEAD);
   var vals = sh.getDataRange().getValues();
   for (var i = 1; i < vals.length; i++) {
-    if (dstr(vals[i][0]) === date && Number(vals[i][1]) === Number(no)) { sh.getRange(i + 1, 3).setValue(name); return; }
+    if (dstr(vals[i][0]) === date && Number(vals[i][1]) === Number(no)) {
+      if (!name) sh.deleteRow(i + 1); else sh.getRange(i + 1, 3).setValue(name);
+      return;
+    }
   }
-  sh.appendRow([date, Number(no), name]);
+  if (name) sh.appendRow([date, Number(no), name]);
+}
+
+// まとめて反映(スマホの「同期」)。同じ id の入力は二重に記録しない
+function batch(date, ops, by) {
+  var ss = SpreadsheetApp.getActive();
+  var logSh = sheet(ss, 'ログ', LOG_HEAD);
+  var logVals = logSh.getDataRange().getValues();
+  var idRow = {};
+  for (var i = 1; i < logVals.length; i++) idRow[String(logVals[i][0])] = i + 1;
+  var names = {};
+  rowsOf(sheet(ss, '名簿', ROSTER_HEAD)).forEach(function (r) { if (r.date === date) names[Number(r.no)] = r.name; });
+  var newRows = [], newIdx = {};
+  ops.forEach(function (op) {
+    if (op.op === 'register') { register(date, op.no, op.name); names[Number(op.no)] = op.name; }
+    else if (op.op === 'config') setConfig(date, op.config || {});
+    else if (op.op === 'tx') {
+      var tx = op.tx || {}, id = String(tx.id || Utilities.getUuid());
+      if (idRow[id] || newIdx[id] != null) return;
+      var dealer = tx.game === 'dealer';
+      newIdx[id] = newRows.length;
+      newRows.push([id, Number(tx.ts) || Date.now(), date, dealer ? '' : Number(tx.no), dealer ? '' : (names[Number(tx.no)] || ''), tx.game, tx.table || '', tx.type, Number(tx.pt) || 0, tx.by || by || '', 0]);
+    } else if (op.op === 'undo') {
+      var uid = String(op.id);
+      if (idRow[uid]) logSh.getRange(idRow[uid], 11).setValue(1);
+      else if (newIdx[uid] != null) newRows[newIdx[uid]][10] = 1;
+    }
+  });
+  if (newRows.length) {
+    var start = logSh.getLastRow() + 1;
+    logSh.getRange(start, 1, newRows.length, 3).setNumberFormat('@');
+    logSh.getRange(start, 1, newRows.length, LOG_HEAD.length).setValues(newRows.map(function (r) { r[0] = String(r[0]); r[1] = String(r[1]); return r; }));
+  }
 }
 
 function addTx(date, tx, by) {
