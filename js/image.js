@@ -27,6 +27,7 @@
     ];
     if (has.bac) cols.push(
       { t: 'バカラ IN', w: 110, a: 'right', hc: '#007aff', v: p => fp(p.bac.in), dim: p => !p.bac.in, tot: () => fp(Math.round((t.bac.in + dl.in) * 10) / 10) },
+      { t: 'OUT', w: 100, a: 'right', hc: '#007aff', v: p => fp(p.bac.out), dim: p => !p.bac.out, tot: () => fp(Math.round((t.bac.out + dl.out) * 10) / 10) },
       { t: '収支', w: 100, a: 'right', v: p => sp(p.bac.pl), c: p => colorOf(p.bac.pl), tot: () => sp(t.bacDiff) });
     if (has.cash) cols.push(
       { t: 'リング IN', w: 110, a: 'right', hc: '#30b0c7', v: p => fp(p.cash.in), dim: p => !p.cash.in, tot: () => fp(t.cash.in) },

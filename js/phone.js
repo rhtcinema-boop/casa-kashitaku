@@ -170,7 +170,7 @@
   // 遊んだゲームだけ並べる(0万のゲームは出さない)
   function sumParts(p) {
     const parts = [];
-    if (p.bac.in || p.bac.out) parts.push(`バカラ IN ${K.fmtPt(p.bac.in)} ${K.signedPt(p.bac.pl)}`);
+    if (p.bac.in || p.bac.out) parts.push(`バカラ IN ${K.fmtPt(p.bac.in)} OUT ${K.fmtPt(p.bac.out)} ${K.signedPt(p.bac.pl)}`);
     if (p.cash.in || p.cash.out) parts.push(`リング IN ${K.fmtPt(p.cash.in)} ${K.signedPt(p.cash.pl)}`);
     if (p.tour.e + p.tour.re) parts.push(`トナメ ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b>` : ''} ${K.signedPt(p.tour.pl)}`);
     return parts.join(' ／ ') || 'まだ入力なし';
