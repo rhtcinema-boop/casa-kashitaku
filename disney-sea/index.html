@@ -1,0 +1,702 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>シー立ち回りナビ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Oswald:wght@500;600&display=swap">
+<style>
+/* Layout: one-screen phone app. Sticky header (clock, area chips, DPA timer), scrolling panel, bottom tabs. */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --fg:#13202e; --muted:#5d6b7a; --line:#d9e0e7;
+  --accent:#0b5fa5; --accent-fg:#ffffff; --sea:#e3f0fa;
+  --ok:#1f8a4c; --ok-bg:#e2f5e8; --warn:#b26a00; --warn-bg:#fff1d6; --bad:#b3261e; --bad-bg:#fbe3e1;
+  --dpa:#6b3fa0; --dpa-bg:#efe6fa; --must:#c2410c; --must-bg:#ffe8dc;
+  --display:"Oswald","Zen Kaku Gothic New",system-ui,sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0d1620; --panel:#162330; --fg:#e8eef4; --muted:#9db0c2; --line:#2a3a4b;
+  --accent:#5fb3ff; --accent-fg:#06192b; --sea:#17304a;
+  --ok:#5fd48f; --ok-bg:#133a25; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
+  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ffb08a; --must-bg:#47261a; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0d1620; --panel:#162330; --fg:#e8eef4; --muted:#9db0c2; --line:#2a3a4b;
+  --accent:#5fb3ff; --accent-fg:#06192b; --sea:#17304a;
+  --ok:#5fd48f; --ok-bg:#133a25; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
+  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ffb08a; --must-bg:#47261a; color-scheme:dark; }
+
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);
+  padding-block:8px 6px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));flex:none}
+.hrow{display:flex;align-items:center;gap:10px}
+.hrow h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.clock{margin-left:auto;display:flex;align-items:center;gap:6px;position:relative}
+.clock .num{font-size:26px;line-height:1}
+.clock input{width:1px;height:1px;opacity:0;position:absolute;right:0;bottom:0}
+.clock button{border:1px solid var(--line);background:transparent;border-radius:8px;padding:3px 8px;font-size:12px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-block:8px 2px;margin:0 -4px;padding-inline:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
+.dpabar{margin-top:6px;border-radius:10px;background:var(--dpa-bg);padding:6px 10px;display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+.dpabar .num{font-size:20px;color:var(--dpa)}
+.dpabar b{color:var(--dpa)}
+
+main{flex:1;min-height:0;overflow-y:auto;padding-block:12px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section[hidden]{display:none}
+h2{font-size:14px;margin:14px 0 8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+h2 small{color:var(--muted);font-weight:400;font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+.row.done{opacity:.55}
+.row.must{border-left:4px solid var(--must)}
+.row .name{font-weight:700;min-width:0}
+.row .sub{grid-column:1;font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-width:0}
+.row .right{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.wait{display:flex;align-items:baseline;gap:4px}
+.wait .num{font-size:22px;line-height:1}
+.wait .u{font-size:11px;color:var(--muted)}
+.wait.ok .num{color:var(--ok)} .wait.warn .num{color:var(--warn)} .wait.bad .num{color:var(--bad)}
+.tag{display:inline-block;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;line-height:1.6;white-space:nowrap}
+.tag.ok{background:var(--ok-bg);color:var(--ok)} .tag.warn{background:var(--warn-bg);color:var(--warn)} .tag.bad{background:var(--bad-bg);color:var(--bad)}
+.tag.dpa{background:var(--dpa-bg);color:var(--dpa)} .tag.sea{background:var(--sea);color:var(--accent)} .tag.mute{background:var(--bg);color:var(--muted)}
+.tag.must{background:var(--must-bg);color:var(--must)}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.sm{border:1px solid var(--line);background:transparent;border-radius:8px;padding:4px 9px;font-size:12px;line-height:1.5}
+.sm.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.sm.must{background:var(--must);color:#fff;border-color:var(--must)}
+.sm.want{background:var(--sea);color:var(--accent);border-color:var(--accent)}
+.primary{background:var(--accent);color:var(--accent-fg);border:0;border-radius:10px;padding:9px 14px;font-weight:700}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.danger{color:var(--bad);border-color:var(--bad)}
+.next{background:var(--sea);border:1px solid var(--accent);border-radius:14px;padding:12px 14px}
+.next .big{font-size:20px;font-weight:700;margin:2px 0;text-wrap:balance}
+.next .why{font-size:13px;color:var(--muted)}
+.next .alt{font-size:12px;margin-top:6px;color:var(--fg)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.kv:last-child{border-bottom:0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.form label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px;min-width:0}
+.form select,.form input{border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:var(--bg);min-width:0;width:100%}
+.form .full{grid-column:1/-1}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0}
+.toggle input{width:20px;height:20px}
+/* timeline */
+.step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.step.now{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.step.past{opacity:.5}
+.step.locked{border-style:dashed}
+.step.buy{background:var(--dpa-bg)}
+.step.meal{background:var(--warn-bg)}
+.step.warnfit{border-color:var(--bad)}
+.step .t{font-size:17px;min-width:48px}
+.step .t input{width:72px;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:2px 4px;font-family:var(--display);font-size:15px}
+.step .txt{font-weight:500}
+.step .meta{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.step .ctl{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap}
+.step .ctl .sm{padding:3px 8px}
+.step[draggable="true"]{cursor:grab}
+.step.dragover{outline:2px dashed var(--accent)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.note{font-size:12px;color:var(--muted)}
+.waitedit{display:flex;gap:4px;align-items:center}
+.waitedit input{width:58px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;background:var(--bg);text-align:right}
+.pop input{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--bg);width:100%;margin-top:4px}
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+nav{flex:none;display:flex;background:var(--panel);border-top:1px solid var(--line);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+nav button{flex:1;border:0;background:transparent;padding:10px 4px 8px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .ic{font-family:var(--display);font-size:16px;line-height:1}
+nav button[aria-selected="true"]{color:var(--accent);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
+.empty{color:var(--muted);font-size:13px;padding:12px;text-align:center}
+@media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+</style>
+
+<header>
+  <div class="hrow">
+    <h1>シー立ち回りナビ</h1>
+    <div class="clock">
+      <span class="num" id="clock">--:--</span>
+      <button id="timeBtn" type="button" title="時刻を仮指定">時刻</button>
+      <input type="time" id="timeOverride" aria-label="仮の時刻">
+    </div>
+  </div>
+  <div class="chips" id="areaChips" role="group" aria-label="現在地のエリア"></div>
+  <div class="dpabar" id="dpabar"></div>
+</header>
+
+<main>
+  <section id="tab-near">
+    <div class="next" id="nextCard"></div>
+    <h2>近いアトラクション <small id="nearCount"></small><small id="apiStamp"></small></h2>
+    <div class="filters">
+      <button class="sm on" type="button" data-nf="all">全部</button>
+      <button class="sm" type="button" data-nf="left">未乗車</button>
+      <button class="sm" type="button" data-nf="must">必須</button>
+      <button class="sm" type="button" data-nf="empty">平均より空いてる</button>
+      <button class="sm" type="button" data-nf="dpa">DPAあり</button>
+      <button class="sm" type="button" id="apiBtn">待ち時間を更新</button>
+    </div>
+    <p class="note">「今」欄に公式アプリの待ち時間を入れると判定と計画に使います（90分有効、APIより優先）。優先度バッジをタップすると 必須 → できれば → パス と切り替わります。</p>
+    <div class="list" id="nearList"></div>
+  </section>
+
+  <section id="tab-plan" hidden>
+    <div class="card">
+      <div class="grid2">
+        <div><div class="eyebrow">残り</div><div class="num" style="font-size:26px" id="planLeft"></div></div>
+        <div><div class="eyebrow">退園</div><div class="num" style="font-size:26px" id="planExit"></div></div>
+      </div>
+      <div class="btns" style="margin-top:8px">
+        <button class="primary" type="button" id="replan">今から再計算</button>
+        <button class="ghost" type="button" id="addItem">予定を追加</button>
+        <button class="ghost" type="button" id="unlockAll">ロック解除</button>
+      </div>
+      <div class="form" id="addForm" hidden>
+        <label>種類<select id="addKind"><option value="ride">アトラクション</option><option value="meal">食事</option><option value="rest">休憩</option><option value="show">ショー</option><option value="note">メモ</option></select></label>
+        <label>時刻<input type="time" id="addTime"></label>
+        <label id="addAttrWrap">アトラクション<select id="addAttr"></select></label>
+        <label id="addTextWrap" hidden>内容<input type="text" id="addText" placeholder="例: クリスマスグリーティング"></label>
+        <label>所要(分)<input type="number" id="addDur" value="30" min="5" max="180"></label>
+        <label>&nbsp;<button class="primary" type="button" id="addGo">追加（ロック）</button></label>
+      </div>
+      <p class="note" id="planNote"></p>
+    </div>
+    <h2>タイムテーブル <small>行の時刻を直すと自動でロック。ロック行とDPA枠は再計算でも動きません</small></h2>
+    <div class="list" id="planList"></div>
+    <h2>入らないもの <small>退園までに収まらない</small></h2>
+    <div class="list" id="planSkip"></div>
+  </section>
+
+  <section id="tab-dpa" hidden>
+    <div class="card" id="dpaStatus"></div>
+    <h2>購入済みDPA</h2>
+    <div class="list" id="dpaList"></div>
+    <div class="card">
+      <div class="eyebrow">DPAを登録</div>
+      <div class="form">
+        <label>アトラクション<select id="dpaAttr"></select></label>
+        <label>利用開始<input type="time" id="dpaSlot"></label>
+        <label>購入時刻<input type="time" id="dpaBought"></label>
+        <label>&nbsp;<button class="primary" type="button" id="dpaAdd">登録</button></label>
+      </div>
+      <p class="note">次に買えるのは「購入から60分後」か「そのDPAの利用開始時刻」の早い方。アトラクション用とショー用は別枠。</p>
+    </div>
+    <h2>買う順番の目安 <small>平日・19:00退園</small></h2>
+    <div class="list" id="dpaOrder"></div>
+  </section>
+
+  <section id="tab-food" hidden>
+    <div class="filters">
+      <button class="sm on" type="button" data-ff="all">全部</button>
+      <button class="sm" type="button" data-ff="meal">食事</button>
+      <button class="sm" type="button" data-ff="snack">軽食・スイーツ</button>
+      <button class="sm" type="button" data-ff="mo">モバイルオーダー</button>
+      <button class="sm on" type="button" id="openOnly" aria-pressed="true">今やってる店だけ</button>
+    </div>
+    <p class="note">営業時間は目安。混雑日は早仕舞い・売り切れあり。クリスマス限定メニューは11/1〜12/25。</p>
+    <div class="list" id="foodList"></div>
+    <h2>ポップコーン <small>近い順</small></h2>
+    <div class="list" id="popList"></div>
+  </section>
+
+  <section id="tab-set" hidden>
+    <div class="card">
+      <div class="eyebrow">条件</div>
+      <div class="form">
+        <label>退園時刻<input type="time" id="exitTime"></label>
+        <label>計画の開始<input type="time" id="startTime"></label>
+      </div>
+      <label class="toggle"><input type="checkbox" id="srOk">シングルライダーOK（アナ雪・ピーターパン・レイジングの待ちを短く見積もる）</label>
+      <label class="toggle"><input type="checkbox" id="apiOn">待ち時間を自動取得（queue-times.com 非公式API）</label>
+      <p class="note" id="apiNote"></p>
+    </div>
+    <h2>乗りたい度 <small>必須を先に組み、できれば は余った時間で</small></h2>
+    <div class="btns" style="margin-bottom:8px">
+      <button class="sm" type="button" data-prioall="must">全部 必須</button>
+      <button class="sm" type="button" data-prioall="want">全部 できれば</button>
+      <button class="sm" type="button" data-prioall="skip">全部 パス</button>
+    </div>
+    <div class="list" id="prioList"></div>
+    <h2>今日の運営 <small id="todayLabel"></small></h2>
+    <div class="card note" id="todayNote"></div>
+    <h2>リセット</h2>
+    <div class="card">
+      <div class="btns">
+        <button class="ghost" type="button" id="resetRides">乗車記録と待ち時間を消す</button>
+        <button class="ghost danger" type="button" id="resetAll">全部リセット</button>
+      </div>
+      <p class="note">データはこの端末のブラウザに保存されます。別端末には同期しません。</p>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button type="button" data-tab="near" aria-selected="true"><span class="ic">NOW</span>今</button>
+  <button type="button" data-tab="plan"><span class="ic">PLAN</span>プラン</button>
+  <button type="button" data-tab="dpa"><span class="ic">DPA</span>パス</button>
+  <button type="button" data-tab="food"><span class="ic">FOOD</span>ご飯</button>
+  <button type="button" data-tab="set"><span class="ic">SET</span>設定</button>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// ============ data ============
+const AREAS={MH:"メディテレーニアンハーバー",AWF:"アメリカンウォーターフロント",PD:"ポートディスカバリー",LRD:"ロストリバーデルタ",AC:"アラビアンコースト",ML:"マーメイドラグーン",MI:"ミステリアスアイランド",FS:"ファンタジースプリングス"};
+const SHORT={MH:"ハーバー",AWF:"アメフロ",PD:"ポトディス",LRD:"ロスリバ",AC:"アラビアン",ML:"マーメイド",MI:"ミステリアス",FS:"FS"};
+const WALK={MH:{MH:0,AWF:5,PD:8,LRD:10,AC:10,ML:8,MI:4,FS:15},AWF:{AWF:0,PD:4,LRD:10,AC:12,ML:10,MI:6,FS:14},PD:{PD:0,LRD:5,AC:9,ML:8,MI:8,FS:10},LRD:{LRD:0,AC:5,ML:7,MI:9,FS:4},AC:{AC:0,ML:3,MI:7,FS:4},ML:{ML:0,MI:5,FS:7},MI:{MI:0,FS:12},FS:{FS:0}};
+const walk=(a,b)=>(WALK[a]&&WALK[a][b]!=null)?WALK[a][b]:WALK[b][a];
+const d=s=>new Date(s+"T00:00:00");
+// base=[朝一(〜11時),昼(11〜17),夕(17〜)] 平日目安(分)。qt=queue-timesの英名キーワード
+const ATTR=[
+ {id:"soaring",name:"ソアリン：ファンタスティック・フライト",area:"MH",base:[95,125,100],dpa:2500,dur:15,qt:"soaring",note:"昼が相対的に空く"},
+ {id:"gondola",name:"ヴェネツィアン・ゴンドラ",area:"MH",base:[8,20,15],dur:12,qt:"gondola",note:"ハーバーショー前後は運休"},
+ {id:"fortress",name:"フォートレス・エクスプロレーション",area:"MH",base:[0,0,0],dur:15,walkthrough:true,note:"散策型"},
+ {id:"steamer_mh",name:"トランジットスチーマーライン（ハーバー発）",area:"MH",base:[8,15,10],dur:13,closed:x=>x<=d("2026-11-30")?"〜11/30休止":null},
+ {id:"tower",name:"タワー・オブ・テラー",area:"AWF",base:[38,75,40],dpa:1500,dur:12,qt:"tower of terror",closed:x=>x<=d("2026-11-05")?"11/6再開":null,note:"9時台と20時台が最短"},
+ {id:"toymania",name:"トイ・ストーリー・マニア！",area:"AWF",base:[80,115,85],dpa:2000,dur:10,qt:"toy story"},
+ {id:"turtle",name:"タートル・トーク",area:"AWF",base:[12,25,18],dur:30,qt:"turtle talk"},
+ {id:"railway_awf",name:"エレクトリックレールウェイ（アメフロ駅）",area:"AWF",base:[8,18,12],dur:8,pair:"railway_pd",qt:"electric railway"},
+ {id:"steamer_awf",name:"トランジットスチーマーライン（アメフロ発）",area:"AWF",base:[8,15,10],dur:12,pair:"steamer_lrd",qt:"transit steamer"},
+ {id:"bigcity",name:"ビッグシティ・ヴィークル",area:"AWF",base:[3,5,3],dur:8,qt:"big city",closed:x=>(x>=d("2026-11-10")&&x<=d("2026-12-25"))?"11/10〜12/25休止":null},
+ {id:"nemo",name:"ニモ＆フレンズ・シーライダー",area:"PD",base:[12,25,18],dur:10,qt:"nemo"},
+ {id:"railway_pd",name:"エレクトリックレールウェイ（ポトディス駅）",area:"PD",base:[8,12,8],dur:8,pair:"railway_awf",qt:"electric railway"},
+ {id:"indy",name:"インディ・ジョーンズ・アドベンチャー",area:"LRD",base:[40,70,45],dpa:1500,dur:10,qt:"indiana",closed:x=>x<=d("2026-11-29")?"11/30再開":null},
+ {id:"raging",name:"レイジングスピリッツ",area:"LRD",base:[20,60,30],dpa:1500,sr:true,dur:5,qt:"raging",note:"昼60分台、20時台20分"},
+ {id:"steamer_lrd",name:"トランジットスチーマーライン（ロスリバ発）",area:"LRD",base:[8,15,10],dur:12,pair:"steamer_awf",qt:"transit steamer",note:"アメフロへの移動に使える"},
+ {id:"sindbad",name:"シンドバッド・ストーリーブック・ヴォヤッジ",area:"AC",base:[5,12,8],dur:12,qt:"sindbad"},
+ {id:"carousel",name:"キャラバンカルーセル",area:"AC",base:[5,18,10],dur:5,qt:"carousel"},
+ {id:"jasmine",name:"ジャスミンのフライングカーペット",area:"AC",base:[5,22,12],dur:4,qt:"jasmine"},
+ {id:"magiclamp",name:"マジックランプシアター",area:"AC",base:[12,20,12],dur:25,qt:"magic lamp",closed:x=>(x>=d("2026-12-08")&&x<=d("2026-12-22"))?"12/8〜22休止":null},
+ {id:"flounder",name:"フランダーのフライングフィッシュコースター",area:"ML",base:[8,25,15],dur:3,qt:"flounder",note:"屋外。雨で止まる"},
+ {id:"scuttle",name:"スカットルのスクーター",area:"ML",base:[5,18,12],dur:3,qt:"scuttle"},
+ {id:"jellyfish",name:"ジャンピン・ジェリーフィッシュ",area:"ML",base:[5,18,12],dur:3,qt:"jellyfish"},
+ {id:"blowfish",name:"ブローフィッシュ・バルーンレース",area:"ML",base:[8,25,15],dur:3,qt:"blowfish"},
+ {id:"whirlpool",name:"ワールプール",area:"ML",base:[5,18,12],dur:3,qt:"whirlpool"},
+ {id:"mltheater",name:"マーメイドラグーンシアター",area:"ML",base:[0,0,0],dur:0,closed:()=>"再開未定"},
+ {id:"center",name:"センター・オブ・ジ・アース",area:"MI",base:[50,110,65],dpa:2000,dur:5,qt:"center of the earth",note:"9:30〜10:30と18時以降が狙い目"},
+ {id:"20k",name:"海底2万マイル",area:"MI",base:[12,25,18],dur:6,qt:"20,000"},
+ {id:"anna",name:"アナとエルサのフローズンジャーニー",area:"FS",base:[120,140,110],dpa:2500,sr:true,dur:10,qt:"frozen",note:"DPAは平日9:30〜9:50に売切"},
+ {id:"rapunzel",name:"ラプンツェルのランタンフェスティバル",area:"FS",base:[55,90,70],dpa:2000,dur:8,qt:"rapunzel"},
+ {id:"peterpan",name:"ピーターパンのネバーランドアドベンチャー",area:"FS",base:[70,110,80],dpa:2000,sr:true,dur:10,qt:"peter pan",note:"身長102cm以上"},
+ {id:"buggies",name:"フェアリー・ティンカーベルのビジーバギー",area:"FS",base:[25,45,32],dur:3,qt:"busy buggies"},
+];
+const byId=Object.fromEntries(ATTR.map(a=>[a.id,a]));
+const DPA_ORDER=[
+ {id:"anna",buy:"8:45 入園直後",slot:"09:30",why:"平日でも9:30〜9:50に売切。最初の一枚"},
+ {id:"soaring",buy:"9:45",slot:"16:30",why:"平日11時前に売切。16:30〜17:30枠"},
+ {id:"toymania",buy:"10:45",slot:"14:30",why:"14:30前後の枠"},
+ {id:"center",buy:"11:45",slot:"16:00",why:"16:00前後の枠"},
+ {id:"peterpan",buy:"12:45",slot:"18:00",why:"18:00前後の枠。SRで節約も可"},
+ {id:"rapunzel",buy:"13:45",slot:"18:15",why:"18:15前後の枠。売切なら通常列に差替"},
+ {id:"tower",buy:"14:45",slot:"15:00",why:"15:00前後の枠"},
+];
+const FOOD=[
+ {n:"ザンビーニ・ブラザーズ・リストランテ",a:"MH",k:"meal",o:"10:00",c:"20:00",mo:true,d:"パスタ・ピザ。クリスマス限定セット"},
+ {n:"カフェ・ポルトフィーノ",a:"MH",k:"meal",o:"10:00",c:"20:00",mo:true,d:"ロティサリーチキン・パスタ"},
+ {n:"マゼランズ",a:"MH",k:"meal",o:"11:00",c:"20:00",ps:true,d:"コース料理。PS必須級"},
+ {n:"リストランテ・ディ・カナレット",a:"MH",k:"meal",o:"11:00",c:"20:00",ps:true,d:"イタリアン。PS推奨"},
+ {n:"マンマ・ビスコッティーズ・ベーカリー",a:"MH",k:"snack",o:"9:00",c:"20:00",d:"パン・スイーツ・コーヒー"},
+ {n:"リフレスコス",a:"MH",k:"snack",o:"9:00",c:"20:00",d:"ドリンク・軽食"},
+ {n:"ケープコッド・クックオフ",a:"AWF",k:"meal",o:"10:00",c:"20:00",mo:true,d:"ハンバーガー。ダッフィー限定メニュー"},
+ {n:"ニューヨーク・デリ",a:"AWF",k:"meal",o:"10:00",c:"20:00",mo:true,d:"サンドイッチ。クリスマス限定セット"},
+ {n:"レストラン櫻",a:"AWF",k:"meal",o:"11:00",c:"20:00",ps:true,d:"和食。PS推奨"},
+ {n:"S.S.コロンビア・ダイニングルーム",a:"AWF",k:"meal",o:"11:00",c:"20:00",ps:true,d:"洋食コース。PS推奨"},
+ {n:"テディ・ルーズヴェルト・ラウンジ",a:"AWF",k:"meal",o:"11:00",c:"20:30",ps:true,d:"ラウンジ軽食・酒"},
+ {n:"ドックサイド・ダイナー",a:"AWF",k:"snack",o:"10:00",c:"20:00",d:"ホットドッグ・チキン"},
+ {n:"リバティ・ランディング・ダイナー",a:"AWF",k:"snack",o:"10:00",c:"19:30",d:"軽食"},
+ {n:"バーナクル・ビルズ",a:"AWF",k:"snack",o:"10:00",c:"20:00",d:"ビール・つまみ"},
+ {n:"ハイタイド・トリート",a:"AWF",k:"snack",o:"10:00",c:"19:30",d:"スイーツ・ドリンク"},
+ {n:"ホライズンベイ・レストラン",a:"PD",k:"meal",o:"10:00",c:"20:00",mo:true,d:"プレート料理。キャラダイはPS"},
+ {n:"シーサイドスナック",a:"PD",k:"snack",o:"10:00",c:"19:30",d:"ギョウザドッグ"},
+ {n:"ブリーズウェイ・バイツ",a:"PD",k:"snack",o:"10:00",c:"19:30",d:"ドリンク・軽食"},
+ {n:"ユカタン・ベースキャンプ・グリル",a:"LRD",k:"meal",o:"10:00",c:"20:00",mo:true,d:"グリル料理"},
+ {n:"ミゲルズ・エルドラド・キャンティーナ",a:"LRD",k:"meal",o:"10:00",c:"20:00",mo:true,d:"メキシカン"},
+ {n:"ロストリバークックハウス",a:"LRD",k:"snack",o:"10:00",c:"19:30",d:"チュロス・軽食"},
+ {n:"トロピック・アルズ",a:"LRD",k:"snack",o:"10:00",c:"19:30",d:"ドリンク・軽食"},
+ {n:"カスバ・フードコート",a:"AC",k:"meal",o:"10:00",c:"20:00",mo:true,d:"カレー。プランの昼食候補"},
+ {n:"オープンセサミ",a:"AC",k:"snack",o:"10:00",c:"19:30",d:"チキンレッグ"},
+ {n:"サルタンズ・オアシス",a:"AC",k:"snack",o:"10:00",c:"19:30",d:"チュロス・ドリンク"},
+ {n:"セバスチャンのカリプソキッチン",a:"ML",k:"meal",o:"10:00",c:"20:00",mo:true,d:"ピザ・サンド。屋内"},
+ {n:"ヴォルケイニア・レストラン",a:"MI",k:"meal",o:"10:00",c:"20:00",mo:true,d:"中華"},
+ {n:"ノーチラスギャレー",a:"MI",k:"snack",o:"10:00",c:"19:30",d:"ギョウザドッグ・軽食"},
+ {n:"アレンデール・ロイヤルバンケット",a:"FS",k:"meal",o:"10:00",c:"20:00",mo:true,d:"北欧料理。モバイルオーダー限定"},
+ {n:"スナグリーダックリング",a:"FS",k:"meal",o:"10:00",c:"20:00",mo:true,d:"ハンバーガー。モバイルオーダー限定"},
+ {n:"ルックアウト・クックアウト",a:"FS",k:"meal",o:"10:00",c:"20:00",mo:true,d:"ラップサンド。モバイルオーダー限定"},
+ {n:"オアシスカフェ",a:"FS",k:"snack",o:"10:00",c:"19:30",d:"ドリンク・スイーツ"},
+];
+const POP=[{id:"p_mh",a:"MH",n:"ザンビーニ前（ハーバー）"},{id:"p_awf",a:"AWF",n:"ケープコッド"},{id:"p_pd",a:"PD",n:"ホライズンベイ横"},{id:"p_lrd",a:"LRD",n:"ロストリバーデルタ（橋のそば）"},{id:"p_ac",a:"AC",n:"キャラバンカルーセル近く"},{id:"p_ml",a:"ML",n:"マーメイドラグーン屋外"},{id:"p_mi",a:"MI",n:"ミステリアスアイランド"},{id:"p_fs",a:"FS",n:"ファンタジースプリングス入口"}];
+const API_URL="https://queue-times.com/parks/275/queue_times.json";
+
+// ============ state ============
+const KEY="tds-navi-v2";
+const DEF=()=>({area:"MH",ridden:{},waits:{},api:null,apiOn:true,dpas:[],soldout:{},prio:{},plan:[],pop:{},timeOverride:"",tab:"near",nf:"all",ff:"all",openOnly:true,exit:"19:00",start:"",srOk:false,planBuilt:false});
+let S=DEF();
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(DEF(),JSON.parse(raw));}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+let uid=Date.now();
+const nid=()=>"i"+(uid++).toString(36);
+
+// ============ time ============
+function now(){const n=new Date();if(S.timeOverride){const [h,m]=S.timeOverride.split(":").map(Number);n.setHours(h,m,0,0);}return n;}
+const pad=n=>String(n).padStart(2,"0");
+const hm=dt=>pad(dt.getHours())+":"+pad(dt.getMinutes());
+const mins=s=>{if(!s)return 0;const [h,m]=s.split(":").map(Number);return h*60+m;};
+const nowMin=()=>{const n=now();return n.getHours()*60+n.getMinutes();};
+const fromMin=m=>{m=Math.round(m);m=((m%1440)+1440)%1440;return pad(Math.floor(m/60))+":"+pad(m%60);};
+const slotOf=m=>m<11*60?0:(m<17*60?1:2);
+const today=()=>{const n=now();return d(n.getFullYear()+"-"+pad(n.getMonth()+1)+"-"+pad(n.getDate()));};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let toastT;function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2200);}
+
+// ============ domain helpers ============
+const closedReason=a=>a.closed?a.closed(today()):null;
+const prio=a=>S.prio[a.id]||"must"; // must | want | skip
+const isOpen=a=>!closedReason(a);
+const apiRide=a=>S.api&&S.api.rides&&S.api.rides[a.id];
+function liveWait(a){ // {v, src:'manual'|'api'|null, open}
+  const w=S.waits[a.id];const nm=nowMin();
+  if(w&&nm-w.at>=0&&nm-w.at<=90)return{v:w.v,src:"manual",open:true};
+  const r=apiRide(a);
+  if(r&&nm-S.api.at<=120)return{v:r.v,src:"api",open:r.open};
+  return null;
+}
+function factor(a){const l=liveWait(a);if(!l||!l.open)return 1;const b=a.base[slotOf(nowMin())];if(b<5)return 1;return Math.min(2.5,Math.max(0.4,l.v/b));}
+function estWait(a,t){ // 推定待ち(分) at time t
+  const l=liveWait(a);
+  let v;
+  if(l&&l.open&&Math.abs(t-nowMin())<=30)v=l.v; else v=a.base[slotOf(t)]*factor(a);
+  if(S.srOk&&a.sr)v=Math.max(10,v*0.4);
+  return Math.round(v);
+}
+const waitClass=v=>v<=20?"ok":(v<=60?"warn":"bad");
+function emptier(a){const l=liveWait(a);if(!l)return null;const b=a.base[slotOf(nowMin())];if(b<5)return null;return l.v<=b*0.7?true:(l.v>=b*1.3?false:null);}
+const heldDpa=id=>S.dpas.find(x=>x.id===id&&!x.used);
+function nextBuyMin(){if(!S.dpas.length)return null;const last=S.dpas[S.dpas.length-1];return Math.min(mins(last.bought)+60,mins(last.slot));}
+function candidates(){return ATTR.filter(a=>isOpen(a)&&!S.ridden[a.id]&&prio(a)!=="skip"&&!(a.pair&&S.ridden[a.pair]));}
+function stats(){const open=ATTR.filter(a=>isOpen(a)&&!(a.pair&&S.ridden[a.pair])&&!(a.pair&&a.id>a.pair));const want=open.filter(a=>prio(a)!=="skip");const left=want.filter(a=>!S.ridden[a.id]);return{open,want,left};}
+
+// ============ API ============
+async function fetchApi(silent){
+  if(!S.apiOn){if(!silent)toast("設定で自動取得をONにしてください");return;}
+  const note=document.getElementById("apiNote");
+  try{
+    const res=await fetch(API_URL,{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const j=await res.json();
+    const all=[];(j.lands||[]).forEach(l=>(l.rides||[]).forEach(r=>all.push(r)));(j.rides||[]).forEach(r=>all.push(r));
+    const rides={};let n=0;
+    ATTR.forEach(a=>{if(!a.qt)return;const r=all.find(x=>(x.name||"").toLowerCase().includes(a.qt));if(r){rides[a.id]={v:Number(r.wait_time)||0,open:!!r.is_open};n++;}});
+    S.api={at:nowMin(),rides,n};save();
+    if(note)note.textContent=`最終取得 ${fromMin(S.api.at)}（${n}件）`;
+    if(!silent)toast(`待ち時間を更新（${n}件）`);
+    renderAll();
+  }catch(e){
+    S.api=S.api||null;
+    const msg="自動取得できません。この環境は外部通信が制限されているか、APIが応答していません。手入力を使ってください。";
+    if(note)note.textContent=msg;
+    if(!silent)toast("取得できず。手入力してください");
+  }
+}
+
+// ============ planner ============
+// item: {id,k:'ride'|'buy'|'meal'|'rest'|'show'|'note'|'move'|'wait',t,dur,attr,text,lock}
+function buildPlan(fromNow){
+  const nm=nowMin();
+  let t=fromNow?nm:(S.start?mins(S.start):nm);
+  if(!fromNow&&S.start&&mins(S.start)<nm&&S.planBuilt)t=nm;
+  const exitM=mins(S.exit||"19:00");
+  let area=S.area;
+  const items=[];
+  // keep locked and future items from the current plan
+  const locked=S.plan.filter(i=>i.lock&&i.t>=t-5);
+  const fixed=[];
+  S.dpas.filter(x=>!x.used&&!S.ridden[x.id]&&isOpen(byId[x.id])).forEach(x=>fixed.push({k:"ride",attr:x.id,t:mins(x.slot),end:mins(x.slot)+60,dur:byId[x.id].dur,area:byId[x.id].area,dpa:true,win:true}));
+  locked.forEach(i=>{const a=i.attr?byId[i.attr]:null;fixed.push({k:i.k,attr:i.attr,t:i.t,end:i.t,dur:i.dur||(a?a.dur:30),area:a?a.area:area,lock:true,text:i.text,id:i.id,win:false});});
+  fixed.sort((x,y)=>x.t-y.t);
+  let rem=candidates().filter(a=>!fixed.some(f=>f.attr===a.id));
+  // dpa buy reminders
+  const buys=[];let nb=nextBuyMin();let bt=nb==null?t:Math.max(nb,t);
+  const exitWalk=ar=>walk(ar,"MH")+5;
+  DPA_ORDER.filter(o=>!S.dpas.some(x=>x.id===o.id)&&!S.ridden[o.id]&&!S.soldout[o.id]&&isOpen(byId[o.id])&&prio(byId[o.id])!=="skip").forEach(o=>{
+    if(bt>=exitM-90)return;
+    const a=byId[o.id];
+    // 狙う枠: 推奨枠か購入45分後の遅い方。退園に収まらなければ買わない
+    let ps=Math.max(bt+45,mins(o.slot));
+    if(ps+a.dur+5>exitM-exitWalk(a.area))ps=Math.max(bt+45,exitM-exitWalk(a.area)-a.dur-20);
+    if(ps+a.dur+5>exitM-exitWalk(a.area)||ps<bt+30)return;
+    buys.push({id:nid(),k:"buy",t:bt,dur:0,attr:o.id,text:"DPA購入: "+a.name+"（"+fromMin(ps)+"前後の枠を狙う）"});
+    fixed.push({k:"ride",attr:o.id,t:ps,end:ps+60,dur:a.dur,area:a.area,dpa:true,prov:true,win:true});
+    bt+=60;
+  });
+  fixed.sort((x,y)=>x.t-y.t);
+  rem=rem.filter(a=>!fixed.some(f=>f.attr===a.id));
+  let meal=S.plan.some(i=>i.k==="meal"&&i.lock)||false;
+  const skipped=[];
+  let guard=0;
+  const finishBy=(a)=>exitM-exitWalk(a.area);
+  while(guard++<200){
+    const f=fixed[0];
+    // 固定枠が迫っている → 向かう
+    if(f&&(f.t-t)<=walk(area,f.area)+15){
+      const arrive=t+walk(area,f.area);const st=Math.max(arrive,f.t);
+      if(st>f.end+(f.win?0:20)&&f.attr&&f.dpa&&!f.prov){ // 枠に間に合わない
+        items.push({id:nid(),k:"note",t:st,dur:0,text:"DPA枠に遅刻: "+byId[f.attr].name+"（キャストに相談）"});
+      }
+      const dur=f.dur;
+      items.push({id:f.id||nid(),k:f.k,t:st,dur,attr:f.attr,text:f.text||(f.attr?byId[f.attr].name:""),lock:!!f.lock,dpa:!!f.dpa,prov:!!f.prov,w:f.dpa?5:0});
+      t=st+dur+(f.dpa?5:0);area=f.area;fixed.shift();continue;
+    }
+    // 昼食
+    if(!meal&&t>=12*60&&t<14*60){items.push({id:nid(),k:"meal",t,dur:25,text:"昼食（モバイルオーダーで並ばない）"});t+=25;meal=true;continue;}
+    // 候補から選ぶ: 必須 → できれば
+    let pool=rem.filter(a=>prio(a)==="must");if(!pool.length)pool=rem;
+    let best=null,bestScore=1e9;
+    for(const a of pool){
+      const wk=walk(area,a.area);const w=estWait(a,t+wk);const end=t+wk+w+a.dur;
+      if(end>finishBy(a))continue;
+      if(f&&end+walk(a.area,f.area)>f.end)continue; // 次の固定枠に間に合わない
+      const score=wk+w+(prio(a)==="want"?15:0);
+      if(score<bestScore){bestScore=score;best={a,wk,w,end};}
+    }
+    if(!best){
+      if(f){ // 固定枠まで待つ
+        const arrive=t+walk(area,f.area);
+        if(f.t-arrive>10)items.push({id:nid(),k:"rest",t,dur:f.t-arrive,text:"休憩・買い物（次の枠まで）"});
+        t=Math.max(t,f.t-walk(area,f.area));continue;
+      }
+      break;
+    }
+    const {a,wk,w,end}=best;
+    items.push({id:nid(),k:"ride",t:t+wk,dur:a.dur,attr:a.id,text:a.name,w,walk:wk});
+    t=end;area=a.area;rem=rem.filter(x=>x.id!==a.id&&x.id!==a.pair);
+  }
+  rem.forEach(a=>skipped.push(a.id));
+  const all=items.concat(buys).sort((x,y)=>x.t-y.t);
+  S.plan=all;S.planSkip=skipped;S.planBuilt=true;save();
+}
+function planFits(){ // タイムテーブルの整合チェック（連続する行の終了 > 次の開始なら警告）
+  const warn={};let prev=null;
+  S.plan.forEach(i=>{if(prev&&prev.k!=="buy"&&prev.t+(prev.dur||0)+(prev.w||0)>i.t+1&&i.k!=="buy")warn[i.id]=true;if(i.k!=="buy")prev=i;});
+  return warn;
+}
+
+// ============ render ============
+function renderHeader(){
+  document.getElementById("clock").textContent=hm(now());
+  document.getElementById("timeBtn").textContent=S.timeOverride?"仮 "+S.timeOverride+" ×":"時刻";
+  document.getElementById("areaChips").innerHTML=Object.keys(AREAS).map(k=>`<button class="chip" type="button" data-area="${k}" aria-pressed="${S.area===k}">${SHORT[k]}</button>`).join("");
+  const bar=document.getElementById("dpabar");const nb=nextBuyMin();
+  const next=DPA_ORDER.find(o=>!S.dpas.some(x=>x.id===o.id)&&!S.ridden[o.id]&&!S.soldout[o.id]&&isOpen(byId[o.id])&&prio(byId[o.id])!=="skip");
+  const nx=next?`<span class="note">次: ${esc(byId[next.id].name)}</span>`:`<span class="note">買う候補なし</span>`;
+  if(nb==null)bar.innerHTML=`<span>DPA</span><b>今すぐ買える</b>${nx}`;
+  else{const rem=nb-nowMin();bar.innerHTML=rem>0?`<span>次のDPA</span><span class="num">${fromMin(nb)}</span><span>まで <b>${rem}分</b></span>${nx}`:`<span>DPA</span><b>買えます</b>${nx}`;}
+}
+function scoreNow(a){const l=liveWait(a);if(l&&!l.open)return 5000;const wk=walk(S.area,a.area);const h=heldDpa(a.id);if(h){const until=mins(h.slot)-nowMin();if(until<=wk+15)return -1000+until;return wk+Math.max(until,0)+5;}return wk+estWait(a,nowMin()+wk)+(prio(a)==="want"?15:0)+(prio(a)==="skip"?500:0);}
+function prioTag(a){const p=prio(a);return `<button class="sm ${p==="must"?"must":(p==="want"?"want":"")}" type="button" data-prio="${a.id}" aria-label="優先度">${p==="must"?"必須":(p==="want"?"できれば":"パス")}</button>`;}
+function renderNear(){
+  const {open,left}=stats();
+  const nc=document.getElementById("nextCard");
+  const pool=candidates().slice().sort((x,y)=>scoreNow(x)-scoreNow(y));
+  const must=pool.filter(a=>prio(a)==="must");const cand=(must[0]&&scoreNow(must[0])<9999)?must[0]:pool[0];
+  if(!cand){nc.innerHTML=`<div class="eyebrow">次の一手</div><div class="big">${left.length?"候補なし（優先度を見直してください）":"全部乗り終わり。お疲れさま"}</div>`;}
+  else{
+    const h=heldDpa(cand.id);const wk=walk(S.area,cand.area);const w=estWait(cand,nowMin()+wk);const l=liveWait(cand);
+    const alt=pool.filter(a=>a!==cand).slice(0,2).map(a=>`${esc(a.name)}（${walk(S.area,a.area)}分・${estWait(a,nowMin())}分）`).join(" / ");
+    nc.innerHTML=`<div class="eyebrow">次の一手（${SHORT[S.area]}から）</div><div class="big">${esc(cand.name)}</div>
+      <div class="why">${h?`DPA ${h.slot}〜 の枠。`:""}徒歩${wk}分、待ち${w}分${l?(l.src==="manual"?"（入力値）":"（API）"):"（目安）"}${S.srOk&&cand.sr?"・SR想定":""}。必須の残り ${left.filter(a=>prio(a)==="must").length}、全体 ${left.length}</div>
+      ${alt?`<div class="alt">次点: ${alt}</div>`:""}`;
+  }
+  document.getElementById("nearCount").textContent=`残り${left.length} / ${stats().want.length}`;
+  document.getElementById("apiStamp").textContent=S.api?`API ${fromMin(S.api.at)}`:"";
+  let list=ATTR.filter(a=>isOpen(a)).sort((x,y)=>scoreNow(x)-scoreNow(y));
+  if(S.nf==="empty")list=list.filter(a=>emptier(a)===true);
+  if(S.nf==="dpa")list=list.filter(a=>a.dpa);
+  if(S.nf==="left")list=list.filter(a=>!S.ridden[a.id]);
+  if(S.nf==="must")list=list.filter(a=>prio(a)==="must"&&!S.ridden[a.id]);
+  document.querySelectorAll("[data-nf]").forEach(b=>b.classList.toggle("on",b.dataset.nf===S.nf));
+  const el=document.getElementById("nearList");
+  if(!list.length){el.innerHTML=`<div class="empty">該当なし。待ち時間を入力または更新すると「平均より空いてる」が使えます。</div>`;return;}
+  el.innerHTML=list.map(a=>{
+    const l=liveWait(a);const wk=walk(S.area,a.area);const h=heldDpa(a.id);const em=emptier(a);const v=l?l.v:a.base[slotOf(nowMin())];
+    const tags=[prioTag(a)];
+    if(l&&!l.open)tags.push(`<span class="tag bad">運営中断</span>`);
+    if(h)tags.push(`<span class="tag dpa">DPA ${h.slot}〜</span>`);else if(a.dpa)tags.push(`<span class="tag mute">DPA ${a.dpa.toLocaleString()}円</span>`);
+    if(a.sr)tags.push(`<span class="tag sea">SR</span>`);
+    if(em===true)tags.push(`<span class="tag ok">平均より空いてる</span>`);
+    if(em===false)tags.push(`<span class="tag warn">平均より混んでる</span>`);
+    if(a.walkthrough)tags.push(`<span class="tag mute">散策</span>`);
+    return `<div class="row ${S.ridden[a.id]?"done":""} ${prio(a)==="must"&&!S.ridden[a.id]?"must":""}">
+      <div class="name">${esc(a.name)}</div>
+      <div class="sub"><span>${SHORT[a.area]} 徒歩${wk}分</span>${tags.join("")}${a.note?`<span>${esc(a.note)}</span>`:""}</div>
+      <div class="right">
+        <div class="wait ${waitClass(v)}"><span class="num">${v}</span><span class="u">${l?(l.src==="manual"?"分 入力":"分 API"):"分 目安"}</span></div>
+        <div class="waitedit"><input type="number" inputmode="numeric" min="0" max="300" placeholder="今" aria-label="${esc(a.name)}の今の待ち時間" data-wait="${a.id}" value="${S.waits[a.id]&&nowMin()-S.waits[a.id].at<=90?S.waits[a.id].v:""}"><button class="sm ${S.ridden[a.id]?"on":""}" type="button" data-ride="${a.id}">${S.ridden[a.id]?"乗った":"未"}</button></div>
+      </div></div>`;
+  }).join("");
+}
+function renderPlan(){
+  const {left}=stats();
+  document.getElementById("planLeft").textContent=`${left.length}`;
+  document.getElementById("planExit").textContent=S.exit||"19:00";
+  const nm=nowMin();const warn=planFits();
+  let nowIdx=-1;S.plan.forEach((p,i)=>{if(p.t<=nm)nowIdx=i;});
+  const el=document.getElementById("planList");
+  if(!S.plan.length){el.innerHTML=`<div class="empty">「今から再計算」で、現在地・乗った記録・DPA・優先度からタイムテーブルを作ります。</div>`;}
+  else el.innerHTML=S.plan.map((p,i)=>{
+    const a=p.attr?byId[p.attr]:null;const done=a&&S.ridden[a.id];
+    const meta=[];
+    if(a)meta.push(`<span>${SHORT[a.area]}</span>`);
+    if(p.k==="ride"&&p.dpa)meta.push(p.prov?`<span class="tag dpa">DPA予定（購入時に枠を確定）</span>`:`<span class="tag dpa">DPA枠</span>`);
+    if(p.k==="ride"&&!p.dpa&&p.w!=null)meta.push(`<span>待ち${p.w}分</span>`);
+    if(p.walk)meta.push(`<span>徒歩${p.walk}分</span>`);
+    if(p.dur)meta.push(`<span>〜${fromMin(p.t+p.dur+(p.w&&!p.dpa?0:0))}</span>`);
+    if(a&&a.dpa&&!p.dpa&&!heldDpa(a.id))meta.push(`<span class="tag mute">通常列</span>`);
+    if(p.lock)meta.push(`<span class="tag sea">ロック</span>`);
+    if(warn[p.id])meta.push(`<span class="tag bad">前の予定と重なる</span>`);
+    const cls=["step",p.k,i===nowIdx?"now":"",(done||(p.t+(p.dur||0)<nm&&i<nowIdx))?"past":"",p.lock?"locked":"",warn[p.id]?"warnfit":""].join(" ");
+    return `<div class="${cls}" draggable="true" data-idx="${i}">
+      <div class="t num"><input type="time" value="${fromMin(p.t)}" data-ptime="${i}" aria-label="開始時刻"></div>
+      <div><div class="txt">${esc(p.text)}</div><div class="meta">${meta.join("")}</div></div>
+      <div class="ctl">
+        ${a?`<button class="sm ${done?"on":""}" type="button" data-ride="${a.id}">${done?"乗った":"乗った？"}</button>`:""}
+        ${p.k==="buy"?`<button class="sm" type="button" data-quick="${p.attr}">買った</button><button class="sm" type="button" data-sold="${p.attr}">売切</button>`:""}
+        <button class="sm" type="button" data-up="${i}" aria-label="上へ">↑</button><button class="sm" type="button" data-down="${i}" aria-label="下へ">↓</button>
+        <button class="sm ${p.lock?"on":""}" type="button" data-lock="${i}">${p.lock?"固定中":"固定"}</button>
+        <button class="sm" type="button" data-del="${i}">削除</button>
+      </div></div>`;
+  }).join("");
+  const sk=document.getElementById("planSkip");
+  const skipIds=(S.planSkip||[]).filter(id=>!S.ridden[id]);
+  sk.innerHTML=skipIds.length?skipIds.map(id=>{const a=byId[id];return `<div class="row"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span>${prioTag(a)}${a.dpa?`<span class="tag mute">DPAで短縮可 ${a.dpa.toLocaleString()}円</span>`:""}</div></div>`;}).join(""):`<div class="empty">${S.planBuilt?"全部入っています":"未計算"}</div>`;
+  const note=document.getElementById("planNote");
+  const spent=S.dpas.reduce((s,x)=>s+(byId[x.id].dpa||0),0);
+  note.textContent=`DPA出費 ¥${spent.toLocaleString()}/人。推定待ちは${S.api||Object.keys(S.waits).length?"ライブ値で補正した":""}時間帯目安。遅れたら削る順: フォートレス → ゴンドラ → レールウェイ → スチーマー。`;
+  const sel=document.getElementById("addAttr");
+  if(!sel.options.length)sel.innerHTML=ATTR.filter(isOpen).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
+}
+function renderDpa(){
+  const st=document.getElementById("dpaStatus");const nb=nextBuyMin();const spent=S.dpas.reduce((s,x)=>s+(byId[x.id].dpa||0),0);
+  st.innerHTML=`<div class="grid2"><div><div class="eyebrow">次に買える時刻</div><div class="num" style="font-size:30px">${nb==null?"今":fromMin(nb)}</div></div><div><div class="eyebrow">1人あたり出費</div><div class="num" style="font-size:30px">¥${spent.toLocaleString()}</div></div></div>`;
+  const el=document.getElementById("dpaList");
+  el.innerHTML=S.dpas.length?S.dpas.map((x,i)=>{const a=byId[x.id];const until=mins(x.slot)-nowMin();
+    const tg=x.used?`<span class="tag mute">利用済み</span>`:(until<=0?(until>-60?`<span class="tag ok">今入れる</span>`:`<span class="tag bad">枠終了の可能性</span>`):(until<=15?`<span class="tag warn">あと${until}分</span>`:`<span class="tag dpa">あと${until}分</span>`));
+    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><span>利用 ${x.slot}〜${fromMin(mins(x.slot)+60)}</span><span>購入 ${x.bought}</span>${tg}</div>
+      <div class="right"><div class="btns"><button class="sm ${x.used?"on":""}" type="button" data-dpause="${i}">${x.used?"利用済":"利用した"}</button><button class="sm" type="button" data-dpadel="${i}">削除</button></div></div></div>`;}).join("")
+    :`<div class="empty">まだ登録なし。買ったら登録すると次に買える時刻と計画に反映されます。</div>`;
+  const sel=document.getElementById("dpaAttr");
+  if(!sel.options.length)sel.innerHTML=ATTR.filter(a=>a.dpa).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
+  document.getElementById("dpaOrder").innerHTML=DPA_ORDER.map((o,i)=>{const a=byId[o.id];const done=S.dpas.some(x=>x.id===o.id);const cl=closedReason(a);const so=S.soldout[o.id];
+    return `<div class="row ${done||so?"done":""}"><div class="name"><span class="num">${i+1}</span>　${esc(a.name)} <span class="tag mute">${a.dpa.toLocaleString()}円</span></div>
+      <div class="sub"><span class="tag dpa">${o.buy}に購入</span><span>${esc(o.why)}</span>${cl?`<span class="tag bad">${cl}</span>`:""}${so?`<span class="tag bad">売切</span>`:""}</div>
+      <div class="right">${done?`<span class="tag ok">購入済</span>`:`<div class="btns"><button class="sm" type="button" data-quick="${o.id}">今買った</button><button class="sm ${so?"on":""}" type="button" data-sold="${o.id}">${so?"売切済":"売切"}</button></div>`}</div></div>`;}).join("");
+}
+function foodOpen(f){const m=nowMin();return m>=mins(f.o)&&m<mins(f.c);}
+function renderFood(){
+  document.querySelectorAll("[data-ff]").forEach(b=>b.classList.toggle("on",b.dataset.ff===S.ff));
+  const oo=document.getElementById("openOnly");oo.classList.toggle("on",S.openOnly);oo.setAttribute("aria-pressed",S.openOnly);
+  let list=FOOD.slice();
+  if(S.ff==="meal")list=list.filter(f=>f.k==="meal");if(S.ff==="snack")list=list.filter(f=>f.k==="snack");if(S.ff==="mo")list=list.filter(f=>f.mo);
+  if(S.openOnly)list=list.filter(foodOpen);
+  list.sort((x,y)=>walk(S.area,x.a)-walk(S.area,y.a)||x.n.localeCompare(y.n,"ja"));
+  document.getElementById("foodList").innerHTML=list.length?list.map(f=>{const closeIn=mins(f.c)-nowMin();
+    return `<div class="row"><div class="name">${esc(f.n)}</div><div class="sub"><span>${SHORT[f.a]} 徒歩${walk(S.area,f.a)}分</span><span>${f.o}〜${f.c}</span>${f.mo?`<span class="tag sea">モバイルオーダー</span>`:""}${f.ps?`<span class="tag warn">PS</span>`:""}<span>${esc(f.d)}</span></div>
+      <div class="right">${foodOpen(f)?(closeIn<=60?`<span class="tag warn">あと${closeIn}分</span>`:`<span class="tag ok">営業中</span>`):`<span class="tag mute">時間外</span>`}</div></div>`;}).join(""):`<div class="empty">条件に合う店がありません。</div>`;
+  document.getElementById("popList").innerHTML=POP.slice().sort((x,y)=>walk(S.area,x.a)-walk(S.area,y.a)).map(p=>`<div class="row pop"><div class="name">${esc(p.n)}</div><div class="sub" style="grid-column:1/-1"><input type="text" data-pop="${p.id}" placeholder="フレーバーを入力（看板で確認）" value="${esc(S.pop[p.id]||"")}" aria-label="${esc(p.n)}のフレーバー"></div><div class="right"><span class="tag mute">${SHORT[p.a]} ${walk(S.area,p.a)}分</span></div></div>`).join("");
+}
+function renderSet(){
+  document.getElementById("exitTime").value=S.exit||"19:00";
+  document.getElementById("startTime").value=S.start||"";
+  document.getElementById("srOk").checked=!!S.srOk;
+  document.getElementById("apiOn").checked=!!S.apiOn;
+  const note=document.getElementById("apiNote");if(S.api)note.textContent=`最終取得 ${fromMin(S.api.at)}（${S.api.n}件）`;else if(!note.textContent)note.textContent="未取得。「今」タブの「待ち時間を更新」で取得します。claude.ai上のアーティファクト版は外部通信ができないので手入力のみです。";
+  const t=today();document.getElementById("todayLabel").textContent=`${t.getMonth()+1}/${t.getDate()}`;
+  document.getElementById("prioList").innerHTML=ATTR.map(a=>{const cl=closedReason(a);return `<div class="row ${cl?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span>${a.dpa?`<span class="tag mute">DPA ${a.dpa.toLocaleString()}円</span>`:""}${a.sr?`<span class="tag sea">SR</span>`:""}${cl?`<span class="tag bad">${cl}</span>`:""}</div><div class="right">${cl?"":prioTag(a)}</div></div>`;}).join("");
+  document.getElementById("todayNote").textContent="休止: 上の一覧に赤表示。アクアトピアは9/14で営業終了。11/27はハーバーショー休演・18:30閉園。11/11〜12/25はクリスマス（ハーバーショー11:35・15:15、ビリーヴ19:30）。実際の開園は8:30〜8:45が多い。";
+}
+function renderAll(){renderHeader();renderNear();renderPlan();renderDpa();renderFood();renderSet();}
+function showTab(t){S.tab=t;save();document.querySelectorAll("main > section").forEach(s=>s.hidden=(s.id!=="tab-"+t));document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));document.querySelector("main").scrollTop=0;}
+
+// ============ actions ============
+function cyclePrio(id){const p=S.prio[id]||"must";S.prio[id]=p==="must"?"want":(p==="want"?"skip":"must");save();renderAll();}
+function markRide(id,on){S.ridden[id]=on;const h=heldDpa(id);if(on&&h)h.used=true;const a=byId[id];if(on&&a)S.area=a.area;save();}
+function addDpa(id,slotV,boughtV){const bought=boughtV||hm(now());const slotT=slotV||fromMin(mins(bought)+60);S.dpas.push({id,slot:slotT,bought,used:false});delete S.soldout[id];save();toast(byId[id].name+" を登録");renderAll();}
+function movePlan(i,dir){const j=i+dir;if(j<0||j>=S.plan.length)return;const a=S.plan[i],b=S.plan[j];S.plan[i]=b;S.plan[j]=a;const ta=a.t;a.t=b.t;b.t=ta;a.lock=true;save();renderPlan();}
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;const ds=b.dataset;
+  if(ds.tab){showTab(ds.tab);return;}
+  if(ds.area){S.area=ds.area;save();renderAll();return;}
+  if(ds.nf){S.nf=ds.nf;save();renderNear();return;}
+  if(ds.ff){S.ff=ds.ff;save();renderFood();return;}
+  if(b.id==="openOnly"){S.openOnly=!S.openOnly;save();renderFood();return;}
+  if(b.id==="apiBtn"){fetchApi(false);return;}
+  if(ds.ride){markRide(ds.ride,!S.ridden[ds.ride]);renderAll();return;}
+  if(ds.prio){cyclePrio(ds.prio);return;}
+  if(ds.prioall){ATTR.forEach(a=>S.prio[a.id]=ds.prioall);save();renderAll();return;}
+  if(ds.quick){addDpa(ds.quick,null,null);return;}
+  if(ds.sold){S.soldout[ds.sold]=!S.soldout[ds.sold];save();renderAll();return;}
+  if(b.id==="dpaAdd"){addDpa(document.getElementById("dpaAttr").value,document.getElementById("dpaSlot").value,document.getElementById("dpaBought").value);showTab("dpa");return;}
+  if(ds.dpause!=null){const x=S.dpas[+ds.dpause];x.used=!x.used;save();renderAll();return;}
+  if(ds.dpadel!=null){S.dpas.splice(+ds.dpadel,1);save();renderAll();return;}
+  if(b.id==="replan"){buildPlan(true);renderAll();toast("再計算しました");return;}
+  if(b.id==="unlockAll"){S.plan.forEach(p=>p.lock=false);save();renderPlan();return;}
+  if(b.id==="addItem"){const f=document.getElementById("addForm");f.hidden=!f.hidden;document.getElementById("addTime").value=fromMin(nowMin()+10);return;}
+  if(b.id==="addGo"){
+    const k=document.getElementById("addKind").value;const t=mins(document.getElementById("addTime").value||fromMin(nowMin()));const dur=+document.getElementById("addDur").value||30;
+    let it={id:nid(),k,t,dur,lock:true};
+    if(k==="ride"){const a=byId[document.getElementById("addAttr").value];it.attr=a.id;it.text=a.name;it.dur=a.dur;}
+    else{it.text=document.getElementById("addText").value||({meal:"食事",rest:"休憩",show:"ショー",note:"メモ"})[k];}
+    S.plan.push(it);S.plan.sort((x,y)=>x.t-y.t);save();document.getElementById("addForm").hidden=true;renderPlan();toast("追加しました（ロック）");return;
+  }
+  if(ds.up!=null){movePlan(+ds.up,-1);return;}
+  if(ds.down!=null){movePlan(+ds.down,1);return;}
+  if(ds.lock!=null){S.plan[+ds.lock].lock=!S.plan[+ds.lock].lock;save();renderPlan();return;}
+  if(ds.del!=null){S.plan.splice(+ds.del,1);save();renderPlan();return;}
+  if(b.id==="timeBtn"){if(S.timeOverride){S.timeOverride="";save();renderAll();}else{const inp=document.getElementById("timeOverride");inp.value=hm(new Date());try{inp.showPicker();}catch(err){inp.focus();inp.click();}}return;}
+  if(b.id==="resetRides"){S.ridden={};S.waits={};S.plan=[];S.planSkip=[];S.planBuilt=false;save();renderAll();toast("記録を消しました");return;}
+  if(b.id==="resetAll"){S=DEF();save();renderAll();showTab("near");toast("リセットしました");return;}
+});
+document.addEventListener("change",e=>{
+  const t=e.target;const ds=t.dataset;
+  if(t.id==="timeOverride"){S.timeOverride=t.value;save();renderAll();return;}
+  if(ds.wait){const v=parseInt(t.value,10);if(isNaN(v))delete S.waits[ds.wait];else S.waits[ds.wait]={v,at:nowMin()};save();renderHeader();renderNear();return;}
+  if(ds.ptime!=null){const p=S.plan[+ds.ptime];p.t=mins(t.value);p.lock=true;S.plan.sort((x,y)=>x.t-y.t);save();renderPlan();return;}
+  if(ds.pop){S.pop[ds.pop]=t.value;save();return;}
+  if(t.id==="exitTime"){S.exit=t.value||"19:00";save();renderPlan();return;}
+  if(t.id==="startTime"){S.start=t.value;save();return;}
+  if(t.id==="srOk"){S.srOk=t.checked;save();renderAll();return;}
+  if(t.id==="apiOn"){S.apiOn=t.checked;save();if(t.checked)fetchApi(true);return;}
+  if(t.id==="addKind"){const k=t.value;document.getElementById("addAttrWrap").hidden=k!=="ride";document.getElementById("addTextWrap").hidden=k==="ride";return;}
+});
+// drag & drop (PC)
+let dragIdx=null;
+document.addEventListener("dragstart",e=>{const s=e.target.closest(".step");if(!s)return;dragIdx=+s.dataset.idx;e.dataTransfer.effectAllowed="move";});
+document.addEventListener("dragover",e=>{const s=e.target.closest(".step");if(!s||dragIdx==null)return;e.preventDefault();s.classList.add("dragover");});
+document.addEventListener("dragleave",e=>{const s=e.target.closest(".step");if(s)s.classList.remove("dragover");});
+document.addEventListener("drop",e=>{const s=e.target.closest(".step");if(!s||dragIdx==null)return;e.preventDefault();const to=+s.dataset.idx;const [it]=S.plan.splice(dragIdx,1);S.plan.splice(to,0,it);
+  // 時刻は並び順に合わせて付け直す（ドロップした行を前後の中間に）
+  const prev=S.plan[to-1],next=S.plan[to+1];it.t=prev?prev.t+(prev.dur||0)+(prev.w||0):(next?Math.max(0,next.t-(it.dur||15)):it.t);it.lock=true;dragIdx=null;save();renderPlan();});
+
+// ============ boot ============
+(function boot(){
+  document.getElementById("timeOverride").value=S.timeOverride||"";
+  document.getElementById("dpaBought").value=hm(now());
+  renderAll();showTab(S.tab||"near");
+  if(S.apiOn)fetchApi(true);
+  setInterval(()=>{renderHeader();if(S.tab==="near")renderNear();},30000);
+  setInterval(()=>{if(S.apiOn)fetchApi(true);},5*60000);
+})();
+</script>
+
+</body></html>
