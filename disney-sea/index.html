@@ -388,7 +388,7 @@ const FOOD=[
  {n:"オーケンのオーケー・フード",a:"FS",k:"snack",o:"10:00",c:"19:30",d:"軽食・ドリンク"},
 ];
 const POP=[{id:"p_mh",a:"MH",n:"ザンビーニ前（ハーバー）"},{id:"p_awf",a:"AWF",n:"ケープコッド"},{id:"p_pd",a:"PD",n:"ホライズンベイ横"},{id:"p_lrd",a:"LRD",n:"ロストリバーデルタ（橋のそば）"},{id:"p_ac",a:"AC",n:"キャラバンカルーセル近く"},{id:"p_ml",a:"ML",n:"マーメイドラグーン屋外"},{id:"p_mi",a:"MI",n:"ミステリアスアイランド"},{id:"p_fs",a:"FS",n:"ファンタジースプリングス入口"}];
-// GitHub Actions（.github/workflows/tds-wait.yml）が5分ごとに書く。元データは queue-times.com
+// GitHub Actions（.github/workflows/tds-wait.yml）が1分ごとに書く。元データは queue-times.com
 const LIVE_URL="https://raw.githubusercontent.com/rhtcinema-boop/casa-kashitaku/live-data/tds.json";
 const API_URL="https://queue-times.com/parks/275/queue_times.json";
 
@@ -760,9 +760,9 @@ function buildPlanCore(slotShift,buyCap,skipMeals,skipNth,firstOnly){
   }
   // 食事が入らなかったら、その時間帯の「できれば」の小物を1つ食事に置き換える。それも無理なら知らせる
   MEALS.forEach(m=>{if(skipMeals){if(t>=mins(m.from)-60)missMeal.push(m.k==="lunch"?"昼食":"夕食");return;}if(mealDone[m.k])return;
-    const cands=items.filter(i=>i.k==="ride"&&i.attr&&!i.dpa&&!i.lock&&i.t>=mins(m.from)-90&&i.t<mins(m.to)&&(prio(byId[i.attr])==="want"||!isBig(byId[i.attr]))&&endOf(i)-i.t>=20).sort((x,y)=>avgBase(byId[x.attr])-avgBase(byId[y.attr]));
+    const cands=items.filter(i=>i.k==="ride"&&i.attr&&!i.dpa&&!i.lock&&endOf(i)>=mins(m.from)-10&&i.t<mins(m.to)&&(prio(byId[i.attr])==="want"||!isBig(byId[i.attr]))&&endOf(i)-Math.max(i.t,mins(m.from)-30)>=20).sort((x,y)=>avgBase(byId[x.attr])-avgBase(byId[y.attr]));
     const v=cands[0];
-    if(v){const va=byId[v.attr];const sp=mealSpot(v.area||va.area,v.t);Object.assign(v,{k:"meal",attr:undefined,w:0,dur:endOf(v)-v.t,why:undefined,text:m.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:""),area:sp?sp.a:(v.area||byId[v.attr].area)});rem.push(va);}
+    if(v){const va=byId[v.attr];const sp=mealSpot(v.area||va.area,v.t);const st=Math.max(v.t,mins(m.from)-30);Object.assign(v,{k:"meal",attr:undefined,w:0,t:st,dur:Math.min(endOf(v)-st,30),why:undefined,text:m.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:""),area:sp?sp.a:(v.area||byId[v.attr].area)});rem.push(va);}
     else missMeal.push(m.k==="lunch"?"昼食":"夕食");});
   const plan=items.concat(buys).sort((x,y)=>x.t-y.t||(x.k==="buy"?-1:1));
   const skip=rem.filter(a=>!(a.pair&&rem.some(x=>x.id===a.pair)&&a.id>a.pair));
@@ -846,9 +846,13 @@ function renderNear(){
   const must=pool.filter(a=>prio(a)==="must");let cand=must[0]||pool[0];
   const plan=planToday();
   let pNext=S.planBuilt?plan.find(p=>p.k!=="buy"&&p.k!=="note"&&endOf(p)>=nm&&!(p.k==="ride"&&p.attr&&ridden(p.attr))):null;
-  const dueBuy=plan.find(p=>p.k==="buy"&&p.t<=nm&&!heldDpa(p.attr)&&!noBuy(p.attr)&&!soldOut(p.attr)&&!ridden(p.attr));
-  let unbought=pNext&&pNext.prov&&!heldDpa(pNext.attr)&&pNext.t-nm<=60;
-  if(!unbought&&dueBuy){pNext={...plan.find(p=>p.prov&&p.attr===dueBuy.attr)||{k:"ride",prov:true,attr:dueBuy.attr,t:dueBuy.ps||nm+45}};unbought=true;}
+  const buyable=id=>!heldDpa(id)&&!noBuy(id)&&!soldOut(id)&&!ridden(id)&&!(SOLD_BY[id]&&nm>mins(SOLD_BY[id]))&&canBuyAt(nm);
+  const alive=p=>p&&p.t+60>nm&&slotFits({id:p.attr,slot:fromMin(p.t)},Math.max(p.t,nm+30)); // 枠がまだ生きている
+  const dueBuy=plan.find(p=>p.k==="buy"&&p.t<=nm&&buyable(p.attr)&&alive(plan.find(q=>q.prov&&q.attr===p.attr)));
+  // 目の前に使える保有DPAがあれば、そちらを先に
+  const openHeld=candidates().map(a=>({a,h:heldDpa(a.id)})).find(x=>x.h&&mins(x.h.slot)<=nm+walk(S.area,x.a.area)+15&&mins(x.h.slot)+60>=nm);
+  let unbought=!openHeld&&pNext&&pNext.prov&&buyable(pNext.attr)&&pNext.t-nm<=60&&alive(pNext);
+  if(!unbought&&!openHeld&&dueBuy){pNext={...plan.find(p=>p.prov&&p.attr===dueBuy.attr)};unbought=true;}
   const early=pNext&&pNext.t-nm>20&&!(pNext.dpa&&!pNext.prov)&&!unbought;
   const ahead=early?plan.filter(p=>p.k==="ride"&&p.attr&&!p.dpa&&!ridden(p.attr)&&p.t>=nm).map(p=>byId[p.attr]).find(a=>fits(a)&&!stopInfo(a)&&!showConflict(a,nm+walk(S.area,a.area))):null;
   const onTrack=pNext&&!early&&pNext.t>=nm-15&&!(pNext.attr&&stopInfo(byId[pNext.attr]))&&!(pNext.attr&&!usable(byId[pNext.attr]))&&!(pNext.prov&&!heldDpa(pNext.attr))&&!(pNext.k==="ride"&&pNext.attr&&!pNext.dpa&&!fits(byId[pNext.attr]));
