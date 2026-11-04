@@ -247,7 +247,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
 
   <section id="tab-set" hidden>
     <h2 style="margin-top:0">基本<button class="help" type="button" data-help="basic" aria-label="説明">?</button></h2>
-    <div class="helpbox" id="help-basic" hidden><p>退園＝この時刻までに出口へ。計画は8:45からか「開始」から組みます。</p><p>シングルライダーの実施（レイジング・インディ・アナ雪・ピーターパン）は当日の案内で確認を。</p><p>身長を入れると、乗れないものを外します。予算を決めるとDPAの購入予定を抑えます。</p></div>
+    <div class="helpbox" id="help-basic" hidden><p>退園＝この時刻までに出口へ。計画は8:45からか「開始」から組みます。</p><p>シングルライダーの実施（レイジング・インディ・ピーターパン。アナ雪は未確認）は当日の案内で確認を。</p><p>身長を入れると、乗れないものを外します。予算を決めるとDPAの購入予定を抑えます。</p></div>
     <div class="card">
       <div class="form" style="margin-top:0">
         <label>退園<input type="time" id="exitTime"></label>
@@ -338,7 +338,7 @@ const ATTR=[
  {id:"mltheater",name:"マーメイドラグーンシアター",area:"ML",base:[0,0,0],dur:0,qt:"mermaid lagoon theater",closed:()=>"再開未定"},
  {id:"center",name:"センター・オブ・ジ・アース",area:"MI",base:[50,110,65],dpa:2000,dur:5,qt:"center of the earth",note:"9:30〜10:30と18時以降が狙い目"},
  {id:"20k",name:"海底2万マイル",area:"MI",base:[12,25,18],dur:6,qt:"20,000"},
- {id:"anna",name:"アナとエルサのフローズンジャーニー",area:"FS",base:[120,140,110],dpa:2500,sr:true,dur:10,qt:"frozen",note:"DPAは平日9:30〜9:50に売切"},
+ {id:"anna",name:"アナとエルサのフローズンジャーニー",area:"FS",base:[120,140,110],dpa:2500,dur:10,qt:"frozen",note:"DPAは平日9:30〜9:50に売切"},
  {id:"rapunzel",name:"ラプンツェルのランタンフェスティバル",area:"FS",base:[55,90,70],dpa:2000,dur:8,qt:"rapunzel"},
  {id:"peterpan",name:"ピーターパンのネバーランドアドベンチャー",area:"FS",base:[70,110,80],dpa:2000,sr:true,dur:10,qt:"peter pan"},
  {id:"buggies",name:"フェアリー・ティンカーベルのビジーバギー",area:"FS",base:[25,45,32],dur:3,qt:"busy buggies"},
@@ -590,8 +590,8 @@ function applyImport(){
     else if(r.k==="dpa"&&!heldDpa(r.id)){const bought=r.bought||hm(now());const err=validateDpa(r.id,r.slot,bought,-1);if(err){bad.push(r.name.split("：")[0]+": "+err);c--;return;}S.dpas.push({id:r.id,slot:r.slot,bought,used:false,day:tk});}
   });
   S.day=tk;const re=replanAfterDpa();save();renderAll();
-  if(bad.length){document.getElementById("impStatus").textContent="反映できず: "+bad.join(" / ");}else document.getElementById("impPanel").hidden=true;
-  toast(`${c}件 反映しました${re?"・組み直しました":""}`);
+  if(bad.length){document.getElementById("impStatus").textContent="反映できず: "+bad.join(" / ");toast(`${c}件 反映・${bad.length}件は反映できず（下に理由）`);}
+  else{document.getElementById("impPanel").hidden=true;toast(`${c}件 反映しました${re?"・組み直しました":""}`);}
 }
 let ocrWorker=null;
 async function ocrFiles(files){
@@ -646,7 +646,7 @@ function mealSpot(area,t){
   return open[0]||null;
 }
 // slotShift: 購入予定DPAの枠を後ろへずらして試す（必須の通常列が入る隙間を作る）
-function buildPlanCore(slotShift,buyCap){
+function buildPlanCore(slotShift,buyCap,skipMeals){
   const nm=nowMin();const exitM=exitMin();const tk=todayKey();
   let t=Math.max(nm,mins(PLAN_OPEN),S.start?mins(S.start):0);
   let area=S.area;
@@ -691,7 +691,7 @@ function buildPlanCore(slotShift,buyCap){
   }
   fixed.sort((x,y)=>x.t-y.t);
   let rem=candidates().filter(a=>!fixed.some(f=>f.attr===a.id));
-  const mealDone={};MEALS.forEach(m=>{mealDone[m.k]=t>=mins(m.to)||isToday((S.noMeal||{})[m.k])||fixed.some(f=>f.k==="meal"&&f.t>=mins(m.from)-60&&f.t<mins(m.to));});
+  const mealDone={};MEALS.forEach(m=>{mealDone[m.k]=!!skipMeals||t>=mins(m.to)||isToday((S.noMeal||{})[m.k])||fixed.some(f=>f.k==="meal"&&f.t>=mins(m.from)-60&&f.t<mins(m.to));});
   if(exitM<mins(MEALS[1].from)+30)mealDone.dinner=true;
   const missMeal=[];const mealTried={};
   const putMeal=(ml,dur)=>{const sp=mealSpot(area,t);const wk=sp?walk(area,sp.a):0;const st=t+wk;
@@ -699,7 +699,7 @@ function buildPlanCore(slotShift,buyCap){
     items.push({id:nid(),k:"meal",t:st,dur:dur||25,area:sp?sp.a:area,walk:wk||undefined,text:ml.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:"")});
     t=st+(dur||25);if(sp)area=sp.a;mealDone[ml.k]=true;lastRest=t;};
   // 残っている必須の大物に必要な時間（それぞれ一番空く時間帯で見積もり）
-  const reserve=(ex,t0)=>rem.reduce((s,a)=>a!==ex&&prio(a)==="must"&&isBig(a)?s+bestWait(a,t0,exitM)*1.15+a.dur+6:s,0);
+  const reserve=(ex,t0)=>rem.reduce((s,a)=>a!==ex&&prio(a)==="must"&&isBig(a)?s+Math.max(bestWait(a,t0,exitM),estWait(a,t0)*0.9)*1.1+a.dur+6:s,0);
   let guard=0;let lastRest=t;
   while(guard++<300){
     const f=fixed[0];
@@ -731,13 +731,14 @@ function buildPlanCore(slotShift,buyCap){
           if(end+walk(a.area,f.area||a.area)>lim)continue;} // 次の固定枠に間に合わない（DPAは枠内かつ退園に収まる時刻まで）
         if(showConflict(a,at))continue;
         if(useReserve&&end+reserve(a,end)>exitM)continue; // ほかの必須の大物の時間を残す
-        const score=wk*walkCost()+(w-bestWait(a,at,exitM))*1.5-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0)+(scarce?w*0.3:0);
+        let lost=0;if(useReserve)for(const b of rem){if(b===a||prio(b)!=="must")continue;const okNow=t+walk(area,b.area)+estWait(b,t+walk(area,b.area))+b.dur<=finishBy(b);const okAfter=end+walk(a.area,b.area)+estWait(b,end+walk(a.area,b.area))+b.dur<=finishBy(b);if(okNow&&!okAfter)lost++;}
+        const score=wk*walkCost()+(w-bestWait(a,at,exitM))*1.5-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0)+(scarce?w*0.3:0)+lost*40;
         if(score<bs){bs=score;best={a,wk,w,end,at};}
       }
       return best;
     };
-    const must=rem.filter(a=>prio(a)==="must");
-    const best=pick(must,true)||pick(must,false,true)||pick(rem,true)||pick(rem,false,true);
+    const must=rem.filter(a=>prio(a)==="must");const mustBig=must.filter(isBig);
+    const best=pick(must,true)||pick(mustBig,false,true)||pick(must,false,true)||pick(rem,true)||pick(rem,false,true);
     // 食事: 優先時刻を過ぎた / 長い列で食事時間帯を越えてしまう / 他に候補がない ときに入れる（次の固定予定に食い込まない範囲で）
     if(ml&&gap>=25&&(t>=mins(ml.pref)||!best||best.end>mins(ml.to)-15)){putMeal(ml);continue;}
     if(!best){
@@ -755,7 +756,7 @@ function buildPlanCore(slotShift,buyCap){
     t=end;area=a.area;rem=rem.filter(x=>x.id!==a.id&&x.id!==a.pair);
   }
   // 食事が入らなかったら、その時間帯の「できれば」の小物を1つ食事に置き換える。それも無理なら知らせる
-  MEALS.forEach(m=>{if(mealDone[m.k])return;
+  MEALS.forEach(m=>{if(skipMeals){if(t>=mins(m.from)-60)missMeal.push(m.k==="lunch"?"昼食":"夕食");return;}if(mealDone[m.k])return;
     const cands=items.filter(i=>i.k==="ride"&&i.attr&&!i.dpa&&!i.lock&&i.t>=mins(m.from)-30&&i.t<mins(m.to)&&prio(byId[i.attr])==="want"&&endOf(i)-i.t>=20).sort((x,y)=>avgBase(byId[x.attr])-avgBase(byId[y.attr]));
     const v=cands[0];
     if(v){const va=byId[v.attr];const sp=mealSpot(v.area||va.area,v.t);Object.assign(v,{k:"meal",attr:undefined,w:0,dur:endOf(v)-v.t,why:undefined,text:m.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:""),area:sp?sp.a:(v.area||byId[v.attr].area)});rem.push(va);}
@@ -768,9 +769,10 @@ function buildPlan(){
   // 購入予定の枠を 0 / 60 / 120 分ずらして試し、必須が一番多く入る案を採る
   // 購入枚数を減らした案（必須を通常列で入れる）も比べる。必須の取りこぼし → 入らない数 → 出費 の順で少ない案
   let best=null;const cost=r=>r.plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
-  outer:for(const cap of [null,3,2,1,0])for(const sh of [0,60,120]){const r=buildPlanCore(sh,cap);r.cost=cost(r);
-    if(!best||r.mustSkip<best.mustSkip||(r.mustSkip===best.mustSkip&&(r.skip.length<best.skip.length||(r.skip.length===best.skip.length&&r.cost<best.cost))))best=r;
-    if(best.mustSkip===0&&cap===null&&sh===0)break outer;}
+  outer:for(const sm of [false,true])for(const cap of [null,3,2,1,0])for(const sh of [0,60,120,180]){if(sm&&best&&best.mustSkip===0)break outer;const r=buildPlanCore(sh,cap,sm);r.cost=cost(r);
+    const key=x=>[x.mustSkip,x.missMeal.length,x.skip.length,x.cost];const better=(x,y)=>{const a=key(x),b=key(y);for(let i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]<b[i];return false;};
+    if(!best||better(r,best))best=r;
+    if(best.mustSkip===0&&cap===null&&sh===0&&!sm)break outer;}
   S.plan=best.plan;S.planSkip=best.skip.map(a=>a.id);S.planWhy={};best.skip.forEach(a=>{if(stopUntil(a))S.planWhy[a.id]="運営中断中";});
   S.planMiss=best.missMeal;S.planBuilt=true;S.planDay=todayKey();save();
 }
@@ -955,7 +957,7 @@ function renderPlan(){
   const mustSkip=skipIds.filter(id=>prio(byId[id])==="must").length;
   const buyPlan=plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
   const lines=[];
-  if(mustSkip){const ns=skipIds.filter(id=>prio(byId[id])==="must").map(id=>esc(byId[id].name.split("：")[0].split("（")[0]));lines.push(`<b>入らない必須: ${ns.slice(0,3).join("・")}${ns.length>3?` ほか${ns.length-3}件`:""}</b>`);}
+  if(mustSkip)lines.push(`<b>必須 ${mustSkip}件が入りません</b>（下の「入らない」欄）`);
   lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?" ← 設定で予算を決められます":""}`);
   if((S.planMiss||[]).length&&S.planDay===todayKey())lines.push(`<b>${S.planMiss.join("・")}が入りません</b>`);
   if(condSummary())lines.push(esc(condSummary()));
@@ -1120,7 +1122,7 @@ document.addEventListener("click",e=>{
   if(ds.lock!=null){const p=planToday()[+ds.lock];if(p.dpa||p.k==="note"){toast(p.dpa?"DPAの枠は自動で固定されています":"メモは固定できません");return;}p.lock=!p.lock;save();renderPlan();return;}
   if(ds.del!=null){delPlan(+ds.del);return;}
   if(b.id==="timeBtn"){if(S.timeOverride){S.timeOverride="";save();renderAll();}else{const inp=document.getElementById("timeOverride");inp.value=hm(new Date());try{inp.showPicker();}catch(err){inp.focus();inp.click();}}return;}
-  if(b.id==="resetRides"){withUndo("乗車記録と待ち時間を消しました",()=>Object.assign(S,{ridden:{},waits:{},stops:{},drop:{},plan:[],planSkip:[],planBuilt:false}));return;}
+  if(b.id==="resetRides"){withUndo("今日の記録を消しました",()=>Object.assign(S,{ridden:{},waits:{},stops:{},drop:{},soldout:{},noBuy:{},noMeal:{},dpas:[],plan:[],planSkip:[],planBuilt:false,timeOverride:""}));return;}
   if(b.id==="resetAll"){withUndo("全部リセットしました",()=>{S=DEF();S.day=todayKey();});showTab("near");return;}
 });
 document.addEventListener("input",e=>{if(["dpaAttr","dpaSlot","dpaBought"].includes(e.target.id))dpaDirty=true;if(e.target.id==="cMemo"){S.cond.memo=e.target.value;save();}});
