@@ -731,13 +731,13 @@ function buildPlanCore(slotShift,buyCap){
           if(end+walk(a.area,f.area||a.area)>lim)continue;} // 次の固定枠に間に合わない（DPAは枠内かつ退園に収まる時刻まで）
         if(showConflict(a,at))continue;
         if(useReserve&&end+reserve(a,end)>exitM)continue; // ほかの必須の大物の時間を残す
-        const score=wk*walkCost()+(w-bestWait(a,at,exitM))-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0)+(scarce?w*0.3:0);
+        const score=wk*walkCost()+(w-bestWait(a,at,exitM))*1.5-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0)+(scarce?w*0.3:0);
         if(score<bs){bs=score;best={a,wk,w,end,at};}
       }
       return best;
     };
     const must=rem.filter(a=>prio(a)==="must");
-    const best=pick(must,true)||pick(rem,true)||pick(must,false,true)||pick(rem,false,true);
+    const best=pick(must,true)||pick(must,false,true)||pick(rem,true)||pick(rem,false,true);
     // 食事: 優先時刻を過ぎた / 長い列で食事時間帯を越えてしまう / 他に候補がない ときに入れる（次の固定予定に食い込まない範囲で）
     if(ml&&gap>=25&&(t>=mins(ml.pref)||!best||best.end>mins(ml.to)-15)){putMeal(ml);continue;}
     if(!best){
@@ -756,9 +756,9 @@ function buildPlanCore(slotShift,buyCap){
   }
   // 食事が入らなかったら、その時間帯の「できれば」の小物を1つ食事に置き換える。それも無理なら知らせる
   MEALS.forEach(m=>{if(mealDone[m.k])return;
-    const cands=items.filter(i=>i.k==="ride"&&i.attr&&!i.dpa&&!i.lock&&i.t>=mins(m.from)-30&&i.t<mins(m.to)&&prio(byId[i.attr])==="want").sort((x,y)=>avgBase(byId[x.attr])-avgBase(byId[y.attr]));
+    const cands=items.filter(i=>i.k==="ride"&&i.attr&&!i.dpa&&!i.lock&&i.t>=mins(m.from)-30&&i.t<mins(m.to)&&prio(byId[i.attr])==="want"&&endOf(i)-i.t>=20).sort((x,y)=>avgBase(byId[x.attr])-avgBase(byId[y.attr]));
     const v=cands[0];
-    if(v){const va=byId[v.attr];const sp=mealSpot(v.area||va.area,v.t);Object.assign(v,{k:"meal",attr:undefined,w:0,dur:Math.max(20,endOf(v)-v.t-5),why:undefined,text:m.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:""),area:sp?sp.a:(v.area||byId[v.attr].area)});rem.push(va);}
+    if(v){const va=byId[v.attr];const sp=mealSpot(v.area||va.area,v.t);Object.assign(v,{k:"meal",attr:undefined,w:0,dur:endOf(v)-v.t,why:undefined,text:m.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:""),area:sp?sp.a:(v.area||byId[v.attr].area)});rem.push(va);}
     else missMeal.push(m.k==="lunch"?"昼食":"夕食");});
   const plan=items.concat(buys).sort((x,y)=>x.t-y.t||(x.k==="buy"?-1:1));
   const skip=rem.filter(a=>!(a.pair&&rem.some(x=>x.id===a.pair)&&a.id>a.pair));
@@ -848,7 +848,7 @@ function renderNear(){
   if(nm>=exitM)html+=`<div class="big">退園時刻を過ぎています</div><div class="why">設定タブで退園時刻を変えると、続きを組み直せます。</div>`;
   else if(unbought){
     const b=byId[pNext.attr];
-    html+=`<div class="big">まず ${esc(b.name.split("：")[0])} のDPAを買う</div><div class="why">買ったら${SHORT[b.area]}へ（${fromMin(pNext.t)}頃の枠）。買えなければ「売切」</div>`;
+    html+=`<div class="big">まず ${esc(b.name.split("：")[0])} のDPAを買う</div><div class="why">買ったら${SHORT[b.area]}へ（${fromMin(pNext.t)}頃の枠）</div><div class="buynow"><button class="primary" type="button" data-quick="${b.id}" data-qslot="${fromMin(pNext.t)}">買った</button><button class="sm" type="button" data-sold="${b.id}">売切</button></div>`;
   }
   else if(onTrack){
     const a=pNext.attr&&pNext.k==="ride"?byId[pNext.attr]:null;
@@ -868,8 +868,7 @@ function renderNear(){
       <div class="why">${why}${line(cand)}</div>
       ${alt?`<div class="alt">次点: ${alt}</div>`:""}`;
     if(ahead)cand=ahead;
-    if(unbought){const b=byId[pNext.attr];html+=`<div class="buynow"><span class="tag dpa">DPA</span><b>${esc(b.name)}</b><span class="note">${fromMin(pNext.t)}の枠が未登録</span><button class="sm" type="button" data-quick="${b.id}" data-qslot="${fromMin(pNext.t)}">買った</button><button class="sm" type="button" data-sold="${b.id}">売切</button></div>`;}
-    else if(pNext)html+=`<div class="alt">${early?(ahead?"プランより早いので前倒し":"プランより早いです"):"プランとずれています"} → プランタブで「今から組む」</div>`;
+    if(pNext&&!(cand&&heldDpa(cand.id)))html+=`<div class="alt">${early?(ahead?"プランより早いので前倒し":"プランより早いです"):"プランとずれています"} → プランタブで「今から組む」</div>`;
   }
   const tgt=canBuyAt(nm)&&!unbought?dpaTargets(nm).find(o=>slotFits(o,targetSlot(o,nm))):null;
   if(tgt&&nm<exitM){const a=byId[tgt.id];const slot=fromMin(targetSlot(tgt,nm));
@@ -935,7 +934,7 @@ function renderPlan(){
     const cls=["step",p.k,i===nowIdx?"now":"",(done||(endOf(p)<nm&&i<nowIdx))?"past":"",p.lock?"locked":"",warn[p.id]?"warnfit":""].join(" ");
     return `<div class="${cls}" draggable="true" data-idx="${i}">
       <label class="t num"><span>${fromMin(p.t)}</span><input type="time" value="${fromMin(p.t)}" data-ptime="${i}" aria-label="${esc(p.text)}の開始時刻"></label>
-      <div><div class="txt">${esc(p.text)}</div><div class="meta">${meta.join("")}</div></div>
+      <div><div class="txt">${esc(p.k==="meal"?p.text.replace(/（[^）]*）/g,""):p.text)}</div><div class="meta">${meta.join("")}</div></div>
       <div class="ctl">
         ${ride?`<button class="sm ${done?"on":""}" type="button" data-ride="${a.id}">${done?"乗った":"乗った？"}</button>`:""}
         ${p.k==="buy"?`<button class="sm" type="button" data-quick="${p.attr}" data-qslot="${p.ps?fromMin(p.ps):""}">買った</button><button class="sm" type="button" data-sold="${p.attr}">売切</button>`:""}
@@ -956,7 +955,7 @@ function renderPlan(){
   const mustSkip=skipIds.filter(id=>prio(byId[id])==="must").length;
   const buyPlan=plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
   const lines=[];
-  if(mustSkip)lines.push(`<b>入らない必須: ${skipIds.filter(id=>prio(byId[id])==="must").map(id=>esc(byId[id].name.split("：")[0])).join("・")}</b>`);
+  if(mustSkip){const ns=skipIds.filter(id=>prio(byId[id])==="must").map(id=>esc(byId[id].name.split("：")[0].split("（")[0]));lines.push(`<b>入らない必須: ${ns.slice(0,3).join("・")}${ns.length>3?` ほか${ns.length-3}件`:""}</b>`);}
   lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?" ← 設定で予算を決められます":""}`);
   if((S.planMiss||[]).length&&S.planDay===todayKey())lines.push(`<b>${S.planMiss.join("・")}が入りません</b>`);
   if(condSummary())lines.push(esc(condSummary()));
@@ -976,7 +975,8 @@ function renderDpa(){
   const mine=S.dpas.map((x,i)=>[x,i]).filter(([x])=>isToday(x.day));
   el.innerHTML=mine.length?mine.map(([x,i])=>{const a=byId[x.id];const until=mins(x.slot)-nm;
     const tg=x.used?`<span class="tag mute">利用済み</span>`:(until<=0?(until>-60?`<span class="tag ok">今入れる</span>`:`<span class="tag bad">枠終了の可能性</span>`):(until<=15?`<span class="tag warn">あと${until}分</span>`:`<span class="tag dpa">あと${until>=60?Math.floor(until/60)+"時間"+(until%60?until%60+"分":""):until+"分"}</span>`));
-    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><label class="waitedit">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:auto;min-width:124px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:auto;min-width:124px"></label>${tg}</div>
+    const cl=closedReason(a);
+    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub">${cl?`<span class="tag bad">休止中（${cl}）</span>`:""}<label class="waitedit">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:auto;min-width:124px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:auto;min-width:124px"></label>${tg}</div>
       <div class="right"><div class="btns"><button class="sm ${x.used?"on":""}" type="button" data-dpause="${i}">${x.used?"利用済":"利用した"}</button><button class="sm" type="button" data-dpadel="${i}">削除</button></div></div></div>`;}).join("")
     :`<div class="empty">なし</div>`;
   const sel=document.getElementById("dpaAttr");
