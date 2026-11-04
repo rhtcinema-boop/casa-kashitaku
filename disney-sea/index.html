@@ -160,7 +160,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
     <div id="dayBanner"></div>
     <div class="next" id="nextCard"></div>
     <h2>近く <small id="nearCount"></small><small id="apiStamp"></small><button class="help" type="button" data-help="near" aria-label="使い方">?</button></h2>
-    <div class="helpbox" id="help-near" hidden><p>待ち時間は5分ごとに自動で入ります（出典: Queue-Times.com）。「今」欄に手入力するとそちらを優先します。</p><p>「取り込み」で公式アプリのスクショやテキストから、待ち時間・中断・DPAをまとめて入れられます。</p><p>「止」＝止まっている。優先度のバッジをタップで 必須 → できれば → パス。</p></div>
+    <div class="helpbox" id="help-near" hidden><p>待ち時間は1分ごとに自動で入ります（出典: Queue-Times.com）。「今」欄に手入力するとそちらを優先します。</p><p>「取り込み」で公式アプリのスクショやテキストから、待ち時間・中断・DPAをまとめて入れられます。</p><p>「止」＝止まっている。優先度のバッジをタップで 必須 → できれば → パス。</p></div>
     <div class="filters">
       <button class="sm on" type="button" data-nf="all">全部</button>
       <button class="sm" type="button" data-nf="left">未乗車</button>
@@ -256,7 +256,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
         <label>DPA予算(1人)<select id="dpaBudget"><option value="">上限なし</option><option value="0">買わない</option><option value="2500">2,500円</option><option value="5000">5,000円</option><option value="7500">7,500円</option><option value="10000">10,000円</option></select></label>
       </div>
       <label class="toggle"><input type="checkbox" id="srOk">シングルライダーOK</label>
-      <label class="toggle"><input type="checkbox" id="apiOn">待ち時間を自動取得（5分ごと）</label>
+      <label class="toggle"><input type="checkbox" id="apiOn">待ち時間を自動取得（1分ごと）</label>
       <p class="note" style="margin:0 0 6px">待ち時間データ: <a href="https://queue-times.com/" target="_blank" rel="noopener">Queue-Times.com</a></p>
       <p class="note" id="apiNote" hidden></p>
     </div>
@@ -669,7 +669,7 @@ function buildPlanCore(slotShift,buyCap,skipMeals,skipNth,firstOnly){
   let budget=budgetLeft();let bt=Math.max(nextBuyMin()??t,t);
   const planned=new Set();
   const addProv=(attr,ps)=>{const a=byId[attr];if(!fixed.some(f=>f.attr===attr))fixed.push({k:"ride",attr,t:ps,end:ps+60,dur:a.dur,area:a.area,dpa:true,prov:true,w:5});};
-  lockedBuys.sort((x,y)=>x.t-y.t).forEach(i=>{const a=byId[i.attr];if(a.dpa>budget||planned.has(i.attr))return;budget-=a.dpa;planned.add(i.attr);
+  lockedBuys.sort((x,y)=>x.t-y.t).forEach(i=>{const a=byId[i.attr];if(a.dpa>budget||planned.has(i.attr)||(SOLD_BY[i.attr]&&i.t>mins(SOLD_BY[i.attr])))return;budget-=a.dpa;planned.add(i.attr);
     const ps=Math.max(i.ps||i.t+60,i.t+45);buys.push({...i,ps});addProv(i.attr,ps);});
   const freeBuy=b=>{let g=true;while(g){g=false;for(const l of buys.filter(x=>x.lock)){if(b>l.t-60&&b<Math.min(l.t+60,l.ps)){b=Math.min(l.t+60,l.ps);g=true;}}}return b;};
   bt=freeBuy(bt);
@@ -684,8 +684,8 @@ function buildPlanCore(slotShift,buyCap,skipMeals,skipNth,firstOnly){
     if(a.dpa>budget)continue;
     const ps=targetSlot(o,bt)+(firstOnly&&nth>0?0:slotShift); // firstOnly: 最初の1枚だけ枠をずらす
     if(!slotFits(o,ps))continue;
-    const wNow=bestWait(a,t+walk(area,a.area),Math.max(t+walk(area,a.area),bt));
-    if(wNow<=60&&wNow-bestWait(a,t,exitM)<=10&&ps-bt>120&&!(SOLD_BY[o.id]))continue; // 購入までの間に空いて乗れるなら通常列で
+    const t1=t+walk(area,a.area);let cheap=0;for(let tt=t1;tt<=Math.max(t1,bt);tt+=30)if(estWait(a,tt)<=60)cheap++;
+    if(cheap>=3&&ps-bt>120&&!(SOLD_BY[o.id]))continue; // 購入までの間に空いて乗れるなら通常列で
     budget-=a.dpa;planned.add(o.id);
     buys.push({id:nid(),k:"buy",t:bt,dur:0,attr:o.id,ps,text:`DPA購入: ${a.name}（${fromMin(ps)}前後の枠を狙う）`});
     addProv(o.id,ps);bought++;
@@ -721,6 +721,7 @@ function buildPlanCore(slotShift,buyCap,skipMeals,skipNth,firstOnly){
       items.push({id:f.id||nid(),k:f.k,t:st,dur:f.dur,w:f.w||0,attr:f.attr,area:f.area||undefined,text:f.text||(f.attr?byId[f.attr].name:""),lock:!!f.lock,dpa:!!f.dpa,prov:!!f.prov,walk:wk||undefined});
       t=st+f.dur+(f.w||0);area=fArea;fixed.shift();continue;
     }
+    const bigMustNow=rem.filter(b=>prio(b)==="must"&&isBig(b)&&t+walk(area,b.area)+estWait(b,t+walk(area,b.area))+b.dur<=finishBy(b)); // 今なら入る大物の必須
     const pick=(pool,useReserve,scarce)=>{
       let best=null,bs=Infinity;
       for(const a of pool){
@@ -733,7 +734,7 @@ function buildPlanCore(slotShift,buyCap,skipMeals,skipNth,firstOnly){
           if(end+walk(a.area,f.area||a.area)>lim)continue;} // 次の固定枠に間に合わない（DPAは枠内かつ退園に収まる時刻まで）
         if(showConflict(a,at))continue;
         if(useReserve&&end+reserve(a,end)>exitM)continue; // ほかの必須の大物の時間を残す
-        let lost=0;if(useReserve)for(const b of rem){if(b===a||prio(b)!=="must")continue;const okNow=t+walk(area,b.area)+estWait(b,t+walk(area,b.area))+b.dur<=finishBy(b);const okAfter=end+walk(a.area,b.area)+estWait(b,end+walk(a.area,b.area))+b.dur<=finishBy(b);if(okNow&&!okAfter)lost++;}
+        let lost=0;if(useReserve)for(const b of bigMustNow){if(b===a)continue;if(end+walk(a.area,b.area)+estWait(b,end+walk(a.area,b.area))+b.dur>finishBy(b))lost++;}
         const score=wk*walkCost()+(w-bestWait(a,at,exitM))*1.5-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0)+(scarce?w*0.3:0)+lost*40;
         if(score<bs){bs=score;best={a,wk,w,end,at};}
       }
@@ -771,10 +772,10 @@ function buildPlan(){
   // 購入予定の枠を 0 / 60 / 120 分ずらして試し、必須が一番多く入る案を採る
   // 購入枚数を減らした案（必須を通常列で入れる）も比べる。必須の取りこぼし → 入らない数 → 出費 の順で少ない案
   let best=null;const cost=r=>r.plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
-  outer:for(const sm of [false,true])for(const sk of [null,0,1,2])for(const cap of [null,2,1,0])for(const sh of [0,60,120,180])for(const fo of (sh?[false,true]:[false])){if(sm&&best&&best.bigSkip===0)break outer;const r=buildPlanCore(sh,cap,sm,sk,fo);r.cost=cost(r);
+  outer:for(const sm of [false,true])for(const sk of [null,0,1])for(const cap of [null,1,0])for(const sh of [0,60,120,180])for(const fo of (sh?[false,true]:[false])){if(cap===0&&(sh||sk!==null))continue;if(sm&&best&&best.bigSkip===0&&!best.missMeal.length)break outer;const r=buildPlanCore(sh,cap,sm,sk,fo);r.cost=cost(r);
     const key=x=>[x.bigSkip,x.missMeal.length,x.mustSkip,x.skip.length,x.cost];const better=(x,y)=>{const a=key(x),b=key(y);for(let i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]<b[i];return false;};
     if(!best||better(r,best))best=r;
-    if(best.mustSkip===0&&cap===null&&sh===0&&!sm&&sk===null)break outer;}
+    if(best.mustSkip===0&&!best.missMeal.length&&!best.skip.length)break outer;}
   S.plan=best.plan;S.planSkip=best.skip.map(a=>a.id);S.planWhy={};best.skip.forEach(a=>{if(stopUntil(a))S.planWhy[a.id]="運営中断中";});
   S.planMiss=best.missMeal;S.planBuilt=true;S.planDay=todayKey();save();
 }
@@ -959,7 +960,7 @@ function renderPlan(){
   const mustSkip=skipIds.filter(id=>prio(byId[id])==="must").length;
   const buyPlan=plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
   const lines=[];
-  if(mustSkip)lines.push(`<b>必須 ${mustSkip}件が入りません</b>（下の「入らない」欄）`);
+  if(mustSkip){const dpaLeft=skipIds.filter(id=>prio(byId[id])==="must"&&byId[id].dpa&&!soldOut(id)&&!(SOLD_BY[id]&&nowMin()>mins(SOLD_BY[id]))).length;lines.push(`<b>必須 ${mustSkip}件が入りません</b>（下の「入らない」欄）${dpaLeft&&S.dpaBudget!==""?"。予算を上げるとDPAで入ります":""}`);}
   lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?" ← 設定で予算を決められます":""}`);
   if((S.planMiss||[]).length&&S.planDay===todayKey())lines.push(`<b>${S.planMiss.join("・")}が入りません</b>`);
   if(condSummary())lines.push(esc(condSummary()));
@@ -1185,7 +1186,7 @@ document.addEventListener("drop",e=>{const s=e.target.closest(".step");if(!s||dr
   if(S.apiOn)fetchApi(true);
   // 入力中は一覧を描き直さない（キーボードが閉じるのを防ぐ）
   setInterval(()=>{renderHeader();const ae=document.activeElement;const typing=ae&&ae.closest&&ae.closest("main")&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName);if(S.tab==="near"&&!typing)renderNear();if(S.tab==="dpa"&&!typing)renderDpa();if(S.tab==="plan"&&!typing)renderPlan();},30000);
-  setInterval(()=>{if(S.apiOn)fetchApi(true);},5*60000);
+  setInterval(()=>{if(S.apiOn)fetchApi(true);},60000);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.apiOn&&!apiFresh())fetchApi(true);});
 })();
 </script>
