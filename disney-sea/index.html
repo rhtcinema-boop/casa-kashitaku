@@ -2,128 +2,144 @@
 <style>[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>シー立ち回りナビ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Oswald:wght@500;600&display=swap">
+<meta name="theme-color" content="#ffffff">
 <style>
-/* Layout: one-screen phone app. Sticky header (clock, area chips, DPA timer), scrolling panel, bottom tabs. */
+/* 公式アプリ風: 白ベース・濃紺の見出し・丸いカード・影は薄く・下タブにアイコン。文字は最小限。 */
 :root{
-  --bg:#f3f5f7; --panel:#ffffff; --fg:#13202e; --muted:#5d6b7a; --line:#d9e0e7;
-  --accent:#0b5fa5; --accent-fg:#ffffff; --sea:#e3f0fa;
-  --ok:#1f8a4c; --ok-bg:#e2f5e8; --warn:#b26a00; --warn-bg:#fff1d6; --bad:#b3261e; --bad-bg:#fbe3e1;
-  --dpa:#6b3fa0; --dpa-bg:#efe6fa; --must:#c2410c; --must-bg:#ffe8dc; --must-fg:#ffffff;
-  --display:"Oswald","Zen Kaku Gothic New",system-ui,sans-serif;
-  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --bg:#f2f4f8; --panel:#ffffff; --fg:#1b2a4a; --muted:#6b7894; --line:#e6e9f0; --shadow:0 2px 10px rgba(20,40,90,.07);
+  --navy:#0c2d6b; --accent:#1e63e9; --accent-fg:#ffffff; --sea:#e8f0ff; --sea-fg:#1e4fb8;
+  --ok:#128a4e; --ok-bg:#e3f6ec; --warn:#b86a00; --warn-bg:#fff3dd; --bad:#c62a2a; --bad-bg:#fde6e6;
+  --dpa:#6a3ec7; --dpa-bg:#efe9fc; --must:#e8541c; --must-bg:#ffe9df; --must-fg:#ffffff;
+  --display:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --r:18px; --ease:cubic-bezier(.2,.8,.2,1);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --bg:#0d1620; --panel:#162330; --fg:#e8eef4; --muted:#9db0c2; --line:#2a3a4b;
-  --accent:#5fb3ff; --accent-fg:#06192b; --sea:#17304a;
-  --ok:#5fd48f; --ok-bg:#133a25; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
-  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ffb08a; --must-bg:#47261a; --must-fg:#2a1206; color-scheme:dark; } }
+  --bg:#0f1526; --panel:#182039; --fg:#eef2fb; --muted:#9aa7c7; --line:#283456; --shadow:0 2px 12px rgba(0,0,0,.35);
+  --navy:#dfe7ff; --accent:#6ea0ff; --accent-fg:#0a1a3a; --sea:#1f2d55; --sea-fg:#b9cdff;
+  --ok:#5fd48f; --ok-bg:#15382a; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
+  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ff8a5c; --must-bg:#47261a; --must-fg:#2a1206; color-scheme:dark; } }
 :root[data-theme="dark"]{
-  --bg:#0d1620; --panel:#162330; --fg:#e8eef4; --muted:#9db0c2; --line:#2a3a4b;
-  --accent:#5fb3ff; --accent-fg:#06192b; --sea:#17304a;
-  --ok:#5fd48f; --ok-bg:#133a25; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
-  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ffb08a; --must-bg:#47261a; --must-fg:#2a1206; color-scheme:dark; }
+  --bg:#0f1526; --panel:#182039; --fg:#eef2fb; --muted:#9aa7c7; --line:#283456; --shadow:0 2px 12px rgba(0,0,0,.35);
+  --navy:#dfe7ff; --accent:#6ea0ff; --accent-fg:#0a1a3a; --sea:#1f2d55; --sea-fg:#b9cdff;
+  --ok:#5fd48f; --ok-bg:#15382a; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
+  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ff8a5c; --must-bg:#47261a; --must-fg:#2a1206; color-scheme:dark; }
 
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
 *{box-sizing:border-box}
 button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
+button{cursor:pointer;transition:transform .12s var(--ease),background .15s,color .15s,border-color .15s,box-shadow .15s}
+button:active{transform:scale(.96)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.num{font-family:var(--display);font-variant-numeric:tabular-nums;letter-spacing:.02em}
-.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums;letter-spacing:.01em;font-weight:700}
+.eyebrow{font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:700}
 
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);
-  padding-block:8px 6px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));flex:none}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);box-shadow:var(--shadow);
+  padding-block:10px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));flex:none}
 .hrow{display:flex;align-items:center;gap:10px}
-.hrow h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.hrow h1{font-size:17px;margin:0;font-weight:800;color:var(--navy);letter-spacing:.02em;white-space:nowrap}
 .clock{margin-left:auto;display:flex;align-items:center;gap:6px;position:relative}
-.clock .num{font-size:26px;line-height:1}
+.clock .num{font-size:26px;line-height:1;color:var(--navy)}
 .clock input{width:1px;height:1px;opacity:0;position:absolute;right:0;bottom:0}
-.clock button{border:1px solid var(--line);background:transparent;border-radius:8px;padding:3px 8px;font-size:12px}
-.chips{display:flex;gap:6px;overflow-x:auto;padding-block:8px 2px;margin:0 -4px;padding-inline:4px;scrollbar-width:none}
+.clock button{border:0;background:var(--bg);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--muted)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-block:8px 2px;margin:0 -4px;padding-inline:4px;scrollbar-width:none;scroll-behavior:smooth}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 12px;font-size:13px;white-space:nowrap}
-.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
-.dpabar{margin-top:6px;border-radius:10px;background:var(--dpa-bg);padding:6px 10px;display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
-.dpabar .num{font-size:20px;color:var(--dpa)}
+.chip{flex:none;border:0;background:var(--bg);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;white-space:nowrap;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--navy);color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"],:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:var(--accent-fg)}
+@media (prefers-color-scheme:light){ :root:not([data-theme="dark"]) .chip[aria-pressed="true"]{color:#fff} }
+.dpabar{margin-top:8px;border-radius:14px;background:var(--dpa-bg);padding:7px 12px;display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap;color:var(--dpa)}
+.dpabar .num{font-size:20px}
 .dpabar b{color:var(--dpa)}
+.dpabar .note{color:var(--dpa);opacity:.8}
 
-main{flex:1;min-height:0;overflow-y:auto;padding-block:12px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{flex:1;min-height:0;overflow-y:auto;padding-block:14px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overscroll-behavior:contain}
 section[hidden]{display:none}
-h2{font-size:14px;margin:14px 0 8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-h2 small{color:var(--muted);font-weight:400;font-size:12px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+section.enter{animation:rise .24s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+h2{font-size:15px;margin:18px 0 8px;display:flex;align-items:center;gap:8px;color:var(--navy);font-weight:800}
+h2 small{color:var(--muted);font-weight:600;font-size:12px}
+.help{margin-left:auto;border:0;background:var(--bg);color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:13px;font-weight:800;padding:0;line-height:1;flex:none}
+.helpbox{background:var(--sea);color:var(--sea-fg);border-radius:14px;padding:10px 12px;font-size:13px;margin-bottom:8px;animation:rise .2s var(--ease)}
+.helpbox p{margin:0 0 6px}.helpbox p:last-child{margin:0}
+.card{background:var(--panel);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow)}
 .list{display:flex;flex-direction:column;gap:8px}
-.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
-.row.done{opacity:.55}
-.row.must{border-left:4px solid var(--must)}
-.row .name{font-weight:700;min-width:0}
+.list>*{animation:rise .22s var(--ease) both}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--panel);border-radius:var(--r);padding:11px 14px;box-shadow:var(--shadow)}
+.row.done{opacity:.5}
+.row.must{box-shadow:inset 4px 0 0 var(--must),var(--shadow)}
+.row .name{font-weight:700;min-width:0;color:var(--navy)}
 .row .sub{grid-column:1;font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-width:0}
-.row .right{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-.wait{display:flex;align-items:baseline;gap:4px}
-.wait .num{font-size:22px;line-height:1}
+.row .right{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.wait{display:flex;align-items:baseline;gap:3px}
+.wait .num{font-size:24px;line-height:1}
 .wait .u{font-size:11px;color:var(--muted)}
 .wait.ok .num{color:var(--ok)} .wait.warn .num{color:var(--warn)} .wait.bad .num{color:var(--bad)}
-.tag{display:inline-block;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;line-height:1.6;white-space:nowrap}
+.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap}
 .tag.ok{background:var(--ok-bg);color:var(--ok)} .tag.warn{background:var(--warn-bg);color:var(--warn)} .tag.bad{background:var(--bad-bg);color:var(--bad)}
-.tag.dpa{background:var(--dpa-bg);color:var(--dpa)} .tag.sea{background:var(--sea);color:var(--accent)} .tag.mute{background:var(--bg);color:var(--muted)}
+.tag.dpa{background:var(--dpa-bg);color:var(--dpa)} .tag.sea{background:var(--sea);color:var(--sea-fg)} .tag.mute{background:var(--bg);color:var(--muted)}
 .tag.must{background:var(--must-bg);color:var(--must)}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
-.sm{border:1px solid var(--line);background:transparent;border-radius:8px;padding:4px 9px;font-size:12px;line-height:1.5}
-.sm.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
-.sm.must{background:var(--must);color:var(--must-fg);border-color:var(--must)}
-.sm.want{background:var(--sea);color:var(--accent);border-color:var(--accent)}
-.primary{background:var(--accent);color:var(--accent-fg);border:0;border-radius:10px;padding:9px 14px;font-weight:700}
-.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
-.danger{color:var(--bad);border-color:var(--bad)}
-.next{background:var(--sea);border:1px solid var(--accent);border-radius:14px;padding:12px 14px}
-.next .big{font-size:20px;font-weight:700;margin:2px 0;text-wrap:balance}
+.sm{border:0;background:var(--bg);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;line-height:1.4;min-height:32px;color:var(--fg)}
+.sm.on{background:var(--navy);color:#fff}
+.sm.must{background:var(--must);color:var(--must-fg)}
+.sm.want{background:var(--sea);color:var(--sea-fg)}
+.primary{background:var(--accent);color:var(--accent-fg);border:0;border-radius:999px;padding:11px 18px;font-weight:800;box-shadow:0 4px 14px rgba(30,99,233,.25)}
+.ghost{background:var(--bg);border:0;border-radius:999px;padding:10px 16px;font-weight:700;color:var(--fg)}
+.danger{color:var(--bad)}
+.next{background:linear-gradient(135deg,var(--sea),var(--panel));border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.next::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:var(--accent);opacity:.08}
+.next .big{font-size:22px;font-weight:800;margin:4px 0 2px;text-wrap:balance;color:var(--navy);line-height:1.3}
 .next .why{font-size:13px;color:var(--muted)}
-.next .alt{font-size:12px;margin-top:6px;color:var(--fg)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.kv{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0;border-bottom:1px dashed var(--line)}
-.kv:last-child{border-bottom:0}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.form label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px;min-width:0}
-.form select,.form input{border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:var(--bg);min-width:0;width:100%}
+.next .alt{font-size:12px;margin-top:8px;color:var(--fg);opacity:.85}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.form label{font-size:12px;color:var(--muted);font-weight:700;display:flex;flex-direction:column;gap:4px;min-width:0}
+.form select,.form input,.pop input{border:0;border-radius:12px;padding:10px 12px;background:var(--bg);min-width:0;width:100%;font-weight:600;color:var(--fg)}
 .form .full{grid-column:1/-1}
-.toggle{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0}
-.toggle input{width:20px;height:20px}
+.toggle{display:flex;align-items:center;gap:10px;font-size:14px;padding:9px 0;font-weight:600}
+.toggle input{width:22px;height:22px;accent-color:var(--accent);flex:none}
 /* timeline */
-.step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
-.step.now{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-.step.past{opacity:.5}
-.step.locked{border-style:dashed}
+.step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:start;padding:10px 12px;border-radius:var(--r);background:var(--panel);box-shadow:var(--shadow);position:relative}
+.step.now{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
+.step.past{opacity:.45}
+.step.locked{background:linear-gradient(90deg,var(--sea) 0,var(--panel) 28%)}
 .step.buy{background:var(--dpa-bg)}
 .step.meal{background:var(--warn-bg)}
-.step.warnfit{border-color:var(--bad)}
+.step.rest{background:var(--bg)}
+.step.warnfit{box-shadow:0 0 0 2px var(--bad),var(--shadow)}
 .step .t{font-size:17px;min-width:48px}
-.step .t input{width:112px;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:2px 4px;font-family:var(--display);font-size:15px}
-.step .txt{font-weight:500}
+.step .t{position:relative;display:inline-block;background:var(--bg);border-radius:10px;padding:4px 10px;line-height:1.3}
+.step .t input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0}
+.step .txt{font-weight:700;color:var(--navy)}
 .step .meta{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .step .ctl{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap}
-.step .ctl .sm{padding:3px 8px}
+.step .ctl .sm{padding:5px 10px;min-height:30px}
 .step[draggable="true"]{cursor:grab}
 .step.dragover{outline:2px dashed var(--accent)}
-.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .note{font-size:12px;color:var(--muted)}
 .waitedit{display:flex;gap:4px;align-items:center}
-.waitedit input{width:58px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;background:var(--bg);text-align:right}
-.pop input{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--bg);width:100%;margin-top:4px}
-.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
-.toast.show{opacity:1;pointer-events:auto}
-.toastbtn{background:transparent;border:1px solid currentColor;color:inherit;border-radius:999px;padding:2px 10px;margin-left:10px;font-size:12px}
-.buynow{margin-top:8px;padding-top:8px;border-top:1px dashed var(--accent);font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.banner{margin-bottom:10px;border-color:var(--warn);background:var(--warn-bg)}
-nav{flex:none;display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
-nav button{flex:1;border:0;background:transparent;padding:10px 4px 8px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
-nav button .ic{font-family:var(--display);font-size:16px;line-height:1}
-nav button[aria-selected="true"]{color:var(--accent);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
-.empty{color:var(--muted);font-size:13px;padding:12px;text-align:center}
-@media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+.waitedit input{width:60px;border:0;border-radius:10px;padding:7px 8px;background:var(--bg);text-align:right;font-weight:700}
+.pop input{margin-top:4px}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:var(--navy);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center}
+:root[data-theme="dark"] .toast{color:var(--accent-fg)}
+.toast.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.toastbtn{background:rgba(255,255,255,.18);border:0;color:inherit;border-radius:999px;padding:3px 10px;margin-left:10px;font-size:12px;font-weight:800}
+.buynow{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.banner{margin-bottom:10px;background:var(--warn-bg);color:var(--fg)}
+nav{flex:none;display:flex;background:var(--panel);box-shadow:0 -2px 12px rgba(20,40,90,.06);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+nav button{flex:1;border:0;background:transparent;padding:8px 4px 6px;font-size:10.5px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+nav button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s var(--ease)}
+nav button[aria-selected="true"]{color:var(--accent)}
+nav button[aria-selected="true"] svg{transform:translateY(-2px) scale(1.08)}
+nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+.empty{color:var(--muted);font-size:13px;padding:14px;text-align:center}
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
 
 <header>
@@ -135,7 +151,7 @@ nav button[aria-selected="true"]{color:var(--accent);font-weight:700;box-shadow:
       <input type="time" id="timeOverride" aria-label="仮の時刻">
     </div>
   </div>
-  <div class="chips" id="areaChips" role="group" aria-label="現在地のエリア"></div>
+  <div class="chips" id="areaChips" role="group" aria-label="今いるエリア"></div>
   <div class="dpabar" id="dpabar"></div>
 </header>
 
@@ -143,62 +159,63 @@ nav button[aria-selected="true"]{color:var(--accent);font-weight:700;box-shadow:
   <section id="tab-near">
     <div id="dayBanner"></div>
     <div class="next" id="nextCard"></div>
-    <h2>近いアトラクション <small id="nearCount"></small><small id="apiStamp"></small></h2>
+    <h2>近く <small id="nearCount"></small><small id="apiStamp"></small><button class="help" type="button" data-help="near" aria-label="使い方">?</button></h2>
+    <div class="helpbox" id="help-near" hidden><p>「今」欄に公式アプリの待ち時間を入れると、判定とプランに使います。</p><p>「止」＝止まっている。優先度のバッジをタップで 必須 → できれば → パス。</p></div>
     <div class="filters">
       <button class="sm on" type="button" data-nf="all">全部</button>
       <button class="sm" type="button" data-nf="left">未乗車</button>
       <button class="sm" type="button" data-nf="must">必須</button>
-      <button class="sm" type="button" data-nf="empty">平均より空いてる</button>
-      <button class="sm" type="button" data-nf="dpa">DPAあり</button>
-      <button class="sm" type="button" id="apiBtn">待ち時間を更新</button>
+      <button class="sm" type="button" data-nf="empty">空いてる</button>
+      <button class="sm" type="button" data-nf="dpa">DPA</button>
+      <button class="sm" type="button" id="apiBtn" hidden>更新</button>
     </div>
-    <p class="note">「今」欄に公式アプリの待ち時間を入れると判定と計画に使います（90分有効、APIより優先）。「止」で運営中断を記録（90分有効）。優先度バッジをタップすると 必須 → できれば → パス と切り替わります。</p>
     <div class="list" id="nearList"></div>
   </section>
 
   <section id="tab-plan" hidden>
     <div class="card">
       <div class="grid2">
-        <div><div class="eyebrow">残り</div><div class="num" style="font-size:26px" id="planLeft"></div></div>
-        <div><div class="eyebrow">退園</div><div class="num" style="font-size:26px" id="planExit"></div></div>
+        <div><div class="eyebrow">残り</div><div class="num" style="font-size:28px" id="planLeft"></div></div>
+        <div><div class="eyebrow">退園</div><div class="num" style="font-size:28px" id="planExit"></div></div>
       </div>
-      <div class="btns" style="margin-top:8px">
-        <button class="primary" type="button" id="replan">今から再計算</button>
-        <button class="ghost" type="button" id="addItem">予定を追加</button>
-        <button class="ghost" type="button" id="unlockAll">ロック解除</button>
+      <div class="btns" style="margin-top:10px">
+        <button class="primary" type="button" id="replan">今から組む</button>
+        <button class="ghost" type="button" id="addItem">追加</button>
+        <button class="ghost" type="button" id="unlockAll">固定解除</button>
       </div>
       <div class="form" id="addForm" hidden>
         <label>種類<select id="addKind"><option value="ride">アトラクション</option><option value="meal">食事</option><option value="rest">休憩</option><option value="show">ショー</option><option value="note">メモ</option></select></label>
         <label>時刻<input type="time" id="addTime"></label>
         <label id="addAttrWrap">アトラクション<select id="addAttr"></select></label>
         <label id="addShowWrap" hidden>ショー<select id="addShow"></select></label>
-        <label id="addTextWrap" hidden>内容<input type="text" id="addText" placeholder="例: クリスマスグリーティング"></label>
+        <label id="addTextWrap" hidden>内容<input type="text" id="addText" placeholder="例: グリーティング"></label>
         <label>所要(分)<input type="number" id="addDur" value="30" min="5" max="180"></label>
-        <label>&nbsp;<button class="primary" type="button" id="addGo">追加（ロック）</button></label>
+        <label>&nbsp;<button class="primary" type="button" id="addGo">追加</button></label>
       </div>
-      <p class="note" id="planNote"></p>
+      <p class="note" id="planNote" style="margin:10px 0 0"></p>
     </div>
-    <h2>タイムテーブル <small>行の時刻を直すと自動でロック。ロック行とDPA枠は再計算でも動きません</small></h2>
+    <h2>タイムテーブル<button class="help" type="button" data-help="plan" aria-label="使い方">?</button></h2>
+    <div class="helpbox" id="help-plan" hidden><p>時刻を直す・↑↓・固定 した行は、組み直しても動きません。</p><p>DPAの枠はパスタブで直します。削除は「元に戻す」で戻せます。</p></div>
     <div class="list" id="planList"></div>
-    <h2>入らないもの <small>退園までに収まらない</small></h2>
+    <h2>入らない</h2>
     <div class="list" id="planSkip"></div>
   </section>
 
   <section id="tab-dpa" hidden>
     <div class="card" id="dpaStatus"></div>
-    <h2>購入済みDPA</h2>
+    <h2>持っているDPA</h2>
     <div class="list" id="dpaList"></div>
     <div class="card">
-      <div class="eyebrow">DPAを登録</div>
+      <div class="eyebrow">買ったら登録</div>
       <div class="form">
         <label>アトラクション<select id="dpaAttr"></select></label>
         <label>利用開始<input type="time" id="dpaSlot"></label>
         <label>購入時刻<input type="time" id="dpaBought"></label>
         <label>&nbsp;<button class="primary" type="button" id="dpaAdd">登録</button></label>
       </div>
-      <p class="note">次に買えるのは「購入から60分後」か「そのDPAの利用開始時刻」の早い方。利用開始は購入画面に出た時刻を入れてください（登録後も直せます）。ショー用DPAはアトラクション用と別枠で、このアプリでは管理しません。価格は2026年9月改定時の目安で、日により変わることがあります。</p>
     </div>
-    <h2>買う順番の目安 <small id="dpaOrderNote"></small></h2>
+    <h2>買う順番 <small id="dpaOrderNote"></small><button class="help" type="button" data-help="dpa" aria-label="使い方">?</button></h2>
+    <div class="helpbox" id="help-dpa" hidden><p>次に買えるのは「購入から60分後」か「そのDPAの利用開始」の早い方。</p><p>価格は2026年9月改定時の目安。ショー用DPAは別枠で、ここでは扱いません。</p></div>
     <div class="list" id="dpaOrder"></div>
   </section>
 
@@ -206,57 +223,67 @@ nav button[aria-selected="true"]{color:var(--accent);font-weight:700;box-shadow:
     <div class="filters">
       <button class="sm on" type="button" data-ff="all">全部</button>
       <button class="sm" type="button" data-ff="meal">食事</button>
-      <button class="sm" type="button" data-ff="snack">軽食・スイーツ</button>
+      <button class="sm" type="button" data-ff="snack">軽食</button>
       <button class="sm" type="button" data-ff="mo">モバイルオーダー</button>
-      <button class="sm on" type="button" id="openOnly" aria-pressed="true">今やってる店だけ</button>
+      <button class="sm on" type="button" id="openOnly" aria-pressed="true">今やってる</button>
     </div>
-    <p class="note">営業時間は目安（閉園の30〜60分前に閉まる店が多い）。混雑日は早仕舞い・売り切れあり。クリスマス限定メニューは11/11〜12/25。</p>
     <div class="list" id="foodList"></div>
-    <h2>ポップコーン <small>近い順</small></h2>
+    <h2>ポップコーン</h2>
     <div class="list" id="popList"></div>
   </section>
 
   <section id="tab-set" hidden>
+    <h2 style="margin-top:0">基本</h2>
     <div class="card">
-      <div class="eyebrow">条件</div>
-      <div class="form">
-        <label>退園時刻<input type="time" id="exitTime"></label>
-        <label>計画の開始<input type="time" id="startTime"></label>
-      </div>
-      <label class="toggle"><input type="checkbox" id="srOk">シングルライダーOK（アナ雪・ピーターパン・レイジングの待ちを短く見積もる）</label>
-      <div class="form">
+      <div class="form" style="margin-top:0">
+        <label>退園<input type="time" id="exitTime"></label>
+        <label>開始<input type="time" id="startTime"></label>
         <label>一番小さい人の身長(cm)<input type="number" id="height" min="0" max="200" inputmode="numeric" placeholder="制限なし"></label>
-        <label>DPAの予算(1人)<select id="dpaBudget"><option value="">上限なし</option><option value="0">DPAは買わない</option><option value="2500">2,500円まで</option><option value="5000">5,000円まで</option><option value="7500">7,500円まで</option><option value="10000">10,000円まで</option></select></label>
+        <label>DPA予算(1人)<select id="dpaBudget"><option value="">上限なし</option><option value="0">買わない</option><option value="2500">2,500円</option><option value="5000">5,000円</option><option value="7500">7,500円</option><option value="10000">10,000円</option></select></label>
       </div>
-      <label class="toggle"><input type="checkbox" id="apiOn">待ち時間を自動取得（queue-times.com 非公式API）</label>
-      <p class="note" id="apiNote"></p>
+      <label class="toggle"><input type="checkbox" id="srOk">シングルライダーOK</label>
+      <label class="toggle"><input type="checkbox" id="apiOn">待ち時間を自動取得（非公式）</label>
+      <p class="note" id="apiNote" hidden></p>
     </div>
-    <h2>乗りたい度 <small>必須を先に組み、できれば は余った時間で</small></h2>
+    <h2>今日の条件<button class="help" type="button" data-help="cond" aria-label="説明">?</button></h2>
+    <div class="helpbox" id="help-cond" hidden><p>雨・暑さ・寒さは「並ぶ場所に屋根があるか」で、人の流れを見積もります。強風は止まりやすい乗り物を後回しにします。</p><p>逆張り＝ショー中・閉園間際など、人が離れる時に乗る。</p></div>
+    <div class="card">
+      <div class="form" style="margin-top:0">
+        <label>天気<select id="cWeather"><option value="">晴れ・曇り</option><option value="rain">雨</option><option value="wind">強風</option><option value="heat">猛暑</option><option value="cold">極寒</option></select></label>
+        <label>混み具合<select id="cCrowd"><option value="">普通</option><option value="low">空いてる</option><option value="high">混雑</option><option value="max">激混み</option></select></label>
+      </div>
+      <label class="toggle"><input type="checkbox" id="cContra">逆張り</label>
+      <label class="toggle"><input type="checkbox" id="cOutdoor">屋根のない列は避ける</label>
+      <label class="toggle"><input type="checkbox" id="cWalk">歩き少なめ</label>
+      <label class="toggle"><input type="checkbox" id="cKids">休憩多め</label>
+      <div class="form"><label class="full">メモ<input type="text" id="cMemo" placeholder="例: 16時ハーバー集合"></label></div>
+      <p class="note" id="condNote" style="margin:8px 0 0"></p>
+    </div>
+    <h2>乗りたい度</h2>
     <div class="btns" style="margin-bottom:8px">
       <button class="sm" type="button" data-prioall="must">全部 必須</button>
       <button class="sm" type="button" data-prioall="want">全部 できれば</button>
       <button class="sm" type="button" data-prioall="skip">全部 パス</button>
     </div>
     <div class="list" id="prioList"></div>
-    <h2>今日の運営 <small id="todayLabel"></small></h2>
+    <h2>今日 <small id="todayLabel"></small></h2>
     <div class="card note" id="todayNote"></div>
     <h2>リセット</h2>
     <div class="card">
       <div class="btns">
-        <button class="ghost" type="button" id="resetRides">乗車記録と待ち時間を消す</button>
-        <button class="ghost danger" type="button" id="resetAll">全部リセット</button>
+        <button class="ghost" type="button" id="resetRides">記録を消す</button>
+        <button class="ghost danger" type="button" id="resetAll">全部消す</button>
       </div>
-      <p class="note">データはこの端末のブラウザに保存されます。別端末には同期しません。</p>
     </div>
   </section>
 </main>
 
 <nav>
-  <button type="button" data-tab="near" aria-selected="true"><span class="ic">NOW</span>今</button>
-  <button type="button" data-tab="plan"><span class="ic">PLAN</span>プラン</button>
-  <button type="button" data-tab="dpa"><span class="ic">DPA</span>パス</button>
-  <button type="button" data-tab="food"><span class="ic">FOOD</span>ご飯</button>
-  <button type="button" data-tab="set"><span class="ic">SET</span>設定</button>
+  <button type="button" data-tab="near" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>今</button>
+  <button type="button" data-tab="plan"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>プラン</button>
+  <button type="button" data-tab="dpa"><svg viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg>パス</button>
+  <button type="button" data-tab="food"><svg viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 0-3 2-3 5v3h3v10"/></svg>ご飯</button>
+  <button type="button" data-tab="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
 </nav>
 <div class="toast" id="toast" role="status"></div>
 
@@ -298,7 +325,7 @@ const ATTR=[
  {id:"20k",name:"海底2万マイル",area:"MI",base:[12,25,18],dur:6,qt:"20,000"},
  {id:"anna",name:"アナとエルサのフローズンジャーニー",area:"FS",base:[120,140,110],dpa:2500,sr:true,dur:10,qt:"frozen",note:"DPAは平日9:30〜9:50に売切"},
  {id:"rapunzel",name:"ラプンツェルのランタンフェスティバル",area:"FS",base:[55,90,70],dpa:2000,dur:8,qt:"rapunzel"},
- {id:"peterpan",name:"ピーターパンのネバーランドアドベンチャー",area:"FS",base:[70,110,80],dpa:2000,sr:true,dur:10,qt:"peter pan",note:"身長102cm以上"},
+ {id:"peterpan",name:"ピーターパンのネバーランドアドベンチャー",area:"FS",base:[70,110,80],dpa:2000,sr:true,dur:10,qt:"peter pan"},
  {id:"buggies",name:"フェアリー・ティンカーベルのビジーバギー",area:"FS",base:[25,45,32],dur:3,qt:"busy buggies"},
 ];
 const byId=Object.fromEntries(ATTR.map(a=>[a.id,a]));
@@ -349,7 +376,7 @@ const POP=[{id:"p_mh",a:"MH",n:"ザンビーニ前（ハーバー）"},{id:"p_aw
 const API_URL="https://queue-times.com/parks/275/queue_times.json";
 
 // 身長制限(cm)。公式の目安値
-const HEIGHT={soaring:102,tower:102,indy:117,raging:117,center:117,nemo:90,flounder:90,peterpan:102};
+const HEIGHT={soaring:102,tower:102,indy:117,raging:117,center:117,nemo:90,flounder:90};
 ATTR.forEach(a=>{if(HEIGHT[a.id])a.h=HEIGHT[a.id];});
 // 平日のDPA売切目安。これを過ぎたら購入予定に入れない
 const SOLD_BY={anna:"09:50",soaring:"11:00"};
@@ -361,15 +388,25 @@ const MEALS=[ // 食事を入れる時間帯（from〜to、pref以降は優先�
  {k:"lunch",from:"11:30",pref:"12:00",to:"14:00",text:"昼食（モバイルオーダーで並ばない）"},
  {k:"dinner",from:"17:30",pref:"18:00",to:"19:30",text:"夕食（モバイルオーダーで並ばない）"},
 ];
+// 屋外（雨・暑さ・寒さで人が避ける）、風に弱い（強風で止まることがある）
+const OUTDOOR=new Set(["gondola","fortress","steamer_mh","steamer_awf","steamer_lrd","railway_awf","railway_pd","bigcity","raging","jasmine","flounder","buggies","carousel"]);
+// 並ぶ場所: in=屋内, cov=屋根あり（一部屋外）, out=屋根なし。2026年11月時点の目安
+const QUEUE={soaring:"cov",gondola:"out",fortress:"out",steamer_mh:"cov",steamer_awf:"cov",steamer_lrd:"cov",tower:"cov",toymania:"out",turtle:"in",railway_awf:"cov",railway_pd:"cov",bigcity:"out",nemo:"in",indy:"in",raging:"out",sindbad:"in",carousel:"cov",jasmine:"out",magiclamp:"cov",flounder:"out",scuttle:"in",jellyfish:"in",blowfish:"in",whirlpool:"in",mltheater:"in",center:"in","20k":"cov",anna:"in",rapunzel:"cov",peterpan:"cov",buggies:"out"};
+const QUEUE_LABEL={in:"屋内の列",cov:"屋根あり",out:"屋根なし"};
+const qcover=a=>QUEUE[a.id]||"cov";
+const WINDY=new Set(["gondola","steamer_mh","steamer_awf","steamer_lrd","raging","flounder","jasmine"]);
+const WEATHER_LABEL={rain:"雨",wind:"強風",heat:"猛暑",cold:"極寒"};
+const CROWD_MUL={"":1,low:0.7,high:1.3,max:1.6};
 const PLAN_OPEN="08:45"; // 公式は9:00開園だが実際は8:30〜8:45に開くことが多い
 const parkClose=dt=>(dt.getMonth()===10&&dt.getDate()===27)?"18:30":"21:00";
 
 // ============ state ============
 // 乗車・待ち時間・中断・DPA・売切などの記録は日付つき。前日の記録は今日の判断に使わない
 const KEY="tds-navi-v2";
-const DEF=()=>({area:"MH",ridden:{},waits:{},stops:{},api:null,apiOn:false,dpas:[],soldout:{},drop:{},noBuy:{},prio:{},plan:[],planSkip:[],planWhy:{},pop:{},timeOverride:"",tab:"near",nf:"all",ff:"all",openOnly:true,exit:"19:00",start:"",srOk:false,planBuilt:false,planDay:"",height:"",dpaBudget:"",day:""});
+const DEF=()=>({area:"MH",ridden:{},waits:{},stops:{},api:null,apiOn:false,dpas:[],soldout:{},drop:{},noBuy:{},prio:{},plan:[],planSkip:[],planWhy:{},pop:{},timeOverride:"",tab:"near",nf:"all",ff:"all",openOnly:true,exit:"19:00",start:"",srOk:false,planBuilt:false,planDay:"",height:"",dpaBudget:"",day:"",cond:{weather:"",crowd:"",contra:false,outdoor:false,walk:false,kids:false,memo:""}});
 let S=DEF();
 try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(DEF(),JSON.parse(raw));}catch(e){}
+S.cond=Object.assign(DEF().cond,S.cond||{});
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 let uid=Date.now();
 const nid=()=>"i"+(uid++).toString(36);
@@ -406,7 +443,9 @@ const DP=()=>S.dpas.filter(x=>isToday(x.day)); // 今日のDPA
 const closedReason=a=>a.closed?a.closed(today()):null;
 const avgBase=a=>(a.base[0]+a.base[1]+a.base[2])/3;
 const isBig=a=>avgBase(a)>=50;
-const prio=a=>S.prio[a.id]||(isBig(a)?"must":"want"); // must | want | skip。初期値は大物だけ必須
+const prio0=a=>S.prio[a.id]||(isBig(a)?"must":"want"); // must | want | skip。初期値は大物だけ必須
+const prio=a=>(S.cond.outdoor&&qcover(a)==="out"&&prio0(a)==="must")?"want":prio0(a);
+const walkCost=()=>S.cond.walk?2.5:1;
 const isOpen=a=>!closedReason(a);
 const heightOk=a=>!(S.height&&a.h&&Number(S.height)<a.h);
 const usable=a=>isOpen(a)&&heightOk(a);
@@ -428,11 +467,31 @@ function stopInfo(a){ // 運営中断: 手入力(90分有効) → API
 }
 // この時刻までは中断中とみなす（手入力は入力から90分、APIは30分後に再確認）
 function stopUntil(a){const st=stopInfo(a);if(st==="manual")return S.stops[a.id].at+90;if(st==="api")return nowMin()+30;return null;}
-function factor(a){const l=liveWait(a);if(!l||!l.open)return 1;const b=baseAt(a,nowMin());if(b<5)return 1;return Math.min(2.5,Math.max(0.4,l.v/b));}
+// 条件による目安の補正倍率。人が避ける所を狙う（逆張り）
+function condFactor(a,t){
+  const c=S.cond;let m=CROWD_MUL[c.crowd]||1;const q=qcover(a);
+  if(c.weather==="rain")m*={out:0.5,cov:0.9,in:1.25}[q];
+  else if(c.weather==="wind")m*=OUTDOOR.has(a.id)?0.75:1.1;
+  else if(c.weather==="heat"||c.weather==="cold")m*={out:0.75,cov:0.95,in:1.15}[q];
+  if(c.contra){
+    const sh=todayShows().find(x=>t>=x.t-10&&t<x.t+x.dur);
+    if(sh&&a.id!=="gondola"){if(sh.id==="believe")m*=0.75;else if(["MH","AWF","MI"].includes(a.area))m*=0.7;}
+    const pc=mins(parkClose(today()));if(t>=pc-75)m*=0.8; // 閉園間際は列が短い
+  }
+  return m;
+}
+const condReason=(a,t)=>{const c=S.cond;const q=qcover(a);const r=[];
+  if(c.weather==="rain")r.push(q==="out"?"列に屋根なし・雨で空く見込み":(q==="in"?"屋内の列・雨で混む見込み":"列に屋根あり"));
+  if(c.weather==="wind"&&WINDY.has(a.id))r.push("強風で止まることあり");
+  if((c.weather==="heat"||c.weather==="cold")&&q!=="cov")r.push(q==="in"?WEATHER_LABEL[c.weather]+"で屋内の列は混む見込み":"列に屋根なし・空く見込み");
+  if(c.contra){const sh=todayShows().find(x=>t>=x.t-10&&t<x.t+x.dur);if(sh&&a.id!=="gondola"&&(sh.id==="believe"||["MH","AWF","MI"].includes(a.area)))r.push("ショー中で空く見込み");}
+  return r;};
+const adjBase=(a,t)=>baseAt(a,t)*condFactor(a,t);
+function factor(a){const l=liveWait(a);if(!l||!l.open)return 1;const b=adjBase(a,nowMin());if(b<5)return 1;return Math.min(2.5,Math.max(0.4,l.v/b));}
 function estWait(a,t){ // 推定待ち(分) at time t
   const l=liveWait(a);
   let v;
-  if(l&&l.open&&Math.abs(t-nowMin())<=30)v=l.v; else v=baseAt(a,t)*factor(a);
+  if(l&&l.open&&Math.abs(t-nowMin())<=30)v=l.v; else v=adjBase(a,t)*factor(a);
   if(S.srOk&&a.sr)v=Math.max(10,v*0.4);
   return Math.round(v);
 }
@@ -440,7 +499,7 @@ function bestWait(a,t0,until){let b=Infinity;for(let tt=t0;tt<=until;tt+=30)b=Ma
 // 後回しにしたときの平均待ちと今の差（大きいほど今乗る価値がある）
 function urgency(a,t0,until){let s=0,n=0;for(let tt=t0+60;tt<=until;tt+=30){s+=estWait(a,tt);n++;}return n?s/n-estWait(a,t0):0;}
 const waitClass=v=>v<=20?"ok":(v<=60?"warn":"bad");
-function emptier(a){const l=liveWait(a);if(!l||!l.open)return null;const b=baseAt(a,nowMin());if(b<5)return null;return l.v<=b*0.7?true:(l.v>=b*1.3?false:null);}
+function emptier(a){const l=liveWait(a);if(!l||!l.open)return null;const b=adjBase(a,nowMin());if(b<5)return null;return l.v<=b*0.7?true:(l.v>=b*1.3?false:null);}
 function todayShows(){
   const k=todayKey();const out=[];
   SHOWS.forEach(s=>{if(k<s.from||k>s.to||s.off.includes(k))return;s.times.forEach(tm=>out.push({...s,t:mins(tm),time:tm}));});
@@ -491,7 +550,14 @@ async function fetchApi(silent){
 // item: {id,k:'ride'|'buy'|'meal'|'rest'|'show'|'note',t,dur,w,attr,text,lock,dpa,prov,ps}
 // 方針: 大物は「今日このあと一番空く時間帯」に乗る（機会コスト）。小物は隙間で。
 // 必須の大物の時間を先に確保し、収まらないときは小物から削る。
-function buildPlan(){
+// 食事の候補: 今いるエリアから近く、その時刻に開いている店（PSの店は除く）
+function mealSpot(area,t){
+  const open=FOOD.filter(f=>f.k==="meal"&&!f.ps&&t>=mins(f.o)&&t+25<=closeOf(f));
+  open.sort((x,y)=>walk(area,x.a)-walk(area,y.a)||(y.mo?1:0)-(x.mo?1:0));
+  return open[0]||null;
+}
+// slotShift: 購入予定DPAの枠を後ろへずらして試す（必須の通常列が入る隙間を作る）
+function buildPlanCore(slotShift){
   const nm=nowMin();const exitM=exitMin();const tk=todayKey();
   let t=Math.max(nm,mins(PLAN_OPEN),S.start?mins(S.start):0);
   let area=S.area;
@@ -509,34 +575,48 @@ function buildPlan(){
     const a=i.attr?byId[i.attr]:null;
     fixed.push({k:i.k,attr:i.attr,t:i.t,end:i.t,dur:i.dur||(a?a.dur:30),area:a?a.area:(i.area||null),lock:true,text:i.text,id:i.id,w:i.k==="ride"?(i.w||0):0});
   });
-  // DPA購入計画（60分ルール・売切目安・予算）
+  // DPA購入計画（60分ルール・売切目安・予算）。ロックした購入行は「その時刻に買う」制約として扱い、
+  // ほかの購入はその前後60分を避けて入れる
   let budget=budgetLeft();let bt=Math.max(nextBuyMin()??t,t);
   const planned=new Set();
   const addProv=(attr,ps)=>{const a=byId[attr];if(!fixed.some(f=>f.attr===attr))fixed.push({k:"ride",attr,t:ps,end:ps+60,dur:a.dur,area:a.area,dpa:true,prov:true,w:5});};
   lockedBuys.sort((x,y)=>x.t-y.t).forEach(i=>{const a=byId[i.attr];if(a.dpa>budget||planned.has(i.attr))return;budget-=a.dpa;planned.add(i.attr);
-    const ps=i.ps||i.t+60;buys.push({...i,ps});addProv(i.attr,ps);bt=Math.max(bt,Math.min(i.t+60,ps));});
+    const ps=Math.max(i.ps||i.t+60,i.t+45);buys.push({...i,ps});addProv(i.attr,ps);});
+  const freeBuy=b=>{let g=true;while(g){g=false;for(const l of buys.filter(x=>x.lock)){if(b>l.t-60&&b<Math.min(l.t+60,l.ps)){b=Math.min(l.t+60,l.ps);g=true;}}}return b;};
+  bt=freeBuy(bt);
   for(const o of dpaTargets(bt,budget)){
     if(planned.has(o.id)||fixed.some(f=>f.attr===o.id))continue;
     const a=byId[o.id];
     if(SOLD_BY[o.id]&&bt>mins(SOLD_BY[o.id]))continue;
     if(a.dpa>budget)continue;
-    const ps=targetSlot(o,bt);
+    const ps=targetSlot(o,bt)+slotShift;
     if(!slotFits(o,ps))continue;
+    const wNow=estWait(a,bt+walk(area,a.area));
+    if(wNow<=60&&wNow-bestWait(a,bt,exitM)<=10&&ps-bt>180&&!(SOLD_BY[o.id]))continue; // 今が空いているなら通常列で
     budget-=a.dpa;planned.add(o.id);
     buys.push({id:nid(),k:"buy",t:bt,dur:0,attr:o.id,ps,text:`DPA購入: ${a.name}（${fromMin(ps)}前後の枠を狙う）`});
     addProv(o.id,ps);
-    bt=Math.min(bt+60,ps);
+    bt=freeBuy(Math.min(bt+60,ps));
   }
   fixed.sort((x,y)=>x.t-y.t);
   let rem=candidates().filter(a=>!fixed.some(f=>f.attr===a.id));
   const mealDone={};MEALS.forEach(m=>{mealDone[m.k]=t>=mins(m.to)||fixed.some(f=>f.k==="meal"&&f.t>=mins(m.from)-60&&f.t<mins(m.to));});
   if(exitM<mins("19:30"))mealDone.dinner=true;
+  const missMeal=[];
+  const putMeal=(ml,dur)=>{const sp=mealSpot(area,t);const wk=sp?walk(area,sp.a):0;const st=t+wk;
+    items.push({id:nid(),k:"meal",t:st,dur:dur||25,area:sp?sp.a:area,walk:wk||undefined,text:ml.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:"")});
+    t=st+(dur||25);if(sp)area=sp.a;mealDone[ml.k]=true;lastRest=t;};
   // 残っている必須の大物に必要な時間（それぞれ一番空く時間帯で見積もり）
   const reserve=(ex,t0)=>rem.reduce((s,a)=>a!==ex&&prio(a)==="must"&&isBig(a)?s+bestWait(a,t0,exitM)*1.15+a.dur+6:s,0);
-  let guard=0;
+  let guard=0;let lastRest=t;
   while(guard++<300){
     const f=fixed[0];
     const fArea=f&&f.area?f.area:area;
+    const ml=MEALS.find(m=>!mealDone[m.k]&&t>=mins(m.from)&&t<mins(m.to));
+    const gap=f?f.t-walk(area,fArea)-t:Infinity;
+    // 食事の時間帯が終わりそうなら、固定予定の前でも先に入れる
+    if(ml&&t>=mins(ml.to)-40&&gap>=15){putMeal(ml,Math.min(25,gap));continue;}
+    if(S.cond.kids&&t-lastRest>=150&&!(f&&f.t-t<walk(area,fArea)+40)){items.push({id:nid(),k:"rest",t,dur:20,text:"休憩（子ども連れ）"});t+=20;lastRest=t;continue;}
     if(f&&(f.t-t)<=walk(area,fArea)+15){
       const wk=walk(area,fArea);const st=Math.max(t+wk,f.t);
       if(f.prov&&st+f.dur+(f.w||0)>finishBy(byId[f.attr])){ // 購入予定のDPAが退園に収まらない → 買わない
@@ -554,10 +634,10 @@ function buildPlan(){
         const su=stopUntil(a);if(su&&at<su)continue; // 運営中断中
         const w=estWait(a,at);const end=at+w+a.dur;
         if(end>finishBy(a))continue;
-        if(f&&end+walk(a.area,f.area||a.area)>(f.dpa?Math.min(f.end,f.t+20):f.t))continue; // 次の固定枠に間に合わない（DPAは枠の頭20分以内に着く）
+        if(f&&end+walk(a.area,f.area||a.area)>(f.dpa?f.end-10:f.t))continue; // 次の固定枠に間に合わない（DPAは枠の終わり10分前まで）
         if(showConflict(a,at))continue;
         if(useReserve&&(!isBig(a)||prio(a)==="want")&&end+reserve(a,end)>exitM)continue; // 大物の時間を残す
-        const score=wk+(w-bestWait(a,at,exitM))-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0);
+        const score=wk*walkCost()+(w-bestWait(a,at,exitM))-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0);
         if(score<bs){bs=score;best={a,wk,w,end,at};}
       }
       return best;
@@ -565,33 +645,44 @@ function buildPlan(){
     const must=rem.filter(a=>prio(a)==="must");
     const best=pick(must,true)||pick(rem,true)||pick(must,false)||pick(rem,false);
     // 食事: 優先時刻を過ぎた / 長い列で食事時間帯を越えてしまう / 他に候補がない ときに入れる（次の固定予定に食い込まない範囲で）
-    const ml=MEALS.find(m=>!mealDone[m.k]&&t>=mins(m.from)&&t<mins(m.to));
-    if(ml){
-      const room=!f||f.t-walk(area,fArea)-t>=25;
-      if(room&&(t>=mins(ml.pref)||!best||best.end>mins(ml.to)-15)){items.push({id:nid(),k:"meal",t,dur:25,text:ml.text});t+=25;mealDone[ml.k]=true;continue;}
-    }
+    if(ml&&gap>=25&&(t>=mins(ml.pref)||!best||best.end>mins(ml.to)-15)){putMeal(ml);continue;}
     if(!best){
       if(f){const arrive=t+walk(area,fArea);
-        if(f.t-arrive>10)items.push({id:nid(),k:"rest",t,dur:f.t-arrive,text:"休憩・買い物（次の予定まで）"});
+        if(f.t-arrive>10){items.push({id:nid(),k:"rest",t,dur:f.t-arrive,text:"休憩・買い物（次の予定まで）"});lastRest=f.t;}
         t=Math.max(t,f.t-walk(area,fArea));continue;}
       const nextStop=rem.map(stopUntil).filter(x=>x&&x>t&&x<exitM).sort((x,y)=>x-y)[0];
       if(nextStop){items.push({id:nid(),k:"rest",t,dur:nextStop-t,text:"休憩（運営再開待ち）"});t=nextStop;continue;}
       break;
     }
     const {a,wk,w,end,at}=best;
-    items.push({id:nid(),k:"ride",t:at,dur:a.dur,w,attr:a.id,text:a.name,walk:wk||undefined});
+    items.push({id:nid(),k:"ride",t:at,dur:a.dur,w,attr:a.id,text:a.name,walk:wk||undefined,why:condReason(a,at).join("・")||undefined});
     t=end;area=a.area;rem=rem.filter(x=>x.id!==a.id&&x.id!==a.pair);
   }
-  S.plan=items.concat(buys).sort((x,y)=>x.t-y.t||(x.k==="buy"?-1:1));
+  // 食事が入らなかったら、その時間帯の「できれば」の小物を1つ食事に置き換える。それも無理なら知らせる
+  MEALS.forEach(m=>{if(mealDone[m.k])return;
+    const cands=items.filter(i=>i.k==="ride"&&i.attr&&!i.dpa&&!i.lock&&i.t>=mins(m.from)-30&&i.t<mins(m.to)&&prio(byId[i.attr])==="want").sort((x,y)=>avgBase(byId[x.attr])-avgBase(byId[y.attr]));
+    const v=cands[0];
+    if(v){const sp=mealSpot(v.area||byId[v.attr].area,v.t);Object.assign(v,{k:"meal",attr:undefined,w:0,dur:Math.max(20,endOf(v)-v.t-5),why:undefined,text:m.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:""),area:sp?sp.a:(v.area||byId[v.attr].area)});rem.push(byId[cands[0].attr]);}
+    else missMeal.push(m.k==="lunch"?"昼食":"夕食");});
+  const plan=items.concat(buys).sort((x,y)=>x.t-y.t||(x.k==="buy"?-1:1));
   const skip=rem.filter(a=>!(a.pair&&rem.some(x=>x.id===a.pair)&&a.id>a.pair));
-  S.planSkip=skip.map(a=>a.id);S.planWhy={};skip.forEach(a=>{if(stopUntil(a))S.planWhy[a.id]="運営中断中";});
-  S.planBuilt=true;S.planDay=tk;save();
+  return {plan,skip,missMeal,mustSkip:skip.filter(a=>prio(a)==="must").length};
+}
+function buildPlan(){
+  // 購入予定の枠を 0 / 60 / 120 分ずらして試し、必須が一番多く入る案を採る
+  let best=null;
+  for(const sh of [0,60,120]){const r=buildPlanCore(sh);if(!best||r.mustSkip<best.mustSkip||(r.mustSkip===best.mustSkip&&r.skip.length<best.skip.length))best=r;if(best.mustSkip===0&&sh===0)break;}
+  S.plan=best.plan;S.planSkip=best.skip.map(a=>a.id);S.planWhy={};best.skip.forEach(a=>{if(stopUntil(a))S.planWhy[a.id]="運営中断中";});
+  S.planMiss=best.missMeal;S.planBuilt=true;S.planDay=todayKey();save();
 }
 const endOf=p=>p.t+(p.w||0)+(p.dur||0);
 const planToday=()=>S.planDay===todayKey()?S.plan:[];
-function planFits(){ // 前の行の終了 > 次の開始なら警告
-  const warn={};let prev=null;
-  planToday().forEach(i=>{if(i.k==="buy"||i.k==="note")return;if(prev&&endOf(prev)>i.t+1)warn[i.id]=true;prev=i;});
+function planFits(){ // 前の行の終了 > 次の開始 / 購入が乗車より後 / 購入同士が60分未満 なら警告
+  const warn={};let prev=null;const plan=planToday();
+  plan.forEach(i=>{if(i.k==="buy"||i.k==="note")return;if(prev&&endOf(prev)>i.t+1)warn[i.id]="前の予定と重なる";prev=i;});
+  const buys=plan.filter(i=>i.k==="buy");
+  buys.forEach((b,i)=>{const n=buys[i+1];if(n&&n.t<Math.min(b.t+60,b.ps||Infinity))warn[n.id]="前のDPA購入から60分未満";
+    const ride=plan.find(p=>p.k==="ride"&&p.attr===b.attr&&p.prov);if(ride&&ride.t<b.t+30)warn[b.id]="乗る時刻より購入が遅い";});
   return warn;
 }
 // DPAを登録・変更したらプランを組み直す
@@ -605,7 +696,7 @@ function renderHeader(){
   chips.innerHTML=Object.keys(AREAS).map(k=>`<button class="chip" type="button" data-area="${k}" aria-pressed="${S.area===k}">${SHORT[k]}</button>`).join("");
   const on=chips.querySelector('[aria-pressed="true"]');if(on)chips.scrollLeft=Math.max(0,on.offsetLeft-chips.clientWidth/2+on.offsetWidth/2);
   const bar=document.getElementById("dpabar");const nb=nextBuyMin();const nm=nowMin();
-  const next=dpaTargets(Math.max(nm,nb??nm))[0];
+  const next=dpaTargets(Math.max(nm,nb??nm)).find(o=>slotFits(o,targetSlot(o,Math.max(nm,nb??nm))));
   const nx=next?`<span class="note">次: ${esc(byId[next.id].name)}</span>`:`<span class="note">${budgetLeft()<=0?"予算の範囲で買えるものなし":"買う候補なし"}</span>`;
   if(nb==null||nb<=nm)bar.innerHTML=`<span>DPA</span><b>今すぐ買える</b>${nx}`;
   else bar.innerHTML=`<span>次のDPA</span><span class="num">${fromMin(nb)}</span><span>まで <b>${nb-nm}分</b></span>${nx}`;
@@ -615,16 +706,17 @@ function scoreNow(a){
   const nm=nowMin();const wk=walk(S.area,a.area);const h=heldDpa(a.id);
   if(h){const until=mins(h.slot)-nm;if(until<=wk+15)return -1000+until;return 50+until;}
   const at=nm+wk;const w=estWait(a,at);
-  let s=wk+(w-bestWait(a,at,exitMin()))-urgency(a,at,exitMin())*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(a.walkthrough?10:0);
+  let s=wk*walkCost()+(w-bestWait(a,at,exitMin()))-urgency(a,at,exitMin())*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(a.walkthrough?10:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0);
   const em=emptier(a);if(em===true)s-=15;if(em===false)s+=10;
   return s;
 }
 const PRIO_LABEL={must:"必須",want:"できれば",skip:"パス"};
 function prioTag(a){const p=prio(a);return `<button class="sm ${p==="must"?"must":(p==="want"?"want":"")}" type="button" data-prio="${a.id}" aria-label="${esc(a.name)}の優先度 ${PRIO_LABEL[p]}（タップで切替）">${PRIO_LABEL[p]}</button>`;}
+function condSummary(){const c=S.cond;const r=[];if(c.weather)r.push(WEATHER_LABEL[c.weather]);if(c.crowd)r.push({low:"空いてる",high:"混雑",max:"激混み"}[c.crowd]);if(c.contra)r.push("逆張り");if(c.outdoor)r.push("屋根なしの列は控えめ");if(c.walk)r.push("歩き少なめ");if(c.kids)r.push("休憩多め");if(c.memo)r.push("メモ: "+c.memo);return r.join("・");}
 function renderDayBanner(){
   const el=document.getElementById("dayBanner");
   if(staleDay()){const [,m,dd]=S.day.split("-").map(Number);
-    el.innerHTML=`<div class="card banner"><b>前回（${m}/${dd}）の記録が残っています</b><div class="note">前回の乗車記録・DPA・プランは今日の判断に使っていません。消すか、今日の分として使うかを選んでください（優先度と設定は残ります）。</div><div class="btns" style="margin-top:6px"><button class="primary" type="button" data-day="clear">消して今日を始める</button><button class="ghost" type="button" data-day="keep">今日の分として使う</button></div></div>`;}
+    el.innerHTML=`<div class="card banner"><b>${m}/${dd}の記録があります</b><div class="btns" style="margin-top:8px"><button class="primary" type="button" data-day="clear">消して始める</button><button class="ghost" type="button" data-day="keep">今日の分にする</button></div></div>`;}
   else el.innerHTML="";
 }
 function renderNear(){
@@ -633,39 +725,41 @@ function renderNear(){
   const nc=document.getElementById("nextCard");
   // 退園までに終わるもの・今止まっていないものだけ。DPAで乗る予定のものは（空いていなければ）通常列では勧めない
   const fits=a=>heldDpa(a.id)||nm+walk(S.area,a.area)+estWait(a,nm+walk(S.area,a.area))+a.dur<=finishBy(a);
-  const buyIds=new Set(dpaTargets(nm).map(o=>o.id));
+  // 購入予定でも、枠が3時間以上先なら今の通常列も候補に残す
+  const buyIds=new Set(dpaTargets(nm).filter(o=>targetSlot(o,nm)-nm<180).map(o=>o.id));
   const all=candidates().filter(a=>fits(a)&&!stopInfo(a)).sort((x,y)=>scoreNow(x)-scoreNow(y));
   const pref=all.filter(a=>!buyIds.has(a.id)||emptier(a)===true);const pool=pref.length?pref:all;
   const must=pool.filter(a=>prio(a)==="must");const cand=must[0]||pool[0];
   const plan=planToday();
   const pNext=S.planBuilt?plan.find(p=>p.k!=="buy"&&p.k!=="note"&&endOf(p)>=nm&&!(p.k==="ride"&&p.attr&&ridden(p.attr))):null;
-  const onTrack=pNext&&pNext.t>=nm-15&&!(pNext.attr&&stopInfo(byId[pNext.attr]));
+  const onTrack=pNext&&pNext.t>=nm-15&&!(pNext.attr&&stopInfo(byId[pNext.attr]))&&!(pNext.prov&&!heldDpa(pNext.attr))&&!(pNext.k==="ride"&&pNext.attr&&!pNext.dpa&&!fits(byId[pNext.attr]));
   const line=a=>{const h=heldDpa(a.id);const wk=walk(S.area,a.area);const w=estWait(a,nm+wk);const l=liveWait(a);
     return `徒歩${wk}分、待ち${h?"DPA":w+"分"}${h?"":(l?(l.src==="manual"?"（入力値）":"（API）"):"（目安）")}${S.srOk&&a.sr&&!h?"・SR想定":""}`;};
   let html=`<div class="eyebrow">次の一手（${SHORT[S.area]}から）</div>`;
   if(nm>=exitM)html+=`<div class="big">退園時刻を過ぎています</div><div class="why">設定タブで退園時刻を変えると、続きを組み直せます。</div>`;
   else if(onTrack){
     const a=pNext.attr&&pNext.k==="ride"?byId[pNext.attr]:null;
-    html+=`<div class="big">${esc(pNext.text)}</div><div class="why">プランどおり ${fromMin(pNext.t)}〜${a?"。"+line(a):""}。必須の残り ${left.filter(a=>prio(a)==="must").length}、全体 ${left.length}</div>`;
+    html+=`<div class="big">${esc(pNext.text)}</div><div class="why">${fromMin(pNext.t)}〜${a?"　"+line(a):""}</div>`;
     const alt=pool.filter(x=>x.id!==pNext.attr).slice(0,2).map(x=>`${esc(x.name)}（徒歩${walk(S.area,x.area)}分・${estWait(x,nm+walk(S.area,x.area))}分）`).join(" / ");
-    if(alt)html+=`<div class="alt">近くの代わり: ${alt}</div>`;
+    if(alt)html+=`<div class="alt">代わり: ${alt}</div>`;
   }
-  else if(!cand)html+=`<div class="big">${left.length?"退園までに乗れる候補なし（退園時刻・優先度・身長・運営中断を見直してください）":"全部乗り終わり。お疲れさま"}</div>`;
+  else if(!cand)html+=`<div class="big">${left.length?"今から乗れるものなし":"全部乗った！"}</div>${left.length?'<div class="why">退園時刻か優先度を見直してください</div>':""}`;
   else{
     const h=heldDpa(cand.id);const wk=walk(S.area,cand.area);const w=estWait(cand,nm+wk);
     const bw=bestWait(cand,nm+wk,exitM);
-    const why=h?`DPA ${h.slot}〜 の枠。`:(w-bw<=5&&w>=20?"今日このあと一番空く時間帯。":(emptier(cand)===true?"いつもより空いています。":""));
+    const why=(h?`DPA ${h.slot}〜 の枠。`:(w-bw<=5&&w>=20?"今日このあと一番空く時間帯。":(emptier(cand)===true?"いつもより空いています。":"")))+condReason(cand,nm+wk).map(r=>r+"。").join("");
     const alt=pool.filter(a=>a!==cand).slice(0,2).map(a=>`${esc(a.name)}（徒歩${walk(S.area,a.area)}分・${estWait(a,nm+walk(S.area,a.area))}分）`).join(" / ");
     html+=`<div class="big">${esc(cand.name)}</div>
-      <div class="why">${why}${line(cand)}。必須の残り ${left.filter(a=>prio(a)==="must").length}、全体 ${left.length}</div>
+      <div class="why">${why}${line(cand)}</div>
       ${alt?`<div class="alt">次点: ${alt}</div>`:""}`;
-    if(pNext)html+=`<div class="alt">プランから遅れています（予定 ${fromMin(pNext.t)} ${esc(pNext.text)}）。プランタブの「今から再計算」で組み直せます。</div>`;
+    if(pNext)html+=`<div class="alt">プランとずれています → プランタブで「今から組む」</div>`;
   }
   const tgt=canBuyAt(nm)?dpaTargets(nm).find(o=>slotFits(o,targetSlot(o,nm))):null;
   if(tgt&&nm<exitM){const a=byId[tgt.id];const slot=fromMin(targetSlot(tgt,nm));
-    html+=`<div class="buynow"><span class="tag dpa">DPA</span> 今買えます: <b>${esc(a.name)}</b>（${slot}前後の枠を狙う・${a.dpa.toLocaleString()}円）<button class="sm" type="button" data-quick="${tgt.id}" data-qslot="${slot}">買った</button></div>`;}
+    html+=`<div class="buynow"><span class="tag dpa">DPA 今買える</span><b>${esc(a.name)}</b><span class="note">${slot}頃の枠・${a.dpa.toLocaleString()}円</span><button class="sm" type="button" data-quick="${tgt.id}" data-qslot="${slot}">買った</button></div>`;}
+  const cs=condSummary();if(cs)html+=`<div class="alt">${esc(cs)}</div>`;
   nc.innerHTML=html;
-  document.getElementById("nearCount").textContent=`残り${left.length} / ${want.length}`;
+  document.getElementById("nearCount").textContent=`あと${left.length}`;
   document.getElementById("apiStamp").textContent=apiFresh()?`API ${fromMin(S.api.at)}`:"";
   let list=ATTR.filter(a=>isOpen(a)).sort((x,y)=>walk(S.area,x.area)-walk(S.area,y.area)||estWait(x,nm)-estWait(y,nm));
   if(S.nf==="empty")list=list.filter(a=>emptier(a)===true);
@@ -674,7 +768,7 @@ function renderNear(){
   if(S.nf==="must")list=list.filter(a=>prio(a)==="must"&&!ridden(a.id));
   document.querySelectorAll("[data-nf]").forEach(b=>b.classList.toggle("on",b.dataset.nf===S.nf));
   const el=document.getElementById("nearList");
-  if(!list.length){el.innerHTML=`<div class="empty">該当なし。${S.nf==="empty"?"待ち時間を入力または更新すると「平均より空いてる」が使えます。":""}</div>`;return;}
+  if(!list.length){el.innerHTML=`<div class="empty">${S.nf==="empty"?"待ち時間を入れると判定できます":"なし"}</div>`;return;}
   el.innerHTML=list.map(a=>{
     const l=liveWait(a);const wk=walk(S.area,a.area);const h=heldDpa(a.id);const em=emptier(a);const st=stopInfo(a);const rd=ridden(a.id);
     const v=l?l.v:estWait(a,nm);const hok=heightOk(a);
@@ -684,13 +778,15 @@ function renderNear(){
     if(h)tags.push(`<span class="tag dpa">DPA ${h.slot}〜</span>`);else if(a.dpa)tags.push(`<span class="tag mute">DPA ${a.dpa.toLocaleString()}円</span>`);
     if(a.sr)tags.push(`<span class="tag sea">SR</span>`);
     if(a.h)tags.push(`<span class="tag ${hok?"mute":"bad"}">${hok?"":"身長NG "}${a.h}cm〜</span>`);
-    if(em===true)tags.push(`<span class="tag ok">平均より空いてる</span>`);
-    if(em===false)tags.push(`<span class="tag warn">平均より混んでる</span>`);
+    if(em===true)tags.push(`<span class="tag ok">空いてる</span>`);
+    if(em===false)tags.push(`<span class="tag warn">混んでる</span>`);
     if(a.walkthrough)tags.push(`<span class="tag mute">散策</span>`);
+    if(!S.cond.weather)tags.push(`<span class="tag mute">${QUEUE_LABEL[qcover(a)]}</span>`);
+    condReason(a,nm+wk).forEach(r=>tags.push(`<span class="tag ${/止まる|混む/.test(r)?"warn":"ok"}">${r}</span>`));
     const w0=S.waits[a.id];const wv=w0&&isToday(w0.day)&&nm-w0.at>=0&&nm-w0.at<=90?w0.v:"";
     return `<div class="row ${rd||!hok?"done":""} ${prio(a)==="must"&&!rd&&hok?"must":""}">
       <div class="name">${esc(a.name)}</div>
-      <div class="sub"><span>${SHORT[a.area]} 徒歩${wk}分</span>${tags.join("")}${a.note?`<span>${esc(a.note)}</span>`:""}</div>
+      <div class="sub"><span>${SHORT[a.area]} 徒歩${wk}分</span>${tags.join("")}</div>
       <div class="right">
         <div class="wait ${st?"bad":waitClass(v)}"><span class="num">${st?"—":v}</span><span class="u">${st?"中断":(l?(l.src==="manual"?"分 入力":"分 API"):"分 目安")}</span></div>
         <div class="waitedit"><input type="number" inputmode="numeric" min="0" max="300" placeholder="今" aria-label="${esc(a.name)}の今の待ち時間" data-wait="${a.id}" value="${wv}"><button class="sm ${st==="manual"?"on":""}" type="button" data-stop="${a.id}" aria-label="${esc(a.name)}の運営中断${st==="manual"?"を解除":"を記録"}" title="運営中断">止</button><button class="sm ${rd?"on":""}" type="button" data-ride="${a.id}" aria-label="${esc(a.name)} ${rd?"乗った（取り消す）":"まだ（乗ったら押す）"}">${rd?"乗った":"未"}</button></div>
@@ -704,53 +800,58 @@ function renderPlan(){
   const warn=planFits();
   let nowIdx=-1;plan.forEach((p,i)=>{if(p.t<=nm)nowIdx=i;});
   const el=document.getElementById("planList");
-  if(!plan.length){el.innerHTML=`<div class="empty">「今から再計算」で、現在地・乗った記録・DPA・優先度からタイムテーブルを作ります（開始は ${PLAN_OPEN} 以降、設定の「計画の開始」があればそれ以降）。</div>`;}
+  if(!plan.length){el.innerHTML=`<div class="empty">「今から組む」を押してください</div>`;}
   else el.innerHTML=plan.map((p,i)=>{
     const a=p.attr?byId[p.attr]:null;const ride=p.k==="ride"&&a;const done=ride&&ridden(a.id);
     const meta=[];
     if(a&&p.k!=="buy")meta.push(`<span>${SHORT[a.area]}</span>`);
-    if(p.k==="buy")meta.push(`<span class="tag dpa">アプリで購入（移動なし）</span><span>${a.dpa.toLocaleString()}円</span>`);
-    if(ride&&p.dpa)meta.push(p.prov?`<span class="tag dpa">DPA予定（購入時に枠を確定）</span>`:`<span class="tag dpa">DPA枠</span>`);
+    if(p.k==="buy")meta.push(`<span>${a.dpa.toLocaleString()}円</span>`);
+    if(ride&&p.dpa)meta.push(p.prov?`<span class="tag dpa">DPA予定</span>`:`<span class="tag dpa">DPA</span>`);
     if(ride&&!p.dpa&&p.w)meta.push(`<span>待ち${p.w}分</span>`);
     if(p.walk)meta.push(`<span>徒歩${p.walk}分</span>`);
+    if(p.k==="meal"&&p.area)meta.push(`<span>${SHORT[p.area]}</span>`);
     if(p.dur)meta.push(`<span>〜${fromMin(endOf(p))}</span>`);
     if(ride&&a.dpa&&!p.dpa)meta.push(`<span class="tag mute">通常列</span>`);
-    if(p.lock)meta.push(`<span class="tag sea">ロック</span>`);
-    if(warn[p.id])meta.push(`<span class="tag bad">前の予定と重なる</span>`);
+    if(p.why)meta.push(`<span class="tag ok">${esc(p.why)}</span>`);
+    if(p.lock)meta.push(`<span class="tag sea">固定</span>`);
+    if(warn[p.id])meta.push(`<span class="tag bad">${warn[p.id]}</span>`);
     const cls=["step",p.k,i===nowIdx?"now":"",(done||(endOf(p)<nm&&i<nowIdx))?"past":"",p.lock?"locked":"",warn[p.id]?"warnfit":""].join(" ");
     return `<div class="${cls}" draggable="true" data-idx="${i}">
-      <div class="t num"><input type="time" value="${fromMin(p.t)}" data-ptime="${i}" aria-label="${esc(p.text)}の開始時刻"></div>
+      <label class="t num"><span>${fromMin(p.t)}</span><input type="time" value="${fromMin(p.t)}" data-ptime="${i}" aria-label="${esc(p.text)}の開始時刻"></label>
       <div><div class="txt">${esc(p.text)}</div><div class="meta">${meta.join("")}</div></div>
       <div class="ctl">
         ${ride?`<button class="sm ${done?"on":""}" type="button" data-ride="${a.id}">${done?"乗った":"乗った？"}</button>`:""}
         ${p.k==="buy"?`<button class="sm" type="button" data-quick="${p.attr}" data-qslot="${p.ps?fromMin(p.ps):""}">買った</button><button class="sm" type="button" data-sold="${p.attr}">売切</button>`:""}
         <button class="sm" type="button" data-up="${i}" aria-label="上へ">↑</button><button class="sm" type="button" data-down="${i}" aria-label="下へ">↓</button>
-        <button class="sm ${p.lock?"on":""}" type="button" data-lock="${i}">${p.lock?"固定中":"固定"}</button>
+        <button class="sm ${p.lock?"on":""}" type="button" data-lock="${i}">固定</button>
         <button class="sm" type="button" data-del="${i}">削除</button>
       </div></div>`;
   }).join("");
   const sk=document.getElementById("planSkip");
   const skipIds=S.planDay===todayKey()?(S.planSkip||[]).filter(id=>!ridden(id)&&prio(byId[id])!=="skip"&&!dropped(id)):[];
   const dropIds=ATTR.filter(a=>dropped(a.id)&&!ridden(a.id)).map(a=>a.id);
-  const rows=skipIds.map(id=>{const a=byId[id];const why=(S.planWhy||{})[id];return `<div class="row"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span>${prioTag(a)}${why?`<span class="tag bad">${why}</span>`:""}${a.dpa?`<span class="tag mute">DPAで短縮可 ${a.dpa.toLocaleString()}円</span>`:""}</div></div>`;})
-    .concat(dropIds.map(id=>{const a=byId[id];return `<div class="row done"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span><span class="tag mute">今日は外した</span></div><div class="right"><button class="sm" type="button" data-undrop="${id}">戻す</button></div></div>`;}));
-  sk.innerHTML=rows.length?rows.join(""):`<div class="empty">${S.planBuilt&&S.planDay===todayKey()?"全部入っています":"未計算"}</div>`;
+  const rows=skipIds.map(id=>{const a=byId[id];const why=(S.planWhy||{})[id];return `<div class="row"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span>${prioTag(a)}${why?`<span class="tag bad">${why}</span>`:""}${a.dpa&&!soldOut(id)&&!(SOLD_BY[id]&&nowMin()>mins(SOLD_BY[id]))?`<span class="tag mute">DPA ${a.dpa.toLocaleString()}円で入る</span>`:""}</div></div>`;})
+    .concat(dropIds.map(id=>{const a=byId[id];return `<div class="row done"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span><span class="tag mute">外した</span></div><div class="right"><button class="sm" type="button" data-undrop="${id}">戻す</button></div></div>`;}));
+  sk.innerHTML=rows.length?rows.join(""):`<div class="empty">${S.planBuilt&&S.planDay===todayKey()?"全部入る":"—"}</div>`;
   const note=document.getElementById("planNote");
   const mustSkip=skipIds.filter(id=>prio(byId[id])==="must").length;
   const buyPlan=plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
-  const bud=S.dpaBudget===""?"予算上限なし":(S.dpaBudget==="0"?"DPAは買わない設定":`予算 ¥${Number(S.dpaBudget).toLocaleString()}`);
-  note.innerHTML=(mustSkip?`<b>必須のうち${mustSkip}件が退園までに入りません。</b>DPA・SR・退園時刻・優先度を見直すと入ることがあります。<br>`:"")
-    +`<b>DPA 1人 ¥${(spent()+buyPlan).toLocaleString()}</b>（購入済み ¥${spent().toLocaleString()}＋このプランで買う予定 ¥${buyPlan.toLocaleString()}／${bud}。設定タブで変更）。<br>推定待ちは${apiFresh()||Object.keys(S.waits).length?"入力値で補正した":""}時間帯目安。大物は一日で一番空く時間帯に、小物は隙間に入れます。遅れたら削る順: フォートレス → ゴンドラ → レールウェイ → スチーマー。`;
+  const lines=[];
+  if(mustSkip)lines.push(`<b>必須 ${mustSkip}件が入りません</b>`);
+  lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?" ← 設定で予算を決められます":""}`);
+  if((S.planMiss||[]).length&&S.planDay===todayKey())lines.push(`<b>${S.planMiss.join("・")}が入りません</b>`);
+  if(condSummary())lines.push(esc(condSummary()));
+  note.innerHTML=lines.join("<br>");
   const sel=document.getElementById("addAttr");
   if(!sel.options.length)sel.innerHTML=ATTR.filter(isOpen).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
   const shows=todayShows();
-  document.getElementById("addShow").innerHTML=shows.length?shows.map(s=>`<option value="${s.id}|${s.time}">${s.time} ${esc(s.name)}</option>`).join("")+`<option value="">その他（内容を入力）</option>`:`<option value="">今日の時刻データなし（内容を入力）</option>`;
+  document.getElementById("addShow").innerHTML=shows.length?shows.map(s=>`<option value="${s.id}|${s.time}">${s.time} ${esc(s.name)}</option>`).join("")+`<option value="">その他</option>`:`<option value="">時刻データなし</option>`;
 }
 let dpaDirty=false; // DPA登録フォームを触ったか（触っていなければ購入時刻を今に合わせ続ける）
 function renderDpa(){
   const st=document.getElementById("dpaStatus");const nb=nextBuyMin();const nm=nowMin();
   const bl=budgetLeft();
-  st.innerHTML=`<div class="grid2"><div><div class="eyebrow">次に買える時刻</div><div class="num" style="font-size:30px">${nb==null||nb<=nm?"今":fromMin(nb)}</div></div><div><div class="eyebrow">1人あたり出費</div><div class="num" style="font-size:30px">¥${spent().toLocaleString()}</div>${bl!==Infinity?`<div class="note">予算の残り ¥${Math.max(0,bl).toLocaleString()}</div>`:""}</div></div>`;
+  st.innerHTML=`<div class="grid2"><div><div class="eyebrow">次に買える時刻</div><div class="num" style="font-size:30px">${nb==null||nb<=nm?"今":fromMin(nb)}</div></div><div><div class="eyebrow">1人の出費</div><div class="num" style="font-size:30px">¥${spent().toLocaleString()}</div>${bl!==Infinity?`<div class="note">残り ¥${Math.max(0,bl).toLocaleString()}</div>`:""}</div></div>`;
   if(!dpaDirty)document.getElementById("dpaBought").value=hm(now());
   const el=document.getElementById("dpaList");
   const mine=S.dpas.map((x,i)=>[x,i]).filter(([x])=>isToday(x.day));
@@ -758,17 +859,17 @@ function renderDpa(){
     const tg=x.used?`<span class="tag mute">利用済み</span>`:(until<=0?(until>-60?`<span class="tag ok">今入れる</span>`:`<span class="tag bad">枠終了の可能性</span>`):(until<=15?`<span class="tag warn">あと${until}分</span>`:`<span class="tag dpa">あと${until}分</span>`));
     return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><label class="waitedit">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:104px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:104px"></label>${tg}</div>
       <div class="right"><div class="btns"><button class="sm ${x.used?"on":""}" type="button" data-dpause="${i}">${x.used?"利用済":"利用した"}</button><button class="sm" type="button" data-dpadel="${i}">削除</button></div></div></div>`;}).join("")
-    :`<div class="empty">まだ登録なし。買ったら登録すると次に買える時刻と計画に反映されます。</div>`;
+    :`<div class="empty">なし</div>`;
   const sel=document.getElementById("dpaAttr");
-  if(!sel.options.length)sel.innerHTML=ATTR.filter(a=>a.dpa).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
-  document.getElementById("dpaOrderNote").textContent=`平日の目安・${fromMin(exitMin())}退園の場合`;
+  sel.innerHTML=ATTR.filter(a=>a.dpa&&isOpen(a)).map(a=>`<option value="${a.id}" ${sel.value===a.id?"selected":""}>${esc(a.name)}</option>`).join("");
+  document.getElementById("dpaOrderNote").textContent=`平日・${fromMin(exitMin())}退園`;
   document.getElementById("dpaOrder").innerHTML=DPA_ORDER.map((o,i)=>{const a=byId[o.id];const done=DP().some(x=>x.id===o.id);const cl=closedReason(a);const so=soldOut(o.id);
     const late=SOLD_BY[o.id]&&nm>mins(SOLD_BY[o.id]);
     return `<div class="row ${done||so||cl?"done":""}"><div class="name"><span class="num">${i+1}</span>　${esc(a.name)} <span class="tag mute">${a.dpa.toLocaleString()}円</span></div>
-      <div class="sub"><span class="tag dpa">${o.buy}に購入</span><span>${esc(o.why)}</span>${cl?`<span class="tag bad">${cl}</span>`:""}${late&&!done?`<span class="tag warn">売切目安(${SOLD_BY[o.id]})を過ぎた</span>`:""}${so?`<span class="tag bad">売切</span>`:""}${!heightOk(a)?`<span class="tag bad">身長NG</span>`:""}</div>
-      <div class="right">${done?`<span class="tag ok">購入済</span>`:(cl?"":`<div class="btns"><button class="sm" type="button" data-quick="${o.id}" data-qslot="${fromMin(targetSlot(o,nm))}">今買った</button><button class="sm ${so?"on":""}" type="button" data-sold="${o.id}">${so?"売切済":"売切"}</button></div>`)}</div></div>`;}).join("");
+      <div class="sub"><span class="tag dpa">${o.buy}</span>${cl?`<span class="tag bad">${cl}</span>`:""}${late&&!done?`<span class="tag warn">売切目安 ${SOLD_BY[o.id]}</span>`:""}${so?`<span class="tag bad">売切</span>`:""}${!heightOk(a)?`<span class="tag bad">身長NG</span>`:""}</div>
+      <div class="right">${done?`<span class="tag ok">購入済</span>`:(cl?"":`<div class="btns"><button class="sm" type="button" data-quick="${o.id}" data-qslot="${fromMin(targetSlot(o,nm))}">買った</button><button class="sm ${so?"on":""}" type="button" data-sold="${o.id}">${so?"売切済":"売切"}</button></div>`)}</div></div>`;}).join("");
 }
-function closeOf(f){const pc=mins(parkClose(today()));return f.ps?Math.min(mins(f.c),pc-60):pc-(f.k==="meal"?30:60);}
+function closeOf(f){const pc=mins(parkClose(today()));return Math.min(mins(f.c),pc-(f.k==="meal"?30:60));}
 function foodOpen(f){const m=nowMin();return m>=mins(f.o)&&m<closeOf(f);}
 function renderFood(){
   document.querySelectorAll("[data-ff]").forEach(b=>b.classList.toggle("on",b.dataset.ff===S.ff));
@@ -779,8 +880,8 @@ function renderFood(){
   list.sort((x,y)=>walk(S.area,x.a)-walk(S.area,y.a)||x.n.localeCompare(y.n,"ja"));
   document.getElementById("foodList").innerHTML=list.length?list.map(f=>{const c=closeOf(f);const closeIn=c-nowMin();
     return `<div class="row"><div class="name">${esc(f.n)}</div><div class="sub"><span>${SHORT[f.a]} 徒歩${walk(S.area,f.a)}分</span><span>${f.o}〜${fromMin(c)}頃</span>${f.mo?`<span class="tag sea">モバイルオーダー</span>`:""}${f.ps?`<span class="tag warn">PS</span>`:""}<span>${esc(f.d)}</span></div>
-      <div class="right">${foodOpen(f)?(closeIn<=60?`<span class="tag warn">あと${closeIn}分</span>`:`<span class="tag ok">営業中</span>`):`<span class="tag mute">時間外</span>`}</div></div>`;}).join(""):`<div class="empty">${S.openOnly?"今やっている店がありません（軽食は9:00頃、レストランは10:00頃から）。":"条件に合う店がありません。"}</div>`;
-  document.getElementById("popList").innerHTML=POP.slice().sort((x,y)=>walk(S.area,x.a)-walk(S.area,y.a)).map(p=>`<div class="row pop"><div class="name">${esc(p.n)}</div><div class="sub" style="grid-column:1/-1"><input type="text" data-pop="${p.id}" placeholder="フレーバーを入力（看板で確認）" value="${esc(S.pop[p.id]||"")}" aria-label="${esc(p.n)}のフレーバー"></div><div class="right"><span class="tag mute">${SHORT[p.a]} ${walk(S.area,p.a)}分</span></div></div>`).join("");
+      <div class="right">${foodOpen(f)?(closeIn<=60?`<span class="tag warn">あと${closeIn}分</span>`:`<span class="tag ok">営業中</span>`):`<span class="tag mute">時間外</span>`}</div></div>`;}).join(""):`<div class="empty">${S.openOnly?"今やっている店なし":"なし"}</div>`;
+  document.getElementById("popList").innerHTML=POP.slice().sort((x,y)=>walk(S.area,x.a)-walk(S.area,y.a)).map(p=>`<div class="row pop"><div class="name">${esc(p.n)}</div><div class="sub" style="grid-column:1/-1"><input type="text" data-pop="${p.id}" placeholder="フレーバー" value="${esc(S.pop[p.id]||"")}" aria-label="${esc(p.n)}のフレーバー"></div><div class="right"><span class="tag mute">${SHORT[p.a]} ${walk(S.area,p.a)}分</span></div></div>`).join("");
 }
 function renderSet(){
   document.getElementById("exitTime").value=S.exit||"19:00";
@@ -789,26 +890,30 @@ function renderSet(){
   document.getElementById("apiOn").checked=!!S.apiOn;
   document.getElementById("height").value=S.height||"";
   document.getElementById("dpaBudget").value=S.dpaBudget;
-  const note=document.getElementById("apiNote");if(apiFresh())note.textContent=`最終取得 ${fromMin(S.api.at)}（${S.api.n}件）`;else if(!note.textContent)note.textContent="既定はOFF。queue-times.com はブラウザからの直接取得を許可していないことが多く（CORS）、取れない場合は中継サーバーが必要です。ふだんは公式アプリの待ち時間を「今」欄に手入力してください。";
+  const c=S.cond;document.getElementById("cWeather").value=c.weather;document.getElementById("cCrowd").value=c.crowd;document.getElementById("cContra").checked=!!c.contra;document.getElementById("cOutdoor").checked=!!c.outdoor;document.getElementById("cWalk").checked=!!c.walk;document.getElementById("cKids").checked=!!c.kids;document.getElementById("cMemo").value=c.memo||"";
+  document.getElementById("condNote").textContent=({rain:"屋根なしの列は空き、屋内の列は混む見込みで組みます",wind:"止まりやすい乗り物は後回し。止まったら「止」で記録",heat:"屋内の列は混む見込み。水分と日陰を",cold:"屋内の列は混む見込みで組みます"})[c.weather]||"";
+  const note=document.getElementById("apiNote");note.hidden=!S.apiOn;document.getElementById("apiBtn").hidden=!S.apiOn;if(apiFresh())note.textContent=`取得 ${fromMin(S.api.at)}（${S.api.n}件）`;else if(S.apiOn&&!note.textContent)note.textContent="取れないことが多いです。取れなければ手入力で。";
   const t=today();document.getElementById("todayLabel").textContent=`${t.getMonth()+1}/${t.getDate()} 閉園${parkClose(t)}`;
   document.getElementById("prioList").innerHTML=ATTR.map(a=>{const cl=closedReason(a);return `<div class="row ${cl?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span>${a.dpa?`<span class="tag mute">DPA ${a.dpa.toLocaleString()}円</span>`:""}${a.sr?`<span class="tag sea">SR</span>`:""}${a.h?`<span class="tag ${heightOk(a)?"mute":"bad"}">${a.h}cm〜</span>`:""}${cl?`<span class="tag bad">${cl}</span>`:""}</div><div class="right">${cl?"":prioTag(a)}</div></div>`;}).join("");
   const shows=todayShows();
-  document.getElementById("todayNote").innerHTML=`<p style="margin:0 0 6px">ショー: ${shows.length?shows.map(s=>`${s.time} ${esc(s.name)}`).join("、")+"（前後はゴンドラ運休）":"この日の時刻データなし。公式アプリで確認してください"}。</p>
-    <p style="margin:0 0 6px">休止: 上の一覧に赤表示。アクアトピアは9/14で営業終了。11/27はハーバーショー休演・18:30閉園。11/11〜12/25はクリスマス（ハーバーショー11:35・15:15、ビリーヴ19:30）。公式の開園は9:00、実際は8:30〜8:45が多いので計画は${PLAN_OPEN}から組みます。</p>
-    <p style="margin:0">DPA価格・身長制限・待ち時間・営業時間の目安は2026年11月時点の調べで、変わることがあります。当日は公式アプリを優先してください。初期の優先度は大物（平均待ち50分以上）が必須、ほかは「できれば」です。</p>`;
+  const closed=ATTR.filter(a=>closedReason(a)).map(a=>a.name.split("（")[0].split("：")[0]);
+  document.getElementById("todayNote").innerHTML=`<div class="kv"><span>ショー</span><b>${shows.length?shows.map(s=>s.time).join(" / "):"なし"}</b></div><div class="kv"><span>休止</span><b style="text-align:right">${closed.length?closed.map(esc).join("・"):"なし"}</b></div><div class="kv"><span>開園</span><b>${PLAN_OPEN}頃（計画の開始）</b></div><div class="note" style="margin-top:6px">目安は2026年11月時点。当日は公式アプリ優先。</div>`;
 }
 function renderAll(){renderHeader();renderNear();renderPlan();renderDpa();renderFood();renderSet();}
-function showTab(t){S.tab=t;save();document.querySelectorAll("main > section").forEach(s=>s.hidden=(s.id!=="tab-"+t));document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));document.querySelector("main").scrollTop=0;}
+function showTab(t){S.tab=t;save();document.querySelectorAll("main > section").forEach(s=>{const on=s.id==="tab-"+t;if(on&&s.hidden){s.classList.remove("enter");void s.offsetWidth;s.classList.add("enter");}s.hidden=!on;});document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));document.querySelector("main").scrollTop=0;}
 
 // ============ actions ============
-function cyclePrio(id){const p=prio(byId[id]);S.prio[id]=p==="must"?"want":(p==="want"?"skip":"must");save();renderAll();}
-function markRide(id,on){if(on)S.ridden[id]=todayKey();else delete S.ridden[id];const h=heldDpa(id);if(on&&h)h.used=true;const a=byId[id];if(on&&a)S.area=a.area;S.day=todayKey();save();}
+function cyclePrio(id){const p=prio0(byId[id]);S.prio[id]=p==="must"?"want":(p==="want"?"skip":"must");save();renderAll();}
+function markRide(id,on){if(on)S.ridden[id]=todayKey();else{delete S.ridden[id];DP().filter(x=>x.id===id&&x.used).forEach(x=>x.used=false);}const h=heldDpa(id);if(on&&h)h.used=true;const a=byId[id];if(on&&a)S.area=a.area;S.day=todayKey();save();}
 function addDpa(id,slotV,boughtV){
   const bought=boughtV||hm(now());
   if(!slotV){toast("利用開始時刻を入れてください");document.getElementById("dpaSlot").focus();return false;}
-  if(heldDpa(id)){toast(byId[id].name+" は登録済みです（パスタブで時刻を直せます）");return false;}
-  if(mins(slotV)<mins(bought)){toast("利用開始が購入時刻より前になっています");return false;}
-  const nb=nextBuyMin();if(nb!=null&&mins(bought)<nb){toast(`60分ルールでは ${fromMin(nb)} まで次を買えません。購入時刻を確認してください`);return false;}
+  if(heldDpa(id)){toast("登録済みです");return false;}
+  if(mins(slotV)<mins(bought)){toast("利用開始が購入より前です");return false;}
+  const bm=mins(bought);const before=DP().filter(x=>mins(x.bought)<=bm).sort((x,y)=>mins(y.bought)-mins(x.bought))[0];
+  if(before&&bm<Math.min(mins(before.bought)+60,mins(before.slot))){toast(`60分ルールでは ${fromMin(Math.min(mins(before.bought)+60,mins(before.slot)))} まで次を買えません。購入時刻を確認してください`);return false;}
+  const after=DP().filter(x=>mins(x.bought)>bm).sort((x,y)=>mins(x.bought)-mins(y.bought))[0];
+  if(after&&mins(after.bought)<Math.min(bm+60,mins(slotV))){toast(`${after.bought}に買った${byId[after.id].name}と60分ルールが合いません。購入時刻を確認してください`);return false;}
   S.dpas.push({id,slot:slotV,bought,used:false,day:todayKey()});delete S.soldout[id];delete S.noBuy[id];
   S.plan=S.plan.filter(p=>!(p.k==="buy"&&p.attr===id));S.day=todayKey();
   dpaDirty=false;document.getElementById("dpaSlot").value="";
@@ -817,22 +922,24 @@ function addDpa(id,slotV,boughtV){
 function openDpaForm(id,slot){
   showTab("dpa");dpaDirty=true;document.getElementById("dpaAttr").value=id;document.getElementById("dpaSlot").value=slot||"";document.getElementById("dpaBought").value=hm(now());
   const s=document.getElementById("dpaSlot");s.scrollIntoView({block:"center"});s.focus();
-  toast("利用開始を購入画面の時刻に合わせて「登録」");
+  toast("利用開始の時刻を入れて「登録」");
 }
 function movePlan(i,dir){
   const plan=planToday();const j=i+dir;if(j<0||j>=plan.length)return;
+  if([plan[i],plan[j]].some(p=>p.dpa&&!p.prov)){toast("DPAの枠はパスタブで直せます");return;}
   const lo=Math.min(i,j);const start=Math.min(plan[i].t,plan[j].t);
   [plan[i],plan[j]]=[plan[j],plan[i]];
   const x=plan[lo],y=plan[lo+1];x.t=start;
   const ax=x.attr?byId[x.attr].area:x.area,ay=y.attr?byId[y.attr].area:y.area;
   y.t=x.k==="buy"?x.t:endOf(x)+(ax&&ay?walk(ax,ay):0);
-  [x,y].forEach(p=>{p.lock=true;if(p.k==="ride"&&p.attr&&!p.dpa)p.w=estWait(byId[p.attr],p.t);});
-  save();renderPlan();
+  [x,y].forEach(p=>{p.lock=true;if(p.k==="ride"&&p.attr&&!p.dpa)p.w=estWait(byId[p.attr],p.t);if(p.k==="buy")p.ps=Math.max(p.ps||0,p.t+45);});
+  S.plan.sort((a,b)=>a.t-b.t||(a.k==="buy"?-1:1));save();renderPlan();
 }
 function delPlan(i){
   const p=planToday()[i];if(!p)return;
+  if(p.dpa&&!p.prov){toast("DPAはパスタブで削除できます");return;}
   const isBuy=p.attr&&(p.k==="buy"||p.prov);const isRide=p.k==="ride"&&p.attr&&!p.dpa;
-  withUndo(isBuy?"このDPAは今日は買わない扱いにしました":(isRide?"今日は外しました（入らないもの欄から戻せます）":"削除しました"),()=>{
+  withUndo(isBuy?"このDPAは今日は買わない扱いにしました":(isRide?"外しました":"削除しました"),()=>{
     S.plan.splice(S.plan.indexOf(p),1);
     if(isBuy){S.noBuy[p.attr]=todayKey();S.plan=S.plan.filter(q=>!(q.attr===p.attr&&(q.k==="buy"||q.prov)));}
     else if(isRide)S.drop[p.attr]=todayKey();
@@ -842,26 +949,27 @@ function delPlan(i){
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b||b.classList.contains("toastbtn"))return;const ds=b.dataset;
   if(ds.tab){showTab(ds.tab);return;}
+  if(ds.help){const h=document.getElementById("help-"+ds.help);h.hidden=!h.hidden;return;}
   if(ds.area){S.area=ds.area;save();renderAll();return;}
   if(ds.nf){S.nf=ds.nf;save();renderNear();return;}
   if(ds.ff){S.ff=ds.ff;save();renderFood();return;}
   if(ds.day){const tk=todayKey();
     if(ds.day==="clear"){Object.assign(S,{ridden:{},waits:{},stops:{},dpas:[],soldout:{},drop:{},noBuy:{},plan:[],planSkip:[],planBuilt:false,timeOverride:"",api:null});document.getElementById("timeOverride").value="";}
     else{const old=S.day;Object.keys(S.ridden).forEach(k=>{if(S.ridden[k]===old)S.ridden[k]=tk;});S.dpas.forEach(x=>{if(x.day===old)x.day=tk;});if(S.planDay===old)S.planDay=tk;S.waits={};S.stops={};S.api=null;}
-    S.day=tk;save();renderAll();toast(ds.day==="clear"?"今日の記録を始めました":"前回の記録を今日の分として使います（待ち時間と中断は消しました）");return;}
+    S.day=tk;save();renderAll();toast(ds.day==="clear"?"今日の記録を始めました":"今日の分にしました");return;}
   if(b.id==="openOnly"){S.openOnly=!S.openOnly;save();renderFood();return;}
   if(b.id==="apiBtn"){fetchApi(false);return;}
   if(ds.ride){markRide(ds.ride,!ridden(ds.ride));renderAll();return;}
   if(ds.stop){if(stopInfo(byId[ds.stop])==="manual")delete S.stops[ds.stop];else S.stops[ds.stop]={at:nowMin(),day:todayKey()};save();renderAll();return;}
-  if(ds.undrop){delete S.drop[ds.undrop];save();renderAll();toast("戻しました。再計算すると入ります");return;}
+  if(ds.undrop){delete S.drop[ds.undrop];save();renderAll();toast("戻しました");return;}
   if(ds.prio){cyclePrio(ds.prio);return;}
   if(ds.prioall){ATTR.forEach(a=>S.prio[a.id]=ds.prioall);save();renderAll();return;}
   if(ds.quick){openDpaForm(ds.quick,ds.qslot);return;}
   if(ds.sold){if(soldOut(ds.sold))delete S.soldout[ds.sold];else S.soldout[ds.sold]=todayKey();save();renderAll();return;}
   if(b.id==="dpaAdd"){addDpa(document.getElementById("dpaAttr").value,document.getElementById("dpaSlot").value,document.getElementById("dpaBought").value);return;}
-  if(ds.dpause!=null){const x=S.dpas[+ds.dpause];x.used=!x.used;if(x.used)S.ridden[x.id]=todayKey();save();renderAll();return;}
+  if(ds.dpause!=null){const x=S.dpas[+ds.dpause];x.used=!x.used;if(x.used)S.ridden[x.id]=todayKey();else delete S.ridden[x.id];save();renderAll();return;}
   if(ds.dpadel!=null){const x=S.dpas[+ds.dpadel];withUndo(byId[x.id].name+" のDPAを削除しました",()=>{S.dpas.splice(+ds.dpadel,1);replanAfterDpa();});return;}
-  if(b.id==="replan"){buildPlan();renderAll();toast("再計算しました");return;}
+  if(b.id==="replan"){buildPlan();renderAll();toast("組みました");return;}
   if(b.id==="unlockAll"){planToday().forEach(p=>p.lock=false);save();renderPlan();toast("ロックを外しました");return;}
   if(b.id==="addItem"){const f=document.getElementById("addForm");f.hidden=!f.hidden;document.getElementById("addTime").value=fromMin(nowMin()+10);return;}
   if(b.id==="addGo"){
@@ -872,7 +980,7 @@ document.addEventListener("click",e=>{
     else if(k==="show"&&document.getElementById("addShow").value){const [sid,tm]=document.getElementById("addShow").value.split("|");const s=SHOWS.find(x=>x.id===sid);it.t=mins(tm)-15;it.dur=s.dur+15;it.text=s.name+"（場所取り15分）";it.area=s.area;}
     else{it.text=document.getElementById("addText").value||({meal:"食事",rest:"休憩",show:"ショー",note:"メモ"})[k];}
     if(S.planDay!==todayKey()){S.plan=[];S.planDay=todayKey();}
-    S.plan.push(it);S.plan.sort((x,y)=>x.t-y.t);save();document.getElementById("addForm").hidden=true;renderPlan();toast("追加しました（ロック）。再計算で前後を組み直せます");return;
+    S.plan.push(it);S.plan.sort((x,y)=>x.t-y.t);save();document.getElementById("addForm").hidden=true;renderPlan();toast("追加しました");return;
   }
   if(ds.up!=null){movePlan(+ds.up,-1);return;}
   if(ds.down!=null){movePlan(+ds.down,1);return;}
@@ -882,13 +990,16 @@ document.addEventListener("click",e=>{
   if(b.id==="resetRides"){withUndo("乗車記録と待ち時間を消しました",()=>Object.assign(S,{ridden:{},waits:{},stops:{},drop:{},plan:[],planSkip:[],planBuilt:false}));return;}
   if(b.id==="resetAll"){withUndo("全部リセットしました",()=>{S=DEF();S.day=todayKey();});showTab("near");return;}
 });
-document.addEventListener("input",e=>{if(["dpaAttr","dpaSlot","dpaBought"].includes(e.target.id))dpaDirty=true;});
+document.addEventListener("input",e=>{if(["dpaAttr","dpaSlot","dpaBought"].includes(e.target.id))dpaDirty=true;if(e.target.id==="cMemo"){S.cond.memo=e.target.value;save();}});
 document.addEventListener("change",e=>{
   const t=e.target;const ds=t.dataset;
   if(["dpaAttr","dpaSlot","dpaBought"].includes(t.id))dpaDirty=true;
   if(t.id==="timeOverride"){S.timeOverride=t.value;save();renderAll();return;}
-  if(ds.wait){const v=parseInt(t.value,10);if(isNaN(v))delete S.waits[ds.wait];else{S.waits[ds.wait]={v,at:nowMin(),day:todayKey()};delete S.stops[ds.wait];}S.day=todayKey();save();renderHeader();renderNear();return;}
-  if(ds.ptime!=null){const p=planToday()[+ds.ptime];if(!t.value||!p)return;p.t=mins(t.value);p.lock=true;if(p.k==="ride"&&p.attr&&!p.dpa)p.w=estWait(byId[p.attr],p.t);S.plan.sort((x,y)=>x.t-y.t);save();renderPlan();return;}
+  if(ds.wait){const v=parseInt(t.value,10);if(isNaN(v))delete S.waits[ds.wait];else{S.waits[ds.wait]={v,at:nowMin(),day:todayKey()};delete S.stops[ds.wait];}S.day=todayKey();save();
+    setTimeout(()=>{const ae=document.activeElement;const id=ae&&ae.dataset?ae.dataset.wait:null;const pos=document.querySelector("main").scrollTop;renderHeader();renderNear();document.querySelector("main").scrollTop=pos;if(id){const el=document.querySelector(`[data-wait="${id}"]`);if(el)el.focus({preventScroll:true});}},0);return;}
+  if(ds.ptime!=null){const p=planToday()[+ds.ptime];if(!t.value||!p)return;
+    if(p.dpa&&!p.prov){toast("DPAの枠はパスタブで直せます");renderPlan();return;}
+    p.t=mins(t.value);p.lock=true;if(p.k==="buy")p.ps=Math.max(p.ps||0,p.t+45);if(p.k==="ride"&&p.attr&&!p.dpa)p.w=estWait(byId[p.attr],p.t);S.plan.sort((x,y)=>x.t-y.t);save();renderPlan();return;}
   if(ds.dpaslot!=null){if(!t.value)return;S.dpas[+ds.dpaslot].slot=t.value;const re=replanAfterDpa();save();renderAll();if(re)toast("プランを組み直しました");return;}
   if(ds.dpabought!=null){if(!t.value)return;S.dpas[+ds.dpabought].bought=t.value;const re=replanAfterDpa();save();renderAll();if(re)toast("プランを組み直しました");return;}
   if(ds.pop){S.pop[ds.pop]=t.value;save();return;}
@@ -896,6 +1007,13 @@ document.addEventListener("change",e=>{
   if(t.id==="startTime"){S.start=t.value;save();return;}
   if(t.id==="height"){S.height=t.value;save();renderAll();return;}
   if(t.id==="dpaBudget"){S.dpaBudget=t.value;save();renderAll();return;}
+  if(t.id==="cWeather"){S.cond.weather=t.value;save();renderAll();return;}
+  if(t.id==="cCrowd"){S.cond.crowd=t.value;save();renderAll();return;}
+  if(t.id==="cContra"){S.cond.contra=t.checked;save();renderAll();return;}
+  if(t.id==="cOutdoor"){S.cond.outdoor=t.checked;save();renderAll();return;}
+  if(t.id==="cWalk"){S.cond.walk=t.checked;save();renderAll();return;}
+  if(t.id==="cKids"){S.cond.kids=t.checked;save();renderAll();return;}
+  if(t.id==="cMemo"){S.cond.memo=t.value;save();renderAll();return;}
   if(t.id==="srOk"){S.srOk=t.checked;save();renderAll();return;}
   if(t.id==="apiOn"){S.apiOn=t.checked;save();if(t.checked)fetchApi(false);return;}
   if(t.id==="addKind"){const k=t.value;document.getElementById("addAttrWrap").hidden=k!=="ride";document.getElementById("addShowWrap").hidden=k!=="show";document.getElementById("addTextWrap").hidden=k==="ride";return;}
@@ -926,7 +1044,7 @@ document.addEventListener("drop",e=>{const s=e.target.closest(".step");if(!s||dr
   renderAll();showTab(S.tab||"near");
   if(S.apiOn)fetchApi(true);
   // 入力中は一覧を描き直さない（キーボードが閉じるのを防ぐ）
-  setInterval(()=>{renderHeader();const ae=document.activeElement;const typing=ae&&ae.closest&&ae.closest("main")&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName);if(S.tab==="near"&&!typing)renderNear();if(S.tab==="dpa"&&!typing)renderDpa();},30000);
+  setInterval(()=>{renderHeader();const ae=document.activeElement;const typing=ae&&ae.closest&&ae.closest("main")&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName);if(S.tab==="near"&&!typing)renderNear();if(S.tab==="dpa"&&!typing)renderDpa();if(S.tab==="plan"&&!typing)renderPlan();},30000);
   setInterval(()=>{if(S.apiOn)fetchApi(true);},5*60000);
 })();
 </script>
