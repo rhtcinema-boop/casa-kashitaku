@@ -115,7 +115,7 @@ h2 small{color:var(--muted);font-weight:600;font-size:12px}
 textarea{resize:none}
 .form .full{grid-column:1/-1}
 .toggle{display:flex;align-items:center;gap:10px;font-size:14px;padding:9px 0;font-weight:600}
-.toggle input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.toggle input{width:24px;height:24px;accent-color:var(--accent);flex:none}
 /* timeline */
 .step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:start;padding:10px 12px;border-radius:var(--r);background:var(--panel);box-shadow:var(--shadow);position:relative}
 .step.now{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
@@ -126,7 +126,7 @@ textarea{resize:none}
 .step.rest{background:var(--panel);box-shadow:none;border:1px dashed var(--line)}
 .step.warnfit{box-shadow:0 0 0 2px var(--bad),var(--shadow)}
 .step .t{font-size:17px;min-width:48px}
-.step .t{position:relative;display:inline-flex;align-items:center;min-height:40px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 10px;line-height:1.3;min-height:36px}
+.step .t{position:relative;display:inline-flex;align-items:center;min-height:40px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 10px;line-height:1.3}
 .step .t::after{content:"✎";font-size:11px;margin-left:4px;color:var(--muted);font-weight:400}
 .step .t input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0}
 .step .txt{font-weight:700;color:var(--navy)}
@@ -146,6 +146,7 @@ textarea{resize:none}
 .dpaedit input{border:0;border-radius:10px;padding:7px 8px;background:var(--bg);font-weight:700;min-height:40px;font-size:16px}
 .row:has(.dpaedit) .right .btns{flex-direction:column;align-items:stretch}
 .row:has(.dpaedit) .right{max-width:96px}
+.row:has(.dpaedit) .right .sm{width:100%}
 .dpaedit input{width:100%!important;min-width:0!important}
 .dpaedit .tag{grid-column:1/-1;justify-self:start}
 .waitedit input{width:100%;border:0;border-radius:10px;padding:7px 8px;background:var(--bg);text-align:right;font-weight:700}
@@ -153,7 +154,7 @@ textarea{resize:none}
 .toast{display:flex;align-items:center;justify-content:center;gap:10px;position:fixed;left:16px;right:16px;width:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateY(12px);background:var(--navy);color:var(--accent-fg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center}
 :root[data-theme="dark"] .toast{color:var(--accent-fg)}
 .toast.show{opacity:1;pointer-events:auto;transform:translateY(0)}
-.toastbtn{background:var(--toastbtn,rgba(255,255,255,.18));border:0;color:inherit;border-radius:999px;padding:8px 14px;min-height:36px;margin-left:10px;font-size:12px;font-weight:800}
+.toastbtn{flex:none;white-space:nowrap;background:var(--toastbtn,rgba(255,255,255,.18));border:0;color:inherit;border-radius:999px;padding:8px 14px;min-height:36px;margin-left:10px;font-size:12px;font-weight:800}
 .buynow{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .banner{margin-bottom:10px;background:var(--warn-bg);color:var(--fg)}
 nav{flex:none;display:flex;background:var(--panel);box-shadow:0 -2px 12px rgba(20,40,90,.06);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
@@ -329,6 +330,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
 <script>
 // ============ data ============
 const AREAS={MH:"メディテレーニアンハーバー",AWF:"アメリカンウォーターフロント",PD:"ポートディスカバリー",LRD:"ロストリバーデルタ",AC:"アラビアンコースト",ML:"マーメイドラグーン",MI:"ミステリアスアイランド",FS:"ファンタジースプリングス"};
+const DPA_SHORT={anna:"アナ雪",soaring:"ソアリン",toymania:"トイマニ",center:"センター",peterpan:"ピーターパン",rapunzel:"ラプンツェル",tower:"タワテラ",indy:"インディ",raging:"レイジング"};
 const SHORT={MH:"ハーバー",AWF:"アメフロ",PD:"ポトディス",LRD:"ロスリバ",AC:"アラビアン",ML:"マーメイド",MI:"ミステリアス",FS:"FS"};
 const WALK={MH:{MH:0,AWF:5,PD:8,LRD:10,AC:10,ML:8,MI:4,FS:15},AWF:{AWF:0,PD:4,LRD:10,AC:12,ML:10,MI:6,FS:14},PD:{PD:0,LRD:5,AC:9,ML:8,MI:8,FS:10},LRD:{LRD:0,AC:5,ML:7,MI:9,FS:4},AC:{AC:0,ML:3,MI:7,FS:4},ML:{ML:0,MI:5,FS:7},MI:{MI:0,FS:12},FS:{FS:0}};
 const walk=(a,b)=>(WALK[a]&&WALK[a][b]!=null)?WALK[a][b]:WALK[b][a];
@@ -834,9 +836,9 @@ function renderHeader(){
   if(chips.innerHTML!==html){chips.innerHTML=html;const on=chips.querySelector('[aria-pressed="true"]');if(on)chips.scrollLeft=Math.max(0,on.offsetLeft-chips.clientWidth/2+on.offsetWidth/2);}
   const bar=document.getElementById("dpabar");const nb=nextBuyMin();const nm=nowMin();
   const next=dpaTargets(Math.max(nm,nb??nm)).find(o=>slotFits(o,targetSlot(o,Math.max(nm,nb??nm))));
-  const nx=next?`<span class="note">次: ${esc(byId[next.id].name.split("：")[0])}</span>`:`<span class="note">${budgetLeft()<=0?"予算いっぱい":"買う予定なし"}</span>`;
+  const nx=next?`<span class="note">次: ${esc(DPA_SHORT[next.id]||byId[next.id].name.split("：")[0])}</span>`:`<span class="note">${budgetLeft()<=0?"予算いっぱい":"買う予定なし"}</span>`;
   if(nb==null||nb<=nm)bar.innerHTML=`<span>DPA</span><b>${next?"今すぐ買える":"—"}</b>${nx}`;
-  else bar.innerHTML=`<span>次のDPA</span><span class="num">${fromMin(nb)}</span><span>まで <b>${nb-nm}分</b></span>${nx}`;
+  else bar.innerHTML=`<span>DPA</span><span class="num">${fromMin(nb)}</span><span>まで <b>${nb-nm}分</b></span>${nx}`;
 }
 function scoreNow(a){
   if(stopInfo(a))return 5000;
@@ -948,7 +950,7 @@ function renderNear(){
       <div class="sub"><span>${SHORT[a.area]} 徒歩${wk}分</span>${tags.join("")}</div>
       <div class="right">
         <div class="wait ${st?"bad":waitClass(v)}"><span class="num">${st?"—":v}</span><span class="u">${st?"中断":(l?(l.src==="manual"?"分 入力":"分 API"):"分 目安")}</span></div>
-        <div class="waitedit"><input type="number" inputmode="numeric" min="0" max="300" placeholder="分" aria-label="${esc(a.name)}の今の待ち時間" data-wait="${a.id}" value="${wv}"><button class="sm ${st==="manual"?"on":""}" type="button" data-stop="${a.id}" aria-label="${esc(a.name)}の運営中断${st==="manual"?"を解除":"を記録"}" title="運営中断">止</button><button class="sm ${rd?"on":""}" type="button" data-ride="${a.id}" aria-label="${esc(a.name)} ${rd?"乗った（取り消す）":"まだ（乗ったら押す）"}">${rd?"乗った":"未"}</button></div>
+        <div class="waitedit"><input type="number" inputmode="numeric" min="0" max="300" placeholder="待ち分" aria-label="${esc(a.name)}の今の待ち時間" data-wait="${a.id}" value="${wv}"><button class="sm ${st==="manual"?"on":""}" type="button" data-stop="${a.id}" aria-label="${esc(a.name)}の運営中断${st==="manual"?"を解除":"を記録"}" title="運営中断">止</button><button class="sm ${rd?"on":""}" type="button" data-ride="${a.id}" aria-label="${esc(a.name)} ${rd?"乗った（取り消す）":"まだ（乗ったら押す）"}">${rd?"乗った":"未"}</button></div>
       </div></div>`;
   }).join("");
 }
@@ -1108,7 +1110,7 @@ function delPlan(i){
   const p=planToday()[i];if(!p)return;
   if(p.dpa&&!p.prov){toast("DPAはパスタブで削除できます");return;}
   const isBuy=p.attr&&(p.k==="buy"||p.prov);const isRide=p.k==="ride"&&p.attr&&!p.dpa;
-  withUndo(isBuy?"今日は買わない（入らない欄から戻せます）":(isRide?"外しました":"削除しました"),()=>{
+  withUndo(isBuy?"今日は買わない":(isRide?"外しました":"削除しました"),()=>{
     S.plan.splice(S.plan.indexOf(p),1);
     if(p.k==="meal"){S.noMeal=S.noMeal||{};S.noMeal[/昼食/.test(p.text)?"lunch":"dinner"]=todayKey();}
     if(isBuy){S.noBuy[p.attr]=todayKey();S.plan=S.plan.filter(q=>!(q.attr===p.attr&&(q.k==="buy"||q.prov)));}
