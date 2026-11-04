@@ -6,10 +6,10 @@
 <style>
 /* 公式アプリ風: 白ベース・濃紺の見出し・丸いカード・影は薄く・下タブにアイコン。文字は最小限。 */
 :root{
-  --bg:#f2f4f8; --panel:#ffffff; --fg:#1b2a4a; --muted:#6b7894; --line:#e6e9f0; --shadow:0 2px 10px rgba(20,40,90,.07);
+  --bg:#f2f4f8; --panel:#ffffff; --fg:#1b2a4a; --muted:#5b6a86; --line:#e6e9f0; --shadow:0 2px 10px rgba(20,40,90,.07);
   --navy:#0c2d6b; --accent:#1e63e9; --accent-fg:#ffffff; --sea:#e8f0ff; --sea-fg:#1e4fb8;
-  --ok:#128a4e; --ok-bg:#e3f6ec; --warn:#b86a00; --warn-bg:#fff3dd; --bad:#c62a2a; --bad-bg:#fde6e6;
-  --dpa:#6a3ec7; --dpa-bg:#efe9fc; --must:#e8541c; --must-bg:#ffe9df; --must-fg:#ffffff;
+  --ok:#0f7a44; --ok-bg:#e3f6ec; --warn:#9a5500; --warn-bg:#fff3dd; --bad:#c62a2a; --bad-bg:#fde6e6;
+  --dpa:#6a3ec7; --dpa-bg:#efe9fc; --must:#d9480f; --must-bg:#ffe9df; --must-fg:#ffffff;
   --display:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   --body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   --r:18px; --ease:cubic-bezier(.2,.8,.2,1);
@@ -44,25 +44,26 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var
 .clock{margin-left:auto;display:flex;align-items:center;gap:6px;position:relative}
 .clock .num{font-size:26px;line-height:1;color:var(--navy)}
 .clock input{width:1px;height:1px;opacity:0;position:absolute;right:0;bottom:0}
-.clock button{border:0;background:var(--bg);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--muted)}
-.chips{display:flex;gap:6px;overflow-x:auto;padding-block:8px 2px;margin:0 -4px;padding-inline:4px;scrollbar-width:none;scroll-behavior:smooth}
+.clock button{border:0;background:var(--bg);border-radius:999px;padding:9px 12px;min-height:36px;font-size:12px;font-weight:700;color:var(--muted)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-block:6px 0;padding-inline-end:32px;mask-image:linear-gradient(90deg,#000 88%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);margin:0 -4px;padding-inline:4px;scrollbar-width:none;scroll-behavior:smooth}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;border:0;background:var(--bg);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;white-space:nowrap;color:var(--muted)}
 .chip[aria-pressed="true"]{background:var(--navy);color:#fff}
 :root[data-theme="dark"] .chip[aria-pressed="true"],:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:var(--accent-fg)}
 @media (prefers-color-scheme:light){ :root:not([data-theme="dark"]) .chip[aria-pressed="true"]{color:#fff} }
-.dpabar{margin-top:8px;border-radius:14px;background:var(--dpa-bg);padding:7px 12px;display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap;color:var(--dpa)}
+.dpabar{margin-top:6px;border-radius:14px;background:var(--dpa-bg);padding:6px 12px;display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:nowrap;color:var(--dpa)}
 .dpabar .num{font-size:20px}
 .dpabar b{color:var(--dpa)}
-.dpabar .note{color:var(--dpa);opacity:.8}
+.dpabar .note{color:var(--dpa);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.step.buy .meta{color:var(--fg)}
 
-main{flex:1;min-height:0;overflow-y:auto;padding-block:14px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overscroll-behavior:contain}
+main{flex:1;min-height:0;overflow-y:auto;padding-block:14px 76px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overscroll-behavior:contain}
 section[hidden]{display:none}
 section.enter{animation:rise .24s var(--ease) both}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 h2{font-size:15px;margin:18px 0 8px;display:flex;align-items:center;gap:8px;color:var(--navy);font-weight:800}
 h2 small{color:var(--muted);font-weight:600;font-size:12px}
-.help{margin-left:auto;border:0;background:var(--bg);color:var(--muted);width:24px;height:24px;border-radius:50%;font-size:13px;font-weight:800;padding:0;line-height:1;flex:none}
+.help{margin-left:auto;border:0;background:var(--bg);color:var(--muted);width:36px;height:36px;border-radius:50%;font-size:13px;font-weight:800;padding:0;line-height:1;flex:none}
 .helpbox{background:var(--sea);color:var(--sea-fg);border-radius:14px;padding:10px 12px;font-size:13px;margin-bottom:8px;animation:rise .2s var(--ease)}
 .helpbox p{margin:0 0 6px}.helpbox p:last-child{margin:0}
 .card{background:var(--panel);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow)}
@@ -70,20 +71,24 @@ h2 small{color:var(--muted);font-weight:600;font-size:12px}
 .list>*{animation:rise .22s var(--ease) both}
 .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--panel);border-radius:var(--r);padding:11px 14px;box-shadow:var(--shadow)}
 .row.done{opacity:.5}
-.row.must{box-shadow:inset 4px 0 0 var(--must),var(--shadow)}
-.row .name{font-weight:700;min-width:0;color:var(--navy)}
+.row.must{border-left:4px solid var(--must);padding-left:10px}
+.row .name{font-weight:700;min-width:0;color:var(--navy);line-break:strict;word-break:keep-all;overflow-wrap:anywhere}
+.step .txt{line-break:strict;overflow-wrap:anywhere}
 .row .sub{grid-column:1;font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-width:0}
 .row .right{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .wait{display:flex;align-items:baseline;gap:3px}
 .wait .num{font-size:24px;line-height:1}
-.wait .u{font-size:11px;color:var(--muted)}
+.wait .u{font-size:12px;color:var(--muted)}
 .wait.ok .num{color:var(--ok)} .wait.warn .num{color:var(--warn)} .wait.bad .num{color:var(--bad)}
-.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap}
+.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;line-height:1.5;white-space:nowrap}
 .tag.ok{background:var(--ok-bg);color:var(--ok)} .tag.warn{background:var(--warn-bg);color:var(--warn)} .tag.bad{background:var(--bad-bg);color:var(--bad)}
 .tag.dpa{background:var(--dpa-bg);color:var(--dpa)} .tag.sea{background:var(--sea);color:var(--sea-fg)} .tag.mute{background:var(--bg);color:var(--muted)}
 .tag.must{background:var(--must-bg);color:var(--must)}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
-.sm{border:0;background:var(--bg);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;line-height:1.4;min-height:32px;color:var(--fg)}
+.sm{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:9px 14px;font-size:12px;font-weight:700;line-height:1.4;min-height:40px;color:var(--fg)}
+.sm.on[data-stop]{background:var(--bad);color:#fff;border-color:var(--bad)}
+#openOnly.on{background:var(--sea);color:var(--sea-fg);border-color:var(--sea-fg)}
+.step.rest .sm,.step.buy .sm,.step.meal .sm{background:var(--panel)}
 .sm.on{background:var(--navy);color:var(--accent-fg)}
 .sm.must{background:var(--must);color:var(--must-fg)}
 .sm.want{background:var(--sea);color:var(--sea-fg)}
@@ -96,10 +101,16 @@ h2 small{color:var(--muted);font-weight:600;font-size:12px}
 .next .why{font-size:13px;color:var(--muted)}
 .next .alt{font-size:12px;margin-top:8px;color:var(--fg);opacity:.85}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.kv{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:4px 0;align-items:baseline}
+.kv>span:first-child{flex:none;white-space:nowrap;color:var(--muted)}
+.kv b{min-width:0;text-align:right;line-break:strict;overflow-wrap:anywhere}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .form label{font-size:12px;color:var(--muted);font-weight:700;display:flex;flex-direction:column;gap:4px;min-width:0}
-.form select,.form input,.pop input{border:0;border-radius:12px;padding:10px 12px;background:var(--bg);min-width:0;width:100%;font-weight:600;color:var(--fg)}
+.form select,.form input,.pop input{border:0;border-radius:12px;padding:10px 12px;background:var(--bg);min-width:0;width:100%;font-weight:600;color:var(--fg);font-size:16px;min-height:44px}
+.waitedit input,textarea{font-size:16px}
+.waitedit{gap:8px}
+.waitedit input{min-height:40px;width:56px}
+textarea{resize:none}
 .form .full{grid-column:1/-1}
 .toggle{display:flex;align-items:center;gap:10px;font-size:14px;padding:9px 0;font-weight:600}
 .toggle input{width:22px;height:22px;accent-color:var(--accent);flex:none}
@@ -110,15 +121,18 @@ h2 small{color:var(--muted);font-weight:600;font-size:12px}
 .step.locked{background:linear-gradient(90deg,var(--sea) 0,var(--panel) 28%)}
 .step.buy{background:var(--dpa-bg)}
 .step.meal{background:var(--warn-bg)}
-.step.rest{background:var(--bg)}
+.step.rest{background:var(--panel);box-shadow:none;border:1px dashed var(--line)}
 .step.warnfit{box-shadow:0 0 0 2px var(--bad),var(--shadow)}
 .step .t{font-size:17px;min-width:48px}
-.step .t{position:relative;display:inline-block;background:var(--bg);border-radius:10px;padding:4px 10px;line-height:1.3}
+.step .t{position:relative;display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 10px;line-height:1.3;min-height:36px}
+.step .t::after{content:"✎";font-size:11px;margin-left:4px;color:var(--muted);font-weight:400}
 .step .t input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0}
 .step .txt{font-weight:700;color:var(--navy)}
 .step .meta{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .step .ctl{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap}
-.step .ctl .sm{padding:5px 10px;min-height:30px}
+.step .ctl{gap:8px}
+.step .ctl .sm{padding:8px 12px;min-height:40px}
+.step .ctl .sm.danger{margin-left:auto}
 .step[draggable="true"]{cursor:grab}
 .step.dragover{outline:2px dashed var(--accent)}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
@@ -126,14 +140,14 @@ h2 small{color:var(--muted);font-weight:600;font-size:12px}
 .waitedit{display:flex;gap:4px;align-items:center}
 .waitedit input{width:68px;border:0;border-radius:10px;padding:7px 8px;background:var(--bg);text-align:right;font-weight:700}
 .pop input{margin-top:4px}
-.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:var(--navy);color:var(--accent-fg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center}
+.toast{position:fixed;left:16px;right:16px;width:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateY(12px);background:var(--navy);color:var(--accent-fg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center}
 :root[data-theme="dark"] .toast{color:var(--accent-fg)}
-.toast.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
-.toastbtn{background:var(--toastbtn,rgba(255,255,255,.18));border:0;color:inherit;border-radius:999px;padding:3px 10px;margin-left:10px;font-size:12px;font-weight:800}
+.toast.show{opacity:1;pointer-events:auto;transform:translateY(0)}
+.toastbtn{background:var(--toastbtn,rgba(255,255,255,.18));border:0;color:inherit;border-radius:999px;padding:8px 14px;min-height:36px;margin-left:10px;font-size:12px;font-weight:800}
 .buynow{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .banner{margin-bottom:10px;background:var(--warn-bg);color:var(--fg)}
 nav{flex:none;display:flex;background:var(--panel);box-shadow:0 -2px 12px rgba(20,40,90,.06);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
-nav button{flex:1;border:0;background:transparent;padding:8px 4px 6px;font-size:10.5px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+nav button{flex:1;border:0;background:transparent;padding:8px 4px 6px;font-size:11px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 nav button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s var(--ease)}
 nav button[aria-selected="true"]{color:var(--accent)}
 nav button[aria-selected="true"] svg{transform:translateY(-2px) scale(1.08)}
@@ -192,7 +206,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
       </div>
       <div class="btns" style="margin-top:10px">
         <button class="primary" type="button" id="replan">今から組む</button>
-        <button class="ghost" type="button" id="addItem">追加</button>
+        <button class="ghost" type="button" id="addItem">行を追加</button>
         <button class="ghost" type="button" id="unlockAll">固定解除</button>
       </div>
       <div class="form" id="addForm" hidden>
@@ -202,7 +216,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
         <label id="addShowWrap" hidden>ショー<select id="addShow"></select></label>
         <label id="addTextWrap" hidden>内容<input type="text" id="addText" placeholder="例: グリーティング"></label>
         <label>所要(分)<input type="number" id="addDur" value="30" min="5" max="180"></label>
-        <label>&nbsp;<button class="primary" type="button" id="addGo">追加</button></label>
+        <div class="full"><button class="primary" type="button" id="addGo" style="width:100%">この内容で追加</button></div>
       </div>
       <p class="note" id="planNote" style="margin:10px 0 0"></p>
     </div>
@@ -763,7 +777,11 @@ function buildPlanCore(slotShift,buyCap,skipMeals,skipNth,firstOnly){
     const cands=items.filter(i=>i.k==="ride"&&i.attr&&!i.dpa&&!i.lock&&endOf(i)>=mins(m.from)-10&&i.t<mins(m.to)&&(prio(byId[i.attr])==="want"||!isBig(byId[i.attr]))&&endOf(i)-Math.max(i.t,mins(m.from)-30)>=20).sort((x,y)=>avgBase(byId[x.attr])-avgBase(byId[y.attr]));
     const v=cands[0];
     if(v){const va=byId[v.attr];const sp=mealSpot(v.area||va.area,v.t);const st=Math.max(v.t,mins(m.from)-30);Object.assign(v,{k:"meal",attr:undefined,w:0,t:st,dur:Math.min(endOf(v)-st,30),why:undefined,text:m.text+(sp?`: ${sp.n}（${SHORT[sp.a]}${sp.mo?"・モバイルオーダー":""}）`:""),area:sp?sp.a:(v.area||byId[v.attr].area)});rem.push(va);}
-    else missMeal.push(m.k==="lunch"?"昼食":"夕食");});
+    else{ // 空き15分があれば軽食
+      const sorted=items.filter(i=>i.k!=="buy"&&i.k!=="note").sort((x,y)=>x.t-y.t);let put=false;
+      for(let k=0;k<sorted.length-1&&!put;k++){const a0=sorted[k],b0=sorted[k+1];const ga=a0.area||(a0.attr?byId[a0.attr].area:null),gb=b0.area||(b0.attr?byId[b0.attr].area:null);const gap=b0.t-endOf(a0)-(ga&&gb?walk(ga,gb):0);
+        if(gap>=15&&endOf(a0)>=mins(m.from)-60&&endOf(a0)<mins(m.to)){items.push({id:nid(),k:"meal",t:endOf(a0),dur:15,area:ga||undefined,text:(m.k==="lunch"?"昼":"夕")+"の軽食（モバイルオーダー）"});put=true;}}
+      if(!put)missMeal.push(m.k==="lunch"?"昼食":"夕食");}});
   const plan=items.concat(buys).sort((x,y)=>x.t-y.t||(x.k==="buy"?-1:1));
   const skip=rem.filter(a=>!(a.pair&&rem.some(x=>x.id===a.pair)&&a.id>a.pair));
   return {plan,skip,missMeal,mustSkip:skip.filter(a=>prio(a)==="must").length,bigSkip:skip.filter(a=>prio(a)==="must"&&isBig(a)).length};
@@ -806,8 +824,8 @@ function renderHeader(){
   if(chips.innerHTML!==html){chips.innerHTML=html;const on=chips.querySelector('[aria-pressed="true"]');if(on)chips.scrollLeft=Math.max(0,on.offsetLeft-chips.clientWidth/2+on.offsetWidth/2);}
   const bar=document.getElementById("dpabar");const nb=nextBuyMin();const nm=nowMin();
   const next=dpaTargets(Math.max(nm,nb??nm)).find(o=>slotFits(o,targetSlot(o,Math.max(nm,nb??nm))));
-  const nx=next?`<span class="note">次: ${esc(byId[next.id].name)}</span>`:`<span class="note">${budgetLeft()<=0?"予算の範囲で買えるものなし":"買う候補なし"}</span>`;
-  if(nb==null||nb<=nm)bar.innerHTML=`<span>DPA</span><b>今すぐ買える</b>${nx}`;
+  const nx=next?`<span class="note">次: ${esc(byId[next.id].name.split("：")[0])}</span>`:`<span class="note">${budgetLeft()<=0?"予算いっぱい":"買う予定なし"}</span>`;
+  if(nb==null||nb<=nm)bar.innerHTML=`<span>DPA</span><b>${next?"今すぐ買える":"—"}</b>${nx}`;
   else bar.innerHTML=`<span>次のDPA</span><span class="num">${fromMin(nb)}</span><span>まで <b>${nb-nm}分</b></span>${nx}`;
 }
 function scoreNow(a){
@@ -825,7 +843,7 @@ function condSummary(){const c=S.cond;const r=[];if(c.weather)r.push(WEATHER_LAB
 function renderDayBanner(){
   const el=document.getElementById("dayBanner");
   if(staleDay()){const [,m,dd]=S.day.split("-").map(Number);
-    el.innerHTML=`<div class="card banner"><b>${m}/${dd}の記録があります</b><div class="btns" style="margin-top:8px"><button class="primary" type="button" data-day="clear">消して始める</button><button class="ghost" type="button" data-day="keep">今日の分にする</button></div></div>`;}
+    el.innerHTML=`<div class="card banner"><b>${m}/${dd}の記録があります</b><div class="btns" style="margin-top:8px"><button class="primary" type="button" data-day="keep">今日の分にする</button><button class="ghost danger" type="button" data-day="clear">消して始める</button></div></div>`;}
   else el.innerHTML="";
 }
 function renderNear(){
@@ -862,7 +880,8 @@ function renderNear(){
   if(nm>=exitM)html+=`<div class="big">退園時刻を過ぎています</div><div class="why">設定タブで退園時刻を変えると、続きを組み直せます。</div>`;
   else if(unbought){
     const b=byId[pNext.attr];
-    html+=`<div class="big">まず ${esc(b.name.split("：")[0])} のDPAを買う</div><div class="why">買ったら${SHORT[b.area]}へ（${fromMin(pNext.t)}頃の枠）</div><div class="buynow"><button class="primary" type="button" data-quick="${b.id}" data-qslot="${fromMin(pNext.t)}">買った</button><button class="sm" type="button" data-sold="${b.id}">売切</button></div>`;
+    const far=pNext.t-nm>90;const after=far?pool.find(a=>a.id!==b.id):null;
+    html+=`<div class="big">まず ${esc(b.name.split("：")[0])} のDPAを買う</div><div class="why">${far?`${fromMin(pNext.t)}頃の枠${after?"。買ったら "+esc(after.name.split("：")[0])+"（徒歩"+walk(S.area,after.area)+"分・"+estWait(after,nm+walk(S.area,after.area))+"分）へ":""}`:`買ったら${SHORT[b.area]}へ（${fromMin(pNext.t)}頃の枠）`}</div><div class="buynow"><button class="sm on" type="button" data-quick="${b.id}" data-qslot="${fromMin(pNext.t)}">買った</button><button class="sm" type="button" data-sold="${b.id}">売切</button></div>`;
   }
   else if(onTrack){
     const a=pNext.attr&&pNext.k==="ride"?byId[pNext.attr]:null;
@@ -919,7 +938,7 @@ function renderNear(){
       <div class="sub"><span>${SHORT[a.area]} 徒歩${wk}分</span>${tags.join("")}</div>
       <div class="right">
         <div class="wait ${st?"bad":waitClass(v)}"><span class="num">${st?"—":v}</span><span class="u">${st?"中断":(l?(l.src==="manual"?"分 入力":"分 API"):"分 目安")}</span></div>
-        <div class="waitedit"><input type="number" inputmode="numeric" min="0" max="300" placeholder="今" aria-label="${esc(a.name)}の今の待ち時間" data-wait="${a.id}" value="${wv}"><button class="sm ${st==="manual"?"on":""}" type="button" data-stop="${a.id}" aria-label="${esc(a.name)}の運営中断${st==="manual"?"を解除":"を記録"}" title="運営中断">止</button><button class="sm ${rd?"on":""}" type="button" data-ride="${a.id}" aria-label="${esc(a.name)} ${rd?"乗った（取り消す）":"まだ（乗ったら押す）"}">${rd?"乗った":"未"}</button></div>
+        <div class="waitedit"><input type="number" inputmode="numeric" min="0" max="300" placeholder="分" aria-label="${esc(a.name)}の今の待ち時間" data-wait="${a.id}" value="${wv}"><button class="sm ${st==="manual"?"on":""}" type="button" data-stop="${a.id}" aria-label="${esc(a.name)}の運営中断${st==="manual"?"を解除":"を記録"}" title="運営中断">止</button><button class="sm ${rd?"on":""}" type="button" data-ride="${a.id}" aria-label="${esc(a.name)} ${rd?"乗った（取り消す）":"まだ（乗ったら押す）"}">${rd?"乗った":"未"}</button></div>
       </div></div>`;
   }).join("");
 }
@@ -942,7 +961,7 @@ function renderPlan(){
     if(p.k==="meal"&&p.area)meta.push(`<span>${SHORT[p.area]}</span>`);
     if(p.dur)meta.push(`<span>〜${fromMin(endOf(p))}</span>`);
     if(ride&&a.dpa&&!p.dpa)meta.push(`<span class="tag mute">通常列</span>`);
-    if(p.why)meta.push(`<span class="tag ok">${esc(p.why)}</span>`);
+    if(p.why)meta.push(`<span class="tag ${/止まる|混む/.test(p.why)?"warn":"ok"}">${esc(p.why)}</span>`);
     if(p.lock)meta.push(`<span class="tag sea">固定</span>`);
     if(warn[p.id])meta.push(`<span class="tag bad">${warn[p.id]}</span>`);
     const cls=["step",p.k,i===nowIdx?"now":"",(done||(endOf(p)<nm&&i<nowIdx))?"past":"",p.lock?"locked":"",warn[p.id]?"warnfit":""].join(" ");
@@ -950,11 +969,11 @@ function renderPlan(){
       <label class="t num"><span>${fromMin(p.t)}</span><input type="time" value="${fromMin(p.t)}" data-ptime="${p.id}" aria-label="${esc(p.text)}の開始時刻"></label>
       <div><div class="txt">${esc(p.k==="meal"?p.text.replace(/（[^）]*）/g,""):p.text)}</div><div class="meta">${meta.join("")}</div></div>
       <div class="ctl">
-        ${ride?`<button class="sm ${done?"on":""}" type="button" data-ride="${a.id}">${done?"乗った":"乗った？"}</button>`:""}
+        ${ride?`<button class="sm ${done?"on":""}" type="button" data-ride="${a.id}">${done?"乗った ✓":"乗った"}</button>`:""}
         ${p.k==="buy"?`<button class="sm" type="button" data-quick="${p.attr}" data-qslot="${p.ps?fromMin(p.ps):""}">買った</button><button class="sm" type="button" data-sold="${p.attr}">売切</button>`:""}
         ${p.dpa||p.k==="note"||p.k==="buy"?"":`<button class="sm" type="button" data-up="${i}" aria-label="上へ">↑</button><button class="sm" type="button" data-down="${i}" aria-label="下へ">↓</button>`}
         ${p.dpa||p.k==="note"?"":`<button class="sm ${p.lock?"on":""}" type="button" data-lock="${i}">固定</button>`}
-        <button class="sm" type="button" data-del="${i}">削除</button>
+        <button class="sm danger" type="button" data-del="${i}">削除</button>
       </div></div>`;
   }).join("");
   const sk=document.getElementById("planSkip");
@@ -970,12 +989,12 @@ function renderPlan(){
   const buyPlan=plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
   const lines=[];
   if(mustSkip){const dpaLeft=skipIds.filter(id=>prio(byId[id])==="must"&&byId[id].dpa&&!soldOut(id)&&!(SOLD_BY[id]&&nowMin()>mins(SOLD_BY[id]))).length;lines.push(`<b>必須 ${mustSkip}件が入りません</b>（下の「入らない」欄）${dpaLeft&&S.dpaBudget!==""?"。予算を上げるとDPAで入ります":""}`);}
-  lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?" ← 設定で予算を決められます":""}`);
+  lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?"。設定で予算を上げると減らせます":""}`);
   if((S.planMiss||[]).length&&S.planDay===todayKey())lines.push(`<b>${S.planMiss.join("・")}が入りません</b>`);
   if(condSummary())lines.push(esc(condSummary()));
   note.innerHTML=lines.join("<br>");
   const sel=document.getElementById("addAttr");
-  if(!sel.options.length)sel.innerHTML=ATTR.filter(isOpen).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
+  if(!sel.options.length)sel.innerHTML=ATTR.filter(isOpen).map(a=>`<option value="${a.id}">${esc(a.name.split("：")[0])}</option>`).join("");
   const shows=todayShows();
   document.getElementById("addShow").innerHTML=shows.length?shows.map(s=>`<option value="${s.id}|${s.time}">${s.time} ${esc(s.name)}</option>`).join("")+`<option value="">その他</option>`:`<option value="">時刻データなし</option>`;
 }
@@ -990,16 +1009,16 @@ function renderDpa(){
   el.innerHTML=mine.length?mine.map(([x,i])=>{const a=byId[x.id];const until=mins(x.slot)-nm;
     const tg=x.used?`<span class="tag mute">利用済み</span>`:(until<=0?(until>-60?`<span class="tag ok">今入れる</span>`:`<span class="tag bad">枠終了の可能性</span>`):(until<=15?`<span class="tag warn">あと${until}分</span>`:`<span class="tag dpa">あと${until>=60?Math.floor(until/60)+"時間"+(until%60?until%60+"分":""):until+"分"}</span>`));
     const cl=closedReason(a);
-    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub">${cl?`<span class="tag bad">休止中（${cl}）</span>`:""}<label class="waitedit">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:auto;min-width:124px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:auto;min-width:124px"></label>${tg}</div>
-      <div class="right"><div class="btns"><button class="sm ${x.used?"on":""}" type="button" data-dpause="${i}">${x.used?"利用済":"利用した"}</button><button class="sm" type="button" data-dpadel="${i}">削除</button></div></div></div>`;}).join("")
+    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub">${cl?`<span class="tag bad">休止中（${cl}）</span>`:""}<label class="waitedit" style="flex-wrap:wrap">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:auto;min-width:124px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:auto;min-width:124px"></label>${tg}</div>
+      <div class="right"><div class="btns"><button class="sm ${x.used?"on":""}" type="button" data-dpause="${i}">${x.used?"利用済 ✓":"利用済"}</button><button class="sm" type="button" data-dpadel="${i}">削除</button></div></div></div>`;}).join("")
     :`<div class="empty">なし</div>`;
   const sel=document.getElementById("dpaAttr");
-  sel.innerHTML=ATTR.filter(a=>a.dpa&&isOpen(a)).map(a=>`<option value="${a.id}" ${sel.value===a.id?"selected":""}>${esc(a.name)}</option>`).join("");
+  sel.innerHTML=ATTR.filter(a=>a.dpa&&isOpen(a)).map(a=>`<option value="${a.id}" ${sel.value===a.id?"selected":""}>${esc(a.name.split("：")[0])}</option>`).join("");
   document.getElementById("dpaOrderNote").textContent=`平日・${fromMin(exitMin())}退園`;
   document.getElementById("dpaOrder").innerHTML=DPA_ORDER.map((o,i)=>{const a=byId[o.id];const done=DP().some(x=>x.id===o.id);const cl=closedReason(a);const so=soldOut(o.id);
     const late=SOLD_BY[o.id]&&nm>mins(SOLD_BY[o.id]);
-    return `<div class="row ${done||so||cl?"done":""}"><div class="name"><span class="num">${i+1}</span>　${esc(a.name)} <span class="tag mute">${a.dpa.toLocaleString()}円</span></div>
-      <div class="sub"><span class="tag dpa">${o.buy}</span>${cl?`<span class="tag bad">${cl}</span>`:""}${late&&!done?`<span class="tag warn">売切目安 ${SOLD_BY[o.id]}</span>`:""}${so?`<span class="tag bad">売切</span>`:""}${!heightOk(a)?`<span class="tag bad">身長NG</span>`:""}</div>
+    return `<div class="row ${done||so||cl?"done":""}"><div class="name"><span class="num">${i+1}</span>　${esc(a.name.split("：")[0])}</div>
+      <div class="sub"><span class="tag dpa">${o.buy}に買う</span><span class="tag mute">${a.dpa.toLocaleString()}円</span>${cl?`<span class="tag bad">${cl}</span>`:""}${late&&!done?`<span class="tag warn">売切目安 ${SOLD_BY[o.id]}</span>`:""}${so?`<span class="tag bad">売切</span>`:""}${!heightOk(a)?`<span class="tag bad">身長NG</span>`:""}</div>
       <div class="right">${done?`<span class="tag ok">購入済</span>`:(cl?"":`<div class="btns"><button class="sm" type="button" data-quick="${o.id}" data-qslot="${fromMin(targetSlot(o,nm))}">買った</button><button class="sm ${so?"on":""}" type="button" data-sold="${o.id}">${so?"売切済":"売切"}</button></div>`)}</div></div>`;}).join("");
 }
 function closeOf(f){const pc=mins(parkClose(today()));return Math.min(mins(f.c),pc-(f.k==="meal"?30:60));}
@@ -1014,7 +1033,7 @@ function renderFood(){
   document.getElementById("foodList").innerHTML=list.length?list.map(f=>{const c=closeOf(f);const closeIn=c-nowMin();
     return `<div class="row"><div class="name">${esc(f.n)}</div><div class="sub"><span>${SHORT[f.a]} 徒歩${walk(S.area,f.a)}分</span><span>${f.o}〜${fromMin(c)}頃</span>${f.mo?`<span class="tag sea">モバイルオーダー</span>`:""}${f.ps?`<span class="tag warn">PS</span>`:""}<span>${esc(f.d)}</span></div>
       <div class="right">${foodOpen(f)?(closeIn<=60?`<span class="tag warn">あと${closeIn}分</span>`:`<span class="tag ok">営業中</span>`):`<span class="tag mute">時間外</span>`}</div></div>`;}).join(""):`<div class="empty">${S.openOnly?"今やっている店なし":"なし"}</div>`;
-  document.getElementById("popList").innerHTML=POP.slice().sort((x,y)=>walk(S.area,x.a)-walk(S.area,y.a)).map(p=>`<div class="row pop"><div class="name">${esc(p.n)}</div><div class="sub" style="grid-column:1/-1"><input type="text" data-pop="${p.id}" placeholder="フレーバー" value="${esc(S.pop[p.id]||"")}" aria-label="${esc(p.n)}のフレーバー"></div><div class="right"><span class="tag mute">${SHORT[p.a]} ${walk(S.area,p.a)}分</span></div></div>`).join("");
+  document.getElementById("popList").innerHTML=POP.slice().sort((x,y)=>walk(S.area,x.a)-walk(S.area,y.a)).map(p=>`<div class="row pop"><div class="name">${esc(p.n)}</div><div class="sub" style="grid-column:1/-1"><input type="text" data-pop="${p.id}" placeholder="フレーバー" value="${esc(S.pop[p.id]||"")}" aria-label="${esc(p.n)}のフレーバー"></div><div class="right"><span class="tag mute">${SHORT[p.a]} 徒歩${walk(S.area,p.a)}分</span></div></div>`).join("");
 }
 function renderSet(){
   document.getElementById("exitTime").value=S.exit||"19:00";
@@ -1030,10 +1049,10 @@ function renderSet(){
   document.getElementById("prioList").innerHTML=ATTR.map(a=>{const cl=closedReason(a);return `<div class="row ${cl?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span>${a.dpa?`<span class="tag mute">DPA ${a.dpa.toLocaleString()}円</span>`:""}${a.sr?`<span class="tag sea">SR</span>`:""}${a.h?`<span class="tag ${heightOk(a)?"mute":"bad"}">${a.h}cm〜</span>`:""}${cl?`<span class="tag bad">${cl}</span>`:""}</div><div class="right">${cl?"":prioTag(a)}</div></div>`;}).join("");
   const shows=todayShows();
   const closed=ATTR.filter(a=>closedReason(a)).map(a=>a.name.split("：")[0].replace("トランジットスチーマーライン","スチーマー"));
-  document.getElementById("todayNote").innerHTML=`<div class="kv"><span>ショー</span><b>${shows.length?shows.map(s=>s.time).join(" / "):"なし"}</b></div><div class="kv"><span>休止</span><b style="text-align:right">${closed.length?closed.map(esc).join("・"):"なし"}</b></div><div class="kv"><span>開園</span><b>${PLAN_OPEN}頃（計画の開始）</b></div><div class="note" style="margin-top:6px">休止・ショー・価格は公式サイト（2026年11月時点）から。最新は<a href="https://www.tokyodisneyresort.jp/tds/" target="_blank" rel="noopener">公式の運営カレンダー</a>で確認を。</div>`;
+  document.getElementById("todayNote").innerHTML=`<div class="kv"><span>ショー</span><b>${shows.length?shows.map(s=>s.time).join(" / "):"なし"}</b></div><div class="kv"><span>休止</span><b>${closed.length?closed.map(esc).join("<br>"):"なし"}</b></div><div class="kv"><span>開園</span><b>${PLAN_OPEN}頃（計画の開始）</b></div><div class="note" style="margin-top:6px">休止・ショー・価格は公式サイト（2026年11月時点）から。最新は<a href="https://www.tokyodisneyresort.jp/tds/" target="_blank" rel="noopener">公式の運営カレンダー</a>で確認を。</div>`;
 }
 function renderAll(){renderHeader();renderNear();renderPlan();renderDpa();renderFood();renderSet();}
-function showTab(t){S.tab=t;save();document.querySelectorAll("main > section").forEach(s=>{const on=s.id==="tab-"+t;if(on&&s.hidden){s.classList.remove("enter");void s.offsetWidth;s.classList.add("enter");}s.hidden=!on;});document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));document.querySelector("main").scrollTop=0;}
+function showTab(t){S.tab=t;save();document.getElementById("toast").classList.remove("show");document.querySelectorAll("main > section").forEach(s=>{const on=s.id==="tab-"+t;if(on&&s.hidden){s.classList.remove("enter");void s.offsetWidth;s.classList.add("enter");}s.hidden=!on;});document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));document.querySelector("main").scrollTop=0;}
 
 // ============ actions ============
 function cyclePrio(id){const p=prio0(byId[id]);S.prio[id]=p==="must"?"want":(p==="want"?"skip":"must");replanAfterDpa();save();renderAll();}
