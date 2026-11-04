@@ -9,7 +9,7 @@
   --bg:#f2f4f8; --panel:#ffffff; --fg:#1b2a4a; --muted:#5b6a86; --line:#e6e9f0; --shadow:0 2px 10px rgba(20,40,90,.07);
   --navy:#0c2d6b; --accent:#1e63e9; --accent-fg:#ffffff; --sea:#e8f0ff; --sea-fg:#1e4fb8;
   --ok:#0f7a44; --ok-bg:#e3f6ec; --warn:#9a5500; --warn-bg:#fff3dd; --bad:#c62a2a; --bad-bg:#fde6e6;
-  --dpa:#6a3ec7; --dpa-bg:#efe9fc; --must:#d9480f; --must-bg:#ffe9df; --must-fg:#ffffff;
+  --dpa:#6a3ec7; --dpa-bg:#efe9fc; --must:#c93f0a; --must-bg:#ffe9df; --must-fg:#ffffff;
   --display:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   --body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   --r:18px; --ease:cubic-bezier(.2,.8,.2,1);
@@ -19,12 +19,12 @@
   --bg:#0f1526; --panel:#182039; --fg:#eef2fb; --muted:#9aa7c7; --line:#283456; --shadow:0 2px 12px rgba(0,0,0,.35);
   --navy:#dfe7ff; --accent:#6ea0ff; --accent-fg:#0a1a3a; --sea:#1f2d55; --sea-fg:#b9cdff;
   --ok:#5fd48f; --ok-bg:#15382a; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
-  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ff8a5c; --must-bg:#47261a; --must-fg:#2a1206; --toastbtn:rgba(0,0,0,.14); color-scheme:dark; } }
+  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ff8a5c; --must-bg:#47261a; --must-fg:#2a1206; --toastbtn:rgba(0,0,0,.14); --stop-fg:#2a0e0c; color-scheme:dark; } }
 :root[data-theme="dark"]{
   --bg:#0f1526; --panel:#182039; --fg:#eef2fb; --muted:#9aa7c7; --line:#283456; --shadow:0 2px 12px rgba(0,0,0,.35);
   --navy:#dfe7ff; --accent:#6ea0ff; --accent-fg:#0a1a3a; --sea:#1f2d55; --sea-fg:#b9cdff;
   --ok:#5fd48f; --ok-bg:#15382a; --warn:#ffc46b; --warn-bg:#3d2d10; --bad:#ff8a80; --bad-bg:#45201d;
-  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ff8a5c; --must-bg:#47261a; --must-fg:#2a1206; --toastbtn:rgba(0,0,0,.14); color-scheme:dark; }
+  --dpa:#c9a6ff; --dpa-bg:#2d2042; --must:#ff8a5c; --must-bg:#47261a; --must-fg:#2a1206; --toastbtn:rgba(0,0,0,.14); --stop-fg:#2a0e0c; color-scheme:dark; }
 
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
@@ -35,7 +35,7 @@ button{cursor:pointer;transition:transform .12s var(--ease),background .15s,colo
 button:active{transform:scale(.96)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .num{font-family:var(--display);font-variant-numeric:tabular-nums;letter-spacing:.01em;font-weight:700}
-.eyebrow{font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.eyebrow{font-size:12px;letter-spacing:.06em;color:var(--muted);font-weight:700}
 
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);box-shadow:var(--shadow);
   padding-block:10px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));flex:none}
@@ -47,7 +47,7 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var
 .clock button{border:0;background:var(--bg);border-radius:999px;padding:9px 12px;min-height:36px;font-size:12px;font-weight:700;color:var(--muted)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-block:6px 0;padding-inline-end:32px;mask-image:linear-gradient(90deg,#000 88%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);margin:0 -4px;padding-inline:4px;scrollbar-width:none;scroll-behavior:smooth}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;border:0;background:var(--bg);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;white-space:nowrap;color:var(--muted)}
+.chip{flex:none;border:0;background:var(--bg);border-radius:999px;padding:10px 14px;min-height:40px;font-size:13px;font-weight:700;white-space:nowrap;color:var(--muted)}
 .chip[aria-pressed="true"]{background:var(--navy);color:#fff}
 :root[data-theme="dark"] .chip[aria-pressed="true"],:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:var(--accent-fg)}
 @media (prefers-color-scheme:light){ :root:not([data-theme="dark"]) .chip[aria-pressed="true"]{color:#fff} }
@@ -55,7 +55,8 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var
 .dpabar .num{font-size:20px}
 .dpabar b{color:var(--dpa)}
 .dpabar .note{color:var(--dpa);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.dpabar>span:first-child,.dpabar b,.dpabar .num{flex:none;white-space:nowrap}
+.dpabar>span,.dpabar b,.dpabar .num{flex:none;white-space:nowrap}
+.dpabar>span.note{flex:1 1 auto}
 .step.buy .meta{color:var(--fg)}
 
 main{flex:1;min-height:0;overflow-y:auto;padding-block:14px 76px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overscroll-behavior:contain}
@@ -72,7 +73,7 @@ h2 small{color:var(--muted);font-weight:600;font-size:12px}
 .list>*{animation:rise .22s var(--ease) both}
 .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--panel);border-radius:var(--r);padding:11px 14px;box-shadow:var(--shadow)}
 .row.done{opacity:.5}
-.row.must{border-left:4px solid var(--must);padding-left:10px}
+.row.must{border-left:4px solid var(--must);padding-left:10px;border-radius:8px var(--r) var(--r) 8px}
 .row .name{font-weight:700;min-width:0;color:var(--navy);line-break:strict;overflow-wrap:anywhere}
 .step .txt{line-break:strict;overflow-wrap:anywhere}
 .row .sub{grid-column:1;font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-width:0}
@@ -87,7 +88,7 @@ h2 small{color:var(--muted);font-weight:600;font-size:12px}
 .tag.must{background:var(--must-bg);color:var(--must)}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
 .sm{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:9px 14px;font-size:12px;font-weight:700;line-height:1.4;min-height:40px;color:var(--fg)}
-.sm.on[data-stop]{background:var(--bad);color:#fff;border-color:var(--bad)}
+.sm.on[data-stop]{background:var(--bad);color:var(--stop-fg,#fff);border-color:var(--bad)}
 #openOnly.on{background:var(--sea);color:var(--sea-fg);border-color:var(--sea-fg)}
 .step.rest .sm,.step.buy .sm,.step.meal .sm{background:var(--panel)}
 .sm.on{background:var(--navy);color:var(--accent-fg)}
@@ -125,7 +126,7 @@ textarea{resize:none}
 .step.rest{background:var(--panel);box-shadow:none;border:1px dashed var(--line)}
 .step.warnfit{box-shadow:0 0 0 2px var(--bad),var(--shadow)}
 .step .t{font-size:17px;min-width:48px}
-.step .t{position:relative;display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 10px;line-height:1.3;min-height:36px}
+.step .t{position:relative;display:inline-flex;align-items:center;min-height:40px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 10px;line-height:1.3;min-height:36px}
 .step .t::after{content:"✎";font-size:11px;margin-left:4px;color:var(--muted);font-weight:400}
 .step .t input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0}
 .step .txt{font-weight:700;color:var(--navy)}
@@ -138,10 +139,16 @@ textarea{resize:none}
 .step.dragover{outline:2px dashed var(--accent)}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .note{font-size:12px;color:var(--muted)}
-.waitedit{display:flex;gap:4px;align-items:center}
-.waitedit input{width:68px;border:0;border-radius:10px;padding:7px 8px;background:var(--bg);text-align:right;font-weight:700}
+.waitedit{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;justify-items:stretch}
+.waitedit input{grid-column:1/-1}
+.waitedit .sm{min-width:40px;padding-inline:8px;text-align:center}
+.row .sub.dpaedit{display:grid;grid-template-columns:auto 1fr auto;gap:6px 8px;align-items:center;width:100%}
+.dpaedit input{border:0;border-radius:10px;padding:7px 8px;background:var(--bg);font-weight:700;min-height:40px;font-size:16px}
+.dpaedit input{width:100%!important;min-width:0!important}
+.dpaedit .tag{grid-column:1/-1;justify-self:start}
+.waitedit input{width:100%;border:0;border-radius:10px;padding:7px 8px;background:var(--bg);text-align:right;font-weight:700}
 .pop input{margin-top:4px}
-.toast{position:fixed;left:16px;right:16px;width:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateY(12px);background:var(--navy);color:var(--accent-fg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center}
+.toast{display:flex;align-items:center;justify-content:center;gap:10px;position:fixed;left:16px;right:16px;width:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateY(12px);background:var(--navy);color:var(--accent-fg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px);text-align:center}
 :root[data-theme="dark"] .toast{color:var(--accent-fg)}
 .toast.show{opacity:1;pointer-events:auto;transform:translateY(0)}
 .toastbtn{background:var(--toastbtn,rgba(255,255,255,.18));border:0;color:inherit;border-radius:999px;padding:8px 14px;min-height:36px;margin-left:10px;font-size:12px;font-weight:800}
@@ -990,7 +997,7 @@ function renderPlan(){
   const buyPlan=plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
   const lines=[];
   if(mustSkip){const dpaLeft=skipIds.filter(id=>prio(byId[id])==="must"&&byId[id].dpa&&!soldOut(id)&&!(SOLD_BY[id]&&nowMin()>mins(SOLD_BY[id]))).length;lines.push(`<b>必須 ${mustSkip}件が入りません</b>（下の「入らない」欄）${dpaLeft&&S.dpaBudget!==""?"。予算を上げるとDPAで入ります":""}`);}
-  lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?"。設定で予算を上げると減らせます":""}`);
+  lines.push(`DPA 1人 <b>¥${(spent()+buyPlan).toLocaleString()}</b>${buyPlan?`（買う予定 ¥${buyPlan.toLocaleString()}）`:""}${S.dpaBudget===""&&buyPlan>=7500?"。設定で予算を決めると抑えられます":""}`);
   if((S.planMiss||[]).length&&S.planDay===todayKey())lines.push(`<b>${S.planMiss.join("・")}が入りません</b>`);
   if(condSummary())lines.push(esc(condSummary()));
   note.innerHTML=lines.join("<br>");
@@ -1010,7 +1017,7 @@ function renderDpa(){
   el.innerHTML=mine.length?mine.map(([x,i])=>{const a=byId[x.id];const until=mins(x.slot)-nm;
     const tg=x.used?`<span class="tag mute">利用済み</span>`:(until<=0?(until>-60?`<span class="tag ok">今入れる</span>`:`<span class="tag bad">枠終了の可能性</span>`):(until<=15?`<span class="tag warn">あと${until}分</span>`:`<span class="tag dpa">あと${until>=60?Math.floor(until/60)+"時間"+(until%60?until%60+"分":""):until+"分"}</span>`));
     const cl=closedReason(a);
-    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub">${cl?`<span class="tag bad">休止中（${cl}）</span>`:""}<label class="waitedit" style="flex-wrap:wrap">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:auto;min-width:124px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:auto;min-width:124px"></label>${tg}</div>
+    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub dpaedit">${cl?`<span class="tag bad">休止中（${cl}）</span>`:""}<span>利用</span><input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始"><span>〜${fromMin(mins(x.slot)+60)}</span><span>購入</span><input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻"><span></span>${tg}</div>
       <div class="right"><div class="btns"><button class="sm ${x.used?"on":""}" type="button" data-dpause="${i}">${x.used?"利用済 ✓":"利用済"}</button><button class="sm" type="button" data-dpadel="${i}">削除</button></div></div></div>`;}).join("")
     :`<div class="empty">なし</div>`;
   const sel=document.getElementById("dpaAttr");
