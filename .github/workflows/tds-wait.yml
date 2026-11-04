@@ -1,36 +1,56 @@
 name: TDS wait times
 
 # 東京ディズニーシーの待ち時間を queue-times.com から5分ごとに取り、live-data ブランチの tds.json に書く。
-# シー立ち回りナビ（disney-sea/）がこのJSONを読む。運用は日本時間 7:00〜22:55 だけ。
+# シー立ち回りナビ（disney-sea/）がこのJSONを読む。
+# GitHub の schedule は遅れたり走らなかったりするので、1回の実行の中で5分おきに取り続け（最長5時間半）、
+# 終わる前に自分で次の実行を起動して途切れないようにする。schedule は保険（止まっていたら毎時起こす）。
 on:
   schedule:
-    - cron: "*/5 22-23,0-13 * * *"
+    - cron: "7 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: tds-wait
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     steps:
-      - name: Fetch queue-times
+      - name: Fetch every 5 minutes and publish to live-data
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
-          curl -fsS --retry 3 --retry-delay 5 "https://queue-times.com/parks/275/queue_times.json" -o raw.json
-          jq -c '{at: (now|todate), park: 275, source: "https://queue-times.com/parks/275",
-                  rides: ([.lands[]?.rides[]?, .rides[]?] | map({n: .name, w: .wait_time, o: .is_open, u: .last_updated}))}' raw.json > tds.json
-          test "$(jq '.rides|length' tds.json)" -gt 10
-      - name: Publish to live-data branch
-        run: |
+          set -u
           git init -q pub
           cd pub
           git config user.name "tds-wait-bot"
           git config user.email "tds-wait-bot@users.noreply.github.com"
-          cp ../tds.json .
-          git add tds.json
-          git commit -qm "tds.json $(date -u +%FT%TZ)"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/live-data
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          end=$(( $(date +%s) + 330*60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            if curl -fsS --retry 2 --retry-delay 5 "https://queue-times.com/parks/275/queue_times.json" -o ../raw.json \
+               && jq -c '{at: (now|todate), park: 275, source: "https://queue-times.com/parks/275",
+                          rides: ([.lands[]?.rides[]?, .rides[]?] | map({n: .name, w: .wait_time, o: .is_open, u: .last_updated}))}' ../raw.json > tds.json \
+               && [ "$(jq '.rides|length' tds.json)" -gt 10 ]; then
+              git add tds.json
+              git commit -qm "tds.json $(date -u +%FT%TZ)" --allow-empty
+              # 履歴を増やさないよう、毎回1コミットだけの状態で強制push
+              git push -qf origin HEAD:refs/heads/live-data || echo "push failed"
+              git checkout -q --orphan tmp && git add tds.json && git commit -qm "reset" && git branch -q -D master 2>/dev/null; git branch -q -M master
+            else
+              echo "fetch failed $(date -u +%T)"
+            fi
+            sleep 300
+          done
+      - name: Start the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run tds-wait.yml -R "${{ github.repository }}" || echo "dispatch failed"
