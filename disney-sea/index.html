@@ -144,9 +144,9 @@ textarea{resize:none}
 .waitedit input{grid-column:1/-1}
 .waitedit .sm{min-width:40px;padding-inline:8px;text-align:center}
 .row .sub.dpaedit{display:grid;grid-template-columns:auto 1fr auto;gap:6px 8px;align-items:center;width:100%}
-.dpaedit input{border:0;border-radius:10px;padding:7px 8px;background:var(--bg);font-weight:700;min-height:40px;font-size:16px}
+.dpaedit input{border:0;border-radius:10px;padding:7px 6px;background:var(--bg);font-weight:700;min-height:40px;font-size:16px;min-width:0}
 .row:has(.dpaedit) .right .btns{flex-direction:column;align-items:stretch;width:100%}
-.row:has(.dpaedit) .right{max-width:96px;width:96px}
+.row:has(.dpaedit) .right{max-width:88px;width:88px}
 .row:has(.dpaedit) .right .sm{width:100%}
 .dpaedit input{width:100%!important;min-width:0!important}
 .dpaedit .tag{grid-column:1/-1;justify-self:start}
@@ -202,7 +202,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
         <label class="primary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">スクショを選ぶ<input type="file" id="impFile" accept="image/*" multiple hidden></label>
         <button class="ghost" type="button" id="impRead">テキストを読む</button>
       </div>
-      <textarea id="impText" rows="4" placeholder="待ち時間やDPAの画面をコピーして貼るか、上のボタンでスクショを選ぶ" style="width:100%;margin-top:10px;border:0;border-radius:12px;padding:10px 12px;background:var(--bg);font:inherit;color:inherit;resize:vertical"></textarea>
+      <textarea id="impText" rows="4" placeholder="待ち時間やDPAの画面をコピーして貼るか、上のボタンでスクショを選ぶ" style="width:100%;margin-top:10px;border:0;border-radius:12px;padding:10px 12px;background:var(--bg);font:inherit;font-size:16px;color:inherit;resize:none"></textarea>
       <p class="note" id="impStatus" style="margin:8px 0 0"></p>
       <div class="list" id="impList" style="margin-top:8px"></div>
       <div class="btns" style="margin-top:10px"><button class="primary" type="button" id="impApply" hidden>反映</button><button class="ghost" type="button" id="impClose">閉じる</button></div>
@@ -900,7 +900,7 @@ function renderNear(){
     const a=pNext.attr&&pNext.k==="ride"?byId[pNext.attr]:null;
     const label=pNext.k==="meal"?pNext.text.replace(/（[^）]*）/g,""):pNext.text;
     html+=`<div class="big">${esc(label)}</div><div class="why">${fromMin(pNext.t)}〜${a?"　"+line(a):""}</div>`;
-    const alt=pool.filter(x=>x.id!==pNext.attr).slice(0,1).map(x=>`${esc(x.name)}（徒歩${walk(S.area,x.area)}分・${estWait(x,nm+walk(S.area,x.area))}分）`).join(" / ");
+    const alt=pool.filter(x=>x.id!==pNext.attr).slice(0,1).map(x=>`${esc(x.name.split("：")[0])}（徒歩${walk(S.area,x.area)}分・待ち${estWait(x,nm+walk(S.area,x.area))}分）`).join(" / ");
     if(alt)html+=`<div class="alt">代わり: ${alt}</div>`;
   }
   else if(!cand)html+=`<div class="big">${left.length?"今から乗れるものなし":"全部乗った！"}</div>${left.length?'<div class="why">退園時刻か優先度を見直してください</div>':""}`;
@@ -909,7 +909,7 @@ function renderNear(){
     const h=heldDpa(cand.id);const wk=walk(S.area,cand.area);const w=estWait(cand,nm+wk);
     const bw=bestWait(cand,nm+wk,exitM);
     const why=(h?`DPA ${h.slot}〜 の枠。`:(w-bw<=5&&w>=20?"今日このあと一番空く時間帯。":(emptier(cand)===true?"いつもより空いています。":"")))+condReason(cand,nm+wk).map(r=>r+"。").join("");
-    const alt=pool.filter(a=>a!==cand).slice(0,2).map(a=>`${esc(a.name)}（徒歩${walk(S.area,a.area)}分・${estWait(a,nm+walk(S.area,a.area))}分）`).join(" / ");
+    const alt=pool.filter(a=>a!==cand).slice(0,2).map(a=>`${esc(a.name.split("：")[0])}（徒歩${walk(S.area,a.area)}分・待ち${estWait(a,nm+walk(S.area,a.area))}分）`).join(" / ");
     html+=`<div class="big">${esc(cand.name)}</div>
       <div class="why">${why}${line(cand)}</div>
       ${alt?`<div class="alt">次点: ${alt}</div>`:""}`;
