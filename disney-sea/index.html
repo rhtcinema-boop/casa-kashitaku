@@ -583,14 +583,14 @@ function renderImport(rows,msg){
   document.getElementById("impApply").hidden=!rows.length;
 }
 function applyImport(){
-  const tk=todayKey();const nm=nowMin();let c=0;const bad=[];
+  const tk=todayKey();const nm=nowMin();let c=0;const bad=[];const badIdx=new Set();
   document.querySelectorAll("[data-imp]").forEach(cb=>{if(!cb.checked)return;const r=impRows[+cb.dataset.imp];c++;
     if(r.k==="wait"){S.waits[r.id]={v:r.v,at:nm,day:tk};delete S.stops[r.id];}
     else if(r.k==="stop"){S.stops[r.id]={at:nm,day:tk};}
-    else if(r.k==="dpa"&&!heldDpa(r.id)){const bought=r.bought||hm(now());const err=validateDpa(r.id,r.slot,bought,-1);if(err){bad.push(r.name.split("：")[0]+": "+err);c--;return;}S.dpas.push({id:r.id,slot:r.slot,bought,used:false,day:tk});}
+    else if(r.k==="dpa"&&!heldDpa(r.id)){const bought=r.bought||hm(now());const err=validateDpa(r.id,r.slot,bought,-1);if(err){bad.push(r.name.split("：")[0]+": "+err);badIdx.add(+cb.dataset.imp);c--;return;}S.dpas.push({id:r.id,slot:r.slot,bought,used:false,day:tk});}
   });
   S.day=tk;const re=replanAfterDpa();save();renderAll();
-  if(bad.length){document.getElementById("impStatus").textContent="反映できず: "+bad.join(" / ");toast(`${c}件 反映・${bad.length}件は反映できず（下に理由）`);}
+  if(bad.length){document.getElementById("impStatus").textContent="反映できず: "+bad.join(" / ");document.querySelectorAll("[data-imp]").forEach(cb=>{if(!badIdx.has(+cb.dataset.imp))cb.checked=false;});toast(`${c}件 反映・${bad.length}件は反映できず（下に理由）`);}
   else{document.getElementById("impPanel").hidden=true;toast(`${c}件 反映しました${re?"・組み直しました":""}`);}
 }
 let ocrWorker=null;
@@ -646,7 +646,7 @@ function mealSpot(area,t){
   return open[0]||null;
 }
 // slotShift: 購入予定DPAの枠を後ろへずらして試す（必須の通常列が入る隙間を作る）
-function buildPlanCore(slotShift,buyCap,skipMeals){
+function buildPlanCore(slotShift,buyCap,skipMeals,skipNth,firstOnly){
   const nm=nowMin();const exitM=exitMin();const tk=todayKey();
   let t=Math.max(nm,mins(PLAN_OPEN),S.start?mins(S.start):0);
   let area=S.area;
@@ -674,13 +674,15 @@ function buildPlanCore(slotShift,buyCap,skipMeals){
   const freeBuy=b=>{let g=true;while(g){g=false;for(const l of buys.filter(x=>x.lock)){if(b>l.t-60&&b<Math.min(l.t+60,l.ps)){b=Math.min(l.t+60,l.ps);g=true;}}}return b;};
   bt=freeBuy(bt);
   let bought=0;
+  let nth=-1;
   for(const o of dpaTargets(bt,budget)){
     if(planned.has(o.id)||fixed.some(f=>f.attr===o.id))continue;
     if(buyCap!=null&&bought>=buyCap)break;
+    nth++;if(skipNth!=null&&nth===skipNth)continue; // この候補は買わない案
     const a=byId[o.id];
     if(SOLD_BY[o.id]&&bt>mins(SOLD_BY[o.id]))continue;
     if(a.dpa>budget)continue;
-    const ps=targetSlot(o,bt)+slotShift;
+    const ps=targetSlot(o,bt)+(firstOnly&&nth>0?0:slotShift); // firstOnly: 最初の1枚だけ枠をずらす
     if(!slotFits(o,ps))continue;
     const wNow=bestWait(a,t+walk(area,a.area),Math.max(t+walk(area,a.area),bt));
     if(wNow<=60&&wNow-bestWait(a,t,exitM)<=10&&ps-bt>120&&!(SOLD_BY[o.id]))continue; // 購入までの間に空いて乗れるなら通常列で
@@ -763,16 +765,16 @@ function buildPlanCore(slotShift,buyCap,skipMeals){
     else missMeal.push(m.k==="lunch"?"昼食":"夕食");});
   const plan=items.concat(buys).sort((x,y)=>x.t-y.t||(x.k==="buy"?-1:1));
   const skip=rem.filter(a=>!(a.pair&&rem.some(x=>x.id===a.pair)&&a.id>a.pair));
-  return {plan,skip,missMeal,mustSkip:skip.filter(a=>prio(a)==="must").length};
+  return {plan,skip,missMeal,mustSkip:skip.filter(a=>prio(a)==="must").length,bigSkip:skip.filter(a=>prio(a)==="must"&&isBig(a)).length};
 }
 function buildPlan(){
   // 購入予定の枠を 0 / 60 / 120 分ずらして試し、必須が一番多く入る案を採る
   // 購入枚数を減らした案（必須を通常列で入れる）も比べる。必須の取りこぼし → 入らない数 → 出費 の順で少ない案
   let best=null;const cost=r=>r.plan.filter(p=>p.k==="buy").reduce((s,p)=>s+byId[p.attr].dpa,0);
-  outer:for(const sm of [false,true])for(const cap of [null,3,2,1,0])for(const sh of [0,60,120,180]){if(sm&&best&&best.mustSkip===0)break outer;const r=buildPlanCore(sh,cap,sm);r.cost=cost(r);
-    const key=x=>[x.mustSkip,x.missMeal.length,x.skip.length,x.cost];const better=(x,y)=>{const a=key(x),b=key(y);for(let i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]<b[i];return false;};
+  outer:for(const sm of [false,true])for(const sk of [null,0,1,2])for(const cap of [null,2,1,0])for(const sh of [0,60,120,180])for(const fo of (sh?[false,true]:[false])){if(sm&&best&&best.bigSkip===0)break outer;const r=buildPlanCore(sh,cap,sm,sk,fo);r.cost=cost(r);
+    const key=x=>[x.bigSkip,x.missMeal.length,x.mustSkip,x.skip.length,x.cost];const better=(x,y)=>{const a=key(x),b=key(y);for(let i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]<b[i];return false;};
     if(!best||better(r,best))best=r;
-    if(best.mustSkip===0&&cap===null&&sh===0&&!sm)break outer;}
+    if(best.mustSkip===0&&cap===null&&sh===0&&!sm&&sk===null)break outer;}
   S.plan=best.plan;S.planSkip=best.skip.map(a=>a.id);S.planWhy={};best.skip.forEach(a=>{if(stopUntil(a))S.planWhy[a.id]="運営中断中";});
   S.planMiss=best.missMeal;S.planBuilt=true;S.planDay=todayKey();save();
 }
@@ -935,7 +937,7 @@ function renderPlan(){
     if(warn[p.id])meta.push(`<span class="tag bad">${warn[p.id]}</span>`);
     const cls=["step",p.k,i===nowIdx?"now":"",(done||(endOf(p)<nm&&i<nowIdx))?"past":"",p.lock?"locked":"",warn[p.id]?"warnfit":""].join(" ");
     return `<div class="${cls}" draggable="true" data-idx="${i}">
-      <label class="t num"><span>${fromMin(p.t)}</span><input type="time" value="${fromMin(p.t)}" data-ptime="${i}" aria-label="${esc(p.text)}の開始時刻"></label>
+      <label class="t num"><span>${fromMin(p.t)}</span><input type="time" value="${fromMin(p.t)}" data-ptime="${p.id}" aria-label="${esc(p.text)}の開始時刻"></label>
       <div><div class="txt">${esc(p.k==="meal"?p.text.replace(/（[^）]*）/g,""):p.text)}</div><div class="meta">${meta.join("")}</div></div>
       <div class="ctl">
         ${ride?`<button class="sm ${done?"on":""}" type="button" data-ride="${a.id}">${done?"乗った":"乗った？"}</button>`:""}
@@ -1133,7 +1135,7 @@ document.addEventListener("change",e=>{
   if(t.id==="impFile"){if(t.files.length)ocrFiles([...t.files]);t.value="";return;}
   if(ds.wait){const v=parseInt(t.value,10);if(isNaN(v))delete S.waits[ds.wait];else{S.waits[ds.wait]={v,at:nowMin(),day:todayKey()};delete S.stops[ds.wait];}S.day=todayKey();save();
     setTimeout(()=>{const ae=document.activeElement;const id=ae&&ae.dataset?ae.dataset.wait:null;const pos=document.querySelector("main").scrollTop;renderHeader();renderNear();document.querySelector("main").scrollTop=pos;if(id){const el=document.querySelector(`[data-wait="${id}"]`);if(el)el.focus({preventScroll:true});}},0);return;}
-  if(ds.ptime!=null){const p=planToday()[+ds.ptime];if(!t.value||!p)return;
+  if(ds.ptime!=null){const p=planToday().find(x=>x.id===ds.ptime);if(!t.value||!p)return;
     if(p.dpa||p.k==="note"){toast(p.dpa?"DPAの枠は動かせません（パスタブで直せます）":"メモは動かせません");renderPlan();return;}
     p.t=mins(t.value);p.lock=true;if(p.k==="buy")p.ps=Math.max(p.ps||0,p.t+45);if(p.k==="ride"&&p.attr&&!p.dpa)p.w=estWait(byId[p.attr],p.t);S.plan.sort((x,y)=>x.t-y.t);buildPlan();save();renderPlan();toast("前後を組み直しました");return;}
   if(ds.dpaslot!=null||ds.dpabought!=null){const i=+(ds.dpaslot??ds.dpabought);const x=S.dpas[i];if(!t.value||!x)return;
