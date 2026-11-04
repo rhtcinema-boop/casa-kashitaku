@@ -1,0 +1,36 @@
+name: TDS wait times
+
+# 東京ディズニーシーの待ち時間を queue-times.com から5分ごとに取り、live-data ブランチの tds.json に書く。
+# シー立ち回りナビ（disney-sea/）がこのJSONを読む。運用は日本時間 7:00〜22:55 だけ。
+on:
+  schedule:
+    - cron: "*/5 22-23,0-13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tds-wait
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch queue-times
+        run: |
+          curl -fsS --retry 3 --retry-delay 5 "https://queue-times.com/parks/275/queue_times.json" -o raw.json
+          jq -c '{at: (now|todate), park: 275, source: "https://queue-times.com/parks/275",
+                  rides: ([.lands[]?.rides[]?, .rides[]?] | map({n: .name, w: .wait_time, o: .is_open, u: .last_updated}))}' raw.json > tds.json
+          test "$(jq '.rides|length' tds.json)" -gt 10
+      - name: Publish to live-data branch
+        run: |
+          git init -q pub
+          cd pub
+          git config user.name "tds-wait-bot"
+          git config user.email "tds-wait-bot@users.noreply.github.com"
+          cp ../tds.json .
+          git add tds.json
+          git commit -qm "tds.json $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/live-data
