@@ -160,7 +160,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
     <div id="dayBanner"></div>
     <div class="next" id="nextCard"></div>
     <h2>近く <small id="nearCount"></small><small id="apiStamp"></small><button class="help" type="button" data-help="near" aria-label="使い方">?</button></h2>
-    <div class="helpbox" id="help-near" hidden><p>「今」欄に公式アプリの待ち時間を入れると、判定とプランに使います。</p><p>「止」＝止まっている。優先度のバッジをタップで 必須 → できれば → パス。</p></div>
+    <div class="helpbox" id="help-near" hidden><p>「今」欄に公式アプリの待ち時間を入れると、判定とプランに使います。</p><p>「取り込み」で公式アプリのスクショやテキストから、待ち時間・中断・DPAをまとめて入れられます。</p><p>「止」＝止まっている。優先度のバッジをタップで 必須 → できれば → パス。</p></div>
     <div class="filters">
       <button class="sm on" type="button" data-nf="all">全部</button>
       <button class="sm" type="button" data-nf="left">未乗車</button>
@@ -168,6 +168,18 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
       <button class="sm" type="button" data-nf="empty">空いてる</button>
       <button class="sm" type="button" data-nf="dpa">DPA</button>
       <button class="sm" type="button" id="apiBtn" hidden>更新</button>
+      <button class="sm" type="button" id="impBtn">📷 取り込み</button>
+    </div>
+    <div class="card" id="impPanel" hidden>
+      <div class="eyebrow">公式アプリから取り込み</div>
+      <div class="btns" style="margin-top:8px">
+        <label class="primary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">スクショを選ぶ<input type="file" id="impFile" accept="image/*" multiple hidden></label>
+        <button class="ghost" type="button" id="impRead">テキストを読む</button>
+      </div>
+      <textarea id="impText" rows="4" placeholder="待ち時間やDPAの画面をコピーして貼るか、上のボタンでスクショを選ぶ" style="width:100%;margin-top:10px;border:0;border-radius:12px;padding:10px 12px;background:var(--bg);font:inherit;color:inherit;resize:vertical"></textarea>
+      <p class="note" id="impStatus" style="margin:8px 0 0"></p>
+      <div class="list" id="impList" style="margin-top:8px"></div>
+      <div class="btns" style="margin-top:10px"><button class="primary" type="button" id="impApply" hidden>反映</button><button class="ghost" type="button" id="impClose">閉じる</button></div>
     </div>
     <div class="list" id="nearList"></div>
   </section>
@@ -228,12 +240,14 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
       <button class="sm on" type="button" id="openOnly" aria-pressed="true">今やってる</button>
     </div>
     <div class="list" id="foodList"></div>
-    <h2>ポップコーン</h2>
+    <h2>ポップコーン<button class="help" type="button" data-help="food" aria-label="説明">?</button></h2>
+    <div class="helpbox" id="help-food" hidden><p>営業時間は目安。閉園の30〜60分前に閉まる店が多いです。PS＝事前予約の店。</p><p>ポップコーンの味は看板で見て、欄にメモできます。</p></div>
     <div class="list" id="popList"></div>
   </section>
 
   <section id="tab-set" hidden>
-    <h2 style="margin-top:0">基本</h2>
+    <h2 style="margin-top:0">基本<button class="help" type="button" data-help="basic" aria-label="説明">?</button></h2>
+    <div class="helpbox" id="help-basic" hidden><p>退園＝この時刻までに出口へ。計画は8:45からか「開始」から組みます。</p><p>身長を入れると、乗れないものを外します。予算を決めるとDPAの購入予定を抑えます。</p></div>
     <div class="card">
       <div class="form" style="margin-top:0">
         <label>退園<input type="time" id="exitTime"></label>
@@ -242,7 +256,7 @@ nav button[aria-selected="true"]::before{content:"";position:absolute;top:0;widt
         <label>DPA予算(1人)<select id="dpaBudget"><option value="">上限なし</option><option value="0">買わない</option><option value="2500">2,500円</option><option value="5000">5,000円</option><option value="7500">7,500円</option><option value="10000">10,000円</option></select></label>
       </div>
       <label class="toggle"><input type="checkbox" id="srOk">シングルライダーOK</label>
-      <label class="toggle"><input type="checkbox" id="apiOn">待ち時間を自動取得（非公式）</label>
+      <label class="toggle"><input type="checkbox" id="apiOn">待ち時間を自動取得（非公式・中継が必要）</label>
       <p class="note" id="apiNote" hidden></p>
     </div>
     <h2>今日の条件<button class="help" type="button" data-help="cond" aria-label="説明">?</button></h2>
@@ -308,7 +322,7 @@ const ATTR=[
  {id:"bigcity",name:"ビッグシティ・ヴィークル",area:"AWF",base:[3,5,3],dur:8,qt:"big city",closed:x=>(x>=d("2026-11-10")&&x<=d("2026-12-25"))?"11/10〜12/25休止":null},
  {id:"nemo",name:"ニモ＆フレンズ・シーライダー",area:"PD",base:[12,25,18],dur:10,qt:"nemo"},
  {id:"railway_pd",name:"エレクトリックレールウェイ（ポトディス駅）",area:"PD",base:[8,12,8],dur:8,pair:"railway_awf",qt:"electric railway"},
- {id:"indy",name:"インディ・ジョーンズ・アドベンチャー",area:"LRD",base:[40,70,45],dpa:1500,dur:10,qt:"indiana",closed:x=>x<=d("2026-11-29")?"11/30再開":null},
+ {id:"indy",name:"インディ・ジョーンズ・アドベンチャー",area:"LRD",base:[40,70,45],dpa:1500,sr:true,dur:10,qt:"indiana",closed:x=>x<=d("2026-11-29")?"11/30再開":null},
  {id:"raging",name:"レイジングスピリッツ",area:"LRD",base:[20,60,30],dpa:1500,sr:true,dur:5,qt:"raging",note:"昼60分台、20時台20分"},
  {id:"steamer_lrd",name:"トランジットスチーマーライン（ロスリバ発）",area:"LRD",base:[8,15,10],dur:12,pair:"steamer_awf",qt:"transit steamer",note:"アメフロへの移動に使える"},
  {id:"sindbad",name:"シンドバッド・ストーリーブック・ヴォヤッジ",area:"AC",base:[5,12,8],dur:12,qt:"sindbad"},
@@ -391,7 +405,7 @@ const MEALS=[ // 食事を入れる時間帯（from〜to、pref以降は優先�
 // 屋外（雨・暑さ・寒さで人が避ける）、風に弱い（強風で止まることがある）
 const OUTDOOR=new Set(["gondola","fortress","steamer_mh","steamer_awf","steamer_lrd","railway_awf","railway_pd","bigcity","raging","jasmine","flounder","buggies","carousel"]);
 // 並ぶ場所: in=屋内, cov=屋根あり（一部屋外）, out=屋根なし。2026年11月時点の目安
-const QUEUE={soaring:"cov",gondola:"out",fortress:"out",steamer_mh:"cov",steamer_awf:"cov",steamer_lrd:"cov",tower:"cov",toymania:"out",turtle:"in",railway_awf:"cov",railway_pd:"cov",bigcity:"out",nemo:"in",indy:"in",raging:"out",sindbad:"in",carousel:"cov",jasmine:"out",magiclamp:"cov",flounder:"out",scuttle:"in",jellyfish:"in",blowfish:"in",whirlpool:"in",mltheater:"in",center:"in","20k":"cov",anna:"in",rapunzel:"cov",peterpan:"cov",buggies:"out"};
+const QUEUE={soaring:"cov",gondola:"out",fortress:"out",steamer_mh:"cov",steamer_awf:"cov",steamer_lrd:"cov",tower:"cov",toymania:"cov",turtle:"in",railway_awf:"cov",railway_pd:"cov",bigcity:"out",nemo:"in",indy:"in",raging:"out",sindbad:"in",carousel:"cov",jasmine:"out",magiclamp:"cov",flounder:"out",scuttle:"in",jellyfish:"in",blowfish:"in",whirlpool:"in",mltheater:"in",center:"in","20k":"cov",anna:"in",rapunzel:"cov",peterpan:"cov",buggies:"out"};
 const QUEUE_LABEL={in:"屋内の列",cov:"屋根あり",out:"屋根なし"};
 const qcover=a=>QUEUE[a.id]||"cov";
 const WINDY=new Set(["gondola","steamer_mh","steamer_awf","steamer_lrd","raging","flounder","jasmine"]);
@@ -525,6 +539,63 @@ function candidates(){return ATTR.filter(a=>usable(a)&&!ridden(a.id)&&!dropped(a
 function stats(){const open=ATTR.filter(a=>usable(a)&&!(a.pair&&ridden(a.pair))&&!(a.pair&&a.id>a.pair&&!ridden(a.id)));const want=open.filter(a=>prio(a)!=="skip");const left=want.filter(a=>!ridden(a.id));return{open,want,left};}
 const staleDay=()=>S.day&&!isToday(S.day)&&(Object.values(S.ridden).some(v=>v===S.day)||S.dpas.some(x=>x.day===S.day)||(S.planDay===S.day&&S.plan.length)||!!S.timeOverride);
 
+// ============ 取り込み（公式アプリのスクショ・テキスト） ============
+// 公式アプリの表記ゆれに合わせた別名（長いものから順に当てる）
+const ALIAS={soaring:["ソアリン"],gondola:["ゴンドラ"],fortress:["フォートレス"],steamer_mh:["スチーマーライン(メディテレーニアン","スチーマー（メディテレーニアン","スチーマー メディテレーニアン"],steamer_awf:["スチーマーライン(アメリカン","スチーマー（アメリカン","スチーマー アメリカン"],steamer_lrd:["スチーマーライン(ロストリバー","スチーマー（ロストリバー","スチーマー ロストリバー","スチーマー"],
+ tower:["タワー・オブ・テラー","タワーオブテラー","タワー"],toymania:["トイ・ストーリー","トイストーリー","トイマニ"],turtle:["タートル"],railway_awf:["レールウェイ(アメリカン","レールウェイ（アメリカン","レールウェイ アメリカン"],railway_pd:["レールウェイ(ポート","レールウェイ（ポート","レールウェイ ポート","レールウェイ"],bigcity:["ビッグシティ"],
+ nemo:["ニモ"],indy:["インディ"],raging:["レイジング"],sindbad:["シンドバッド"],carousel:["カルーセル"],jasmine:["ジャスミン"],magiclamp:["マジックランプ"],flounder:["フランダー"],scuttle:["スカットル"],jellyfish:["ジェリーフィッシュ"],blowfish:["ブローフィッシュ"],whirlpool:["ワールプール"],mltheater:["マーメイドラグーンシアター"],center:["センター・オブ","センターオブ","センター"],"20k":["海底","2万マイル","20000"],anna:["アナとエルサ","フローズン","アナ雪","アナ"],rapunzel:["ラプンツェル"],peterpan:["ピーターパン"],buggies:["ビジーバギー","バギー"]};
+const normText=t=>String(t||"").replace(/[\uFF10-\uFF19]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[\uFF21-\uFF5A]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/：/g,":").replace(/[〜～－—]/g,"-").replace(/[ \t\u3000]+/g," ");
+function matchAttr(line){let best=null;for(const id in ALIAS)for(const al of ALIAS[id]){const i=line.indexOf(al);if(i>=0&&(!best||al.length>best.len))best={id,len:al.length,i};}return best?best.id:null;}
+// 行ごとに「アトラクション → 待ち分 / 中断 / DPAの利用時間」を拾う。見つからない数字は次の2行まで探す
+function parseImport(text){
+  // OCRは文字の間に空白を入れるので、空白は全部取ってから照合する
+  const lines=normText(text).split(/\r?\n/).map(l=>l.replace(/\s+/g,"")).filter(Boolean);
+  const out=[];const seen={};
+  for(let i=0;i<lines.length;i++){
+    const id=matchAttr(lines[i]);if(!id||seen[id])continue;
+    const nx=[];for(let j=i+1;j<Math.min(i+3,lines.length)&&!matchAttr(lines[j]);j++)nx.push(lines[j]);
+    const ctx=[lines[i],...nx].join(" ");
+    const slot=ctx.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+    const stop=/休止|中止|中断|案内終了|調整中|停止|運休|クローズ/.test(ctx);
+    const wm=ctx.match(/(\d{1,3})\s*分/);
+    const r={id,name:byId[id].name};
+    if(slot){r.k="dpa";r.slot=pad(+slot[1])+":"+slot[2];}
+    else if(stop){r.k="stop";}
+    else if(wm&&+wm[1]<=400){r.k="wait";r.v=+wm[1];}
+    else continue;
+    seen[id]=true;out.push(r);
+  }
+  return out;
+}
+let impRows=[];
+function renderImport(rows,msg){
+  impRows=rows;document.getElementById("impStatus").textContent=msg||(rows.length?`${rows.length}件 見つかりました`:"見つかりませんでした");
+  document.getElementById("impList").innerHTML=rows.map((r,i)=>`<label class="row" style="cursor:pointer"><div class="name">${esc(r.name)}</div><div class="sub">${r.k==="wait"?`<span class="tag ok">待ち ${r.v}分</span>`:(r.k==="stop"?`<span class="tag bad">運営中断</span>`:`<span class="tag dpa">DPA ${r.slot}〜</span>`)}</div><div class="right"><input type="checkbox" data-imp="${i}" checked style="width:22px;height:22px;accent-color:var(--accent)"></div></label>`).join("");
+  document.getElementById("impApply").hidden=!rows.length;
+}
+function applyImport(){
+  const tk=todayKey();const nm=nowMin();let c=0;
+  document.querySelectorAll("[data-imp]").forEach(cb=>{if(!cb.checked)return;const r=impRows[+cb.dataset.imp];c++;
+    if(r.k==="wait"){S.waits[r.id]={v:r.v,at:nm,day:tk};delete S.stops[r.id];}
+    else if(r.k==="stop"){S.stops[r.id]={at:nm,day:tk};}
+    else if(r.k==="dpa"&&!heldDpa(r.id)){S.dpas.push({id:r.id,slot:r.slot,bought:hm(now()),used:false,day:tk});}
+  });
+  S.day=tk;const re=S.dpas.length&&replanAfterDpa();save();renderAll();
+  document.getElementById("impPanel").hidden=true;toast(`${c}件 反映しました${re?"・プランを組み直しました":""}`);
+}
+let ocrWorker=null;
+async function ocrFiles(files){
+  const st=document.getElementById("impStatus");
+  try{
+    if(!window.Tesseract){st.textContent="読み取りの準備中…";await new Promise((ok,ng)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";sc.onload=ok;sc.onerror=ng;document.head.appendChild(sc);});}
+    if(!ocrWorker){st.textContent="日本語データを読み込み中（初回は時間がかかります）…";ocrWorker=await Tesseract.createWorker("jpn+eng",1,{logger:m=>{if(m.status==="recognizing text")st.textContent=`読み取り中 ${Math.round(m.progress*100)}%`;}});}
+    let text="";
+    for(const file of files){const {data}=await ocrWorker.recognize(file);text+=data.text+"\n";}
+    const ta=document.getElementById("impText");ta.value=(ta.value?ta.value+"\n":"")+text;
+    renderImport(parseImport(ta.value));
+  }catch(e){st.textContent="読み取れませんでした。通信できる場所で試すか、テキストを貼ってください。";}
+}
+
 // ============ API ============
 async function fetchApi(silent){
   if(!S.apiOn){if(!silent)toast("設定で自動取得をONにしてください");return;}
@@ -634,7 +705,8 @@ function buildPlanCore(slotShift){
         const su=stopUntil(a);if(su&&at<su)continue; // 運営中断中
         const w=estWait(a,at);const end=at+w+a.dur;
         if(end>finishBy(a))continue;
-        if(f&&end+walk(a.area,f.area||a.area)>(f.dpa?f.end-10:f.t))continue; // 次の固定枠に間に合わない（DPAは枠の終わり10分前まで）
+        if(f){const fa=f.attr?byId[f.attr]:null;const lim=f.dpa?Math.min(f.end-10,fa?finishBy(fa)-f.dur-(f.w||0):Infinity):f.t;
+          if(end+walk(a.area,f.area||a.area)>lim)continue;} // 次の固定枠に間に合わない（DPAは枠内かつ退園に収まる時刻まで）
         if(showConflict(a,at))continue;
         if(useReserve&&(!isBig(a)||prio(a)==="want")&&end+reserve(a,end)>exitM)continue; // 大物の時間を残す
         const score=wk*walkCost()+(w-bestWait(a,at,exitM))-urgency(a,at,exitM)*0.5-avgBase(a)*0.05+(prio(a)==="want"?20:0)+(S.cond.weather==="wind"&&WINDY.has(a.id)?15:0)+(S.cond.outdoor&&qcover(a)==="out"?30:0);
@@ -681,7 +753,8 @@ function planFits(){ // 前の行の終了 > 次の開始 / 購入が乗車よ�
   const warn={};let prev=null;const plan=planToday();
   plan.forEach(i=>{if(i.k==="buy"||i.k==="note")return;if(prev&&endOf(prev)>i.t+1)warn[i.id]="前の予定と重なる";prev=i;});
   const buys=plan.filter(i=>i.k==="buy");
-  buys.forEach((b,i)=>{const n=buys[i+1];if(n&&n.t<Math.min(b.t+60,b.ps||Infinity))warn[n.id]="前のDPA購入から60分未満";
+  const nb=nextBuyMin();
+  buys.forEach((b,i)=>{if(nb!=null&&b.t<nb)warn[b.id]=`${fromMin(nb)}まで買えない`;if(SOLD_BY[b.attr]&&b.t>mins(SOLD_BY[b.attr]))warn[b.id]="売切目安を過ぎる";const n=buys[i+1];if(n&&n.t<Math.min(b.t+60,b.ps||Infinity))warn[n.id]="前のDPA購入から60分未満";
     const ride=plan.find(p=>p.k==="ride"&&p.attr===b.attr&&p.prov);if(ride&&ride.t<b.t+30)warn[b.id]="乗る時刻より購入が遅い";});
   return warn;
 }
@@ -711,7 +784,7 @@ function scoreNow(a){
   return s;
 }
 const PRIO_LABEL={must:"必須",want:"できれば",skip:"パス"};
-function prioTag(a){const p=prio(a);return `<button class="sm ${p==="must"?"must":(p==="want"?"want":"")}" type="button" data-prio="${a.id}" aria-label="${esc(a.name)}の優先度 ${PRIO_LABEL[p]}（タップで切替）">${PRIO_LABEL[p]}</button>`;}
+function prioTag(a){const p=prio(a);const down=p!==prio0(a);return `<button class="sm ${p==="must"?"must":(p==="want"?"want":"")}" type="button" data-prio="${a.id}" aria-label="${esc(a.name)}の優先度 ${PRIO_LABEL[p]}（タップで切替）">${PRIO_LABEL[p]}${down?"↓":""}</button>${down?'<span class="tag mute">屋根なし</span>':""}`;}
 function condSummary(){const c=S.cond;const r=[];if(c.weather)r.push(WEATHER_LABEL[c.weather]);if(c.crowd)r.push({low:"空いてる",high:"混雑",max:"激混み"}[c.crowd]);if(c.contra)r.push("逆張り");if(c.outdoor)r.push("屋根なしの列は控えめ");if(c.walk)r.push("歩き少なめ");if(c.kids)r.push("休憩多め");if(c.memo)r.push("メモ: "+c.memo);return r.join("・");}
 function renderDayBanner(){
   const el=document.getElementById("dayBanner");
@@ -732,7 +805,8 @@ function renderNear(){
   const must=pool.filter(a=>prio(a)==="must");const cand=must[0]||pool[0];
   const plan=planToday();
   const pNext=S.planBuilt?plan.find(p=>p.k!=="buy"&&p.k!=="note"&&endOf(p)>=nm&&!(p.k==="ride"&&p.attr&&ridden(p.attr))):null;
-  const onTrack=pNext&&pNext.t>=nm-15&&!(pNext.attr&&stopInfo(byId[pNext.attr]))&&!(pNext.prov&&!heldDpa(pNext.attr))&&!(pNext.k==="ride"&&pNext.attr&&!pNext.dpa&&!fits(byId[pNext.attr]));
+  const early=pNext&&pNext.t-nm>20&&!(pNext.dpa&&!pNext.prov);
+  const onTrack=pNext&&!early&&pNext.t>=nm-15&&!(pNext.attr&&stopInfo(byId[pNext.attr]))&&!(pNext.attr&&!usable(byId[pNext.attr]))&&!(pNext.prov&&!heldDpa(pNext.attr))&&!(pNext.k==="ride"&&pNext.attr&&!pNext.dpa&&!fits(byId[pNext.attr]));
   const line=a=>{const h=heldDpa(a.id);const wk=walk(S.area,a.area);const w=estWait(a,nm+wk);const l=liveWait(a);
     return `徒歩${wk}分、待ち${h?"DPA":w+"分"}${h?"":(l?(l.src==="manual"?"（入力値）":"（API）"):"（目安）")}${S.srOk&&a.sr&&!h?"・SR想定":""}`;};
   let html=`<div class="eyebrow">次の一手（${SHORT[S.area]}から）</div>`;
@@ -740,7 +814,7 @@ function renderNear(){
   else if(onTrack){
     const a=pNext.attr&&pNext.k==="ride"?byId[pNext.attr]:null;
     html+=`<div class="big">${esc(pNext.text)}</div><div class="why">${fromMin(pNext.t)}〜${a?"　"+line(a):""}</div>`;
-    const alt=pool.filter(x=>x.id!==pNext.attr).slice(0,2).map(x=>`${esc(x.name)}（徒歩${walk(S.area,x.area)}分・${estWait(x,nm+walk(S.area,x.area))}分）`).join(" / ");
+    const alt=pool.filter(x=>x.id!==pNext.attr).slice(0,1).map(x=>`${esc(x.name)}（徒歩${walk(S.area,x.area)}分・${estWait(x,nm+walk(S.area,x.area))}分）`).join(" / ");
     if(alt)html+=`<div class="alt">代わり: ${alt}</div>`;
   }
   else if(!cand)html+=`<div class="big">${left.length?"今から乗れるものなし":"全部乗った！"}</div>${left.length?'<div class="why">退園時刻か優先度を見直してください</div>':""}`;
@@ -752,7 +826,7 @@ function renderNear(){
     html+=`<div class="big">${esc(cand.name)}</div>
       <div class="why">${why}${line(cand)}</div>
       ${alt?`<div class="alt">次点: ${alt}</div>`:""}`;
-    if(pNext)html+=`<div class="alt">プランとずれています → プランタブで「今から組む」</div>`;
+    if(pNext)html+=`<div class="alt">${early?"プランより早いです":"プランとずれています"} → プランタブで「今から組む」</div>`;
   }
   const tgt=canBuyAt(nm)?dpaTargets(nm).find(o=>slotFits(o,targetSlot(o,nm))):null;
   if(tgt&&nm<exitM){const a=byId[tgt.id];const slot=fromMin(targetSlot(tgt,nm));
@@ -857,7 +931,7 @@ function renderDpa(){
   const mine=S.dpas.map((x,i)=>[x,i]).filter(([x])=>isToday(x.day));
   el.innerHTML=mine.length?mine.map(([x,i])=>{const a=byId[x.id];const until=mins(x.slot)-nm;
     const tg=x.used?`<span class="tag mute">利用済み</span>`:(until<=0?(until>-60?`<span class="tag ok">今入れる</span>`:`<span class="tag bad">枠終了の可能性</span>`):(until<=15?`<span class="tag warn">あと${until}分</span>`:`<span class="tag dpa">あと${until}分</span>`));
-    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><label class="waitedit">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:104px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:104px"></label>${tg}</div>
+    return `<div class="row ${x.used?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><label class="waitedit">利用<input type="time" value="${x.slot}" data-dpaslot="${i}" aria-label="${esc(a.name)}の利用開始" style="width:auto;min-width:124px"></label><span>〜${fromMin(mins(x.slot)+60)}</span><label class="waitedit">購入<input type="time" value="${x.bought}" data-dpabought="${i}" aria-label="${esc(a.name)}の購入時刻" style="width:auto;min-width:124px"></label>${tg}</div>
       <div class="right"><div class="btns"><button class="sm ${x.used?"on":""}" type="button" data-dpause="${i}">${x.used?"利用済":"利用した"}</button><button class="sm" type="button" data-dpadel="${i}">削除</button></div></div></div>`;}).join("")
     :`<div class="empty">なし</div>`;
   const sel=document.getElementById("dpaAttr");
@@ -896,7 +970,7 @@ function renderSet(){
   const t=today();document.getElementById("todayLabel").textContent=`${t.getMonth()+1}/${t.getDate()} 閉園${parkClose(t)}`;
   document.getElementById("prioList").innerHTML=ATTR.map(a=>{const cl=closedReason(a);return `<div class="row ${cl?"done":""}"><div class="name">${esc(a.name)}</div><div class="sub"><span>${SHORT[a.area]}</span>${a.dpa?`<span class="tag mute">DPA ${a.dpa.toLocaleString()}円</span>`:""}${a.sr?`<span class="tag sea">SR</span>`:""}${a.h?`<span class="tag ${heightOk(a)?"mute":"bad"}">${a.h}cm〜</span>`:""}${cl?`<span class="tag bad">${cl}</span>`:""}</div><div class="right">${cl?"":prioTag(a)}</div></div>`;}).join("");
   const shows=todayShows();
-  const closed=ATTR.filter(a=>closedReason(a)).map(a=>a.name.split("（")[0].split("：")[0]);
+  const closed=ATTR.filter(a=>closedReason(a)).map(a=>a.name.split("：")[0].replace("トランジットスチーマーライン","スチーマー"));
   document.getElementById("todayNote").innerHTML=`<div class="kv"><span>ショー</span><b>${shows.length?shows.map(s=>s.time).join(" / "):"なし"}</b></div><div class="kv"><span>休止</span><b style="text-align:right">${closed.length?closed.map(esc).join("・"):"なし"}</b></div><div class="kv"><span>開園</span><b>${PLAN_OPEN}頃（計画の開始）</b></div><div class="note" style="margin-top:6px">目安は2026年11月時点。当日は公式アプリ優先。</div>`;
 }
 function renderAll(){renderHeader();renderNear();renderPlan();renderDpa();renderFood();renderSet();}
@@ -905,15 +979,21 @@ function showTab(t){S.tab=t;save();document.querySelectorAll("main > section").f
 // ============ actions ============
 function cyclePrio(id){const p=prio0(byId[id]);S.prio[id]=p==="must"?"want":(p==="want"?"skip":"must");save();renderAll();}
 function markRide(id,on){if(on)S.ridden[id]=todayKey();else{delete S.ridden[id];DP().filter(x=>x.id===id&&x.used).forEach(x=>x.used=false);}const h=heldDpa(id);if(on&&h)h.used=true;const a=byId[id];if(on&&a)S.area=a.area;S.day=todayKey();save();}
+// 60分ルールなどの検証。skip=編集中の自分（S.dpas の添字）
+function validateDpa(id,slotV,bought,skip){
+  const others=DP().filter((x,i)=>S.dpas.indexOf(x)!==skip);
+  if(mins(slotV)<mins(bought))return "利用開始が購入より前です";
+  const bm=mins(bought);const before=others.filter(x=>mins(x.bought)<=bm).sort((x,y)=>mins(y.bought)-mins(x.bought))[0];
+  if(before&&bm<Math.min(mins(before.bought)+60,mins(before.slot)))return `60分ルール: ${fromMin(Math.min(mins(before.bought)+60,mins(before.slot)))} まで買えません`;
+  const after=others.filter(x=>mins(x.bought)>bm).sort((x,y)=>mins(x.bought)-mins(y.bought))[0];
+  if(after&&mins(after.bought)<Math.min(bm+60,mins(slotV)))return `${after.bought}の${byId[after.id].name}と60分ルールが合いません`;
+  return null;
+}
 function addDpa(id,slotV,boughtV){
   const bought=boughtV||hm(now());
   if(!slotV){toast("利用開始時刻を入れてください");document.getElementById("dpaSlot").focus();return false;}
   if(heldDpa(id)){toast("登録済みです");return false;}
-  if(mins(slotV)<mins(bought)){toast("利用開始が購入より前です");return false;}
-  const bm=mins(bought);const before=DP().filter(x=>mins(x.bought)<=bm).sort((x,y)=>mins(y.bought)-mins(x.bought))[0];
-  if(before&&bm<Math.min(mins(before.bought)+60,mins(before.slot))){toast(`60分ルールでは ${fromMin(Math.min(mins(before.bought)+60,mins(before.slot)))} まで次を買えません。購入時刻を確認してください`);return false;}
-  const after=DP().filter(x=>mins(x.bought)>bm).sort((x,y)=>mins(x.bought)-mins(y.bought))[0];
-  if(after&&mins(after.bought)<Math.min(bm+60,mins(slotV))){toast(`${after.bought}に買った${byId[after.id].name}と60分ルールが合いません。購入時刻を確認してください`);return false;}
+  const err=validateDpa(id,slotV,bought,-1);if(err){toast(err);return false;}
   S.dpas.push({id,slot:slotV,bought,used:false,day:todayKey()});delete S.soldout[id];delete S.noBuy[id];
   S.plan=S.plan.filter(p=>!(p.k==="buy"&&p.attr===id));S.day=todayKey();
   dpaDirty=false;document.getElementById("dpaSlot").value="";
@@ -927,6 +1007,7 @@ function openDpaForm(id,slot){
 function movePlan(i,dir){
   const plan=planToday();const j=i+dir;if(j<0||j>=plan.length)return;
   if([plan[i],plan[j]].some(p=>p.dpa&&!p.prov)){toast("DPAの枠はパスタブで直せます");return;}
+  if([plan[i],plan[j]].some(p=>p.k==="buy")){toast("購入は時刻をタップして直せます");return;}
   const lo=Math.min(i,j);const start=Math.min(plan[i].t,plan[j].t);
   [plan[i],plan[j]]=[plan[j],plan[i]];
   const x=plan[lo],y=plan[lo+1];x.t=start;
@@ -959,13 +1040,17 @@ document.addEventListener("click",e=>{
     S.day=tk;save();renderAll();toast(ds.day==="clear"?"今日の記録を始めました":"今日の分にしました");return;}
   if(b.id==="openOnly"){S.openOnly=!S.openOnly;save();renderFood();return;}
   if(b.id==="apiBtn"){fetchApi(false);return;}
+  if(b.id==="impBtn"){const p=document.getElementById("impPanel");p.hidden=!p.hidden;if(!p.hidden)p.scrollIntoView({block:"start",behavior:"smooth"});return;}
+  if(b.id==="impClose"){document.getElementById("impPanel").hidden=true;return;}
+  if(b.id==="impRead"){renderImport(parseImport(document.getElementById("impText").value));return;}
+  if(b.id==="impApply"){applyImport();return;}
   if(ds.ride){markRide(ds.ride,!ridden(ds.ride));renderAll();return;}
-  if(ds.stop){if(stopInfo(byId[ds.stop])==="manual")delete S.stops[ds.stop];else S.stops[ds.stop]={at:nowMin(),day:todayKey()};save();renderAll();return;}
+  if(ds.stop){if(stopInfo(byId[ds.stop])==="manual")delete S.stops[ds.stop];else S.stops[ds.stop]={at:nowMin(),day:todayKey()};const re=replanAfterDpa();save();renderAll();if(re)toast("組み直しました");return;}
   if(ds.undrop){delete S.drop[ds.undrop];save();renderAll();toast("戻しました");return;}
   if(ds.prio){cyclePrio(ds.prio);return;}
   if(ds.prioall){ATTR.forEach(a=>S.prio[a.id]=ds.prioall);save();renderAll();return;}
   if(ds.quick){openDpaForm(ds.quick,ds.qslot);return;}
-  if(ds.sold){if(soldOut(ds.sold))delete S.soldout[ds.sold];else S.soldout[ds.sold]=todayKey();save();renderAll();return;}
+  if(ds.sold){if(soldOut(ds.sold))delete S.soldout[ds.sold];else S.soldout[ds.sold]=todayKey();const re=replanAfterDpa();save();renderAll();if(re)toast("組み直しました");return;}
   if(b.id==="dpaAdd"){addDpa(document.getElementById("dpaAttr").value,document.getElementById("dpaSlot").value,document.getElementById("dpaBought").value);return;}
   if(ds.dpause!=null){const x=S.dpas[+ds.dpause];x.used=!x.used;if(x.used)S.ridden[x.id]=todayKey();else delete S.ridden[x.id];save();renderAll();return;}
   if(ds.dpadel!=null){const x=S.dpas[+ds.dpadel];withUndo(byId[x.id].name+" のDPAを削除しました",()=>{S.dpas.splice(+ds.dpadel,1);replanAfterDpa();});return;}
@@ -995,17 +1080,20 @@ document.addEventListener("change",e=>{
   const t=e.target;const ds=t.dataset;
   if(["dpaAttr","dpaSlot","dpaBought"].includes(t.id))dpaDirty=true;
   if(t.id==="timeOverride"){S.timeOverride=t.value;save();renderAll();return;}
+  if(t.id==="impFile"){if(t.files.length)ocrFiles([...t.files]);t.value="";return;}
   if(ds.wait){const v=parseInt(t.value,10);if(isNaN(v))delete S.waits[ds.wait];else{S.waits[ds.wait]={v,at:nowMin(),day:todayKey()};delete S.stops[ds.wait];}S.day=todayKey();save();
     setTimeout(()=>{const ae=document.activeElement;const id=ae&&ae.dataset?ae.dataset.wait:null;const pos=document.querySelector("main").scrollTop;renderHeader();renderNear();document.querySelector("main").scrollTop=pos;if(id){const el=document.querySelector(`[data-wait="${id}"]`);if(el)el.focus({preventScroll:true});}},0);return;}
   if(ds.ptime!=null){const p=planToday()[+ds.ptime];if(!t.value||!p)return;
     if(p.dpa&&!p.prov){toast("DPAの枠はパスタブで直せます");renderPlan();return;}
     p.t=mins(t.value);p.lock=true;if(p.k==="buy")p.ps=Math.max(p.ps||0,p.t+45);if(p.k==="ride"&&p.attr&&!p.dpa)p.w=estWait(byId[p.attr],p.t);S.plan.sort((x,y)=>x.t-y.t);save();renderPlan();return;}
-  if(ds.dpaslot!=null){if(!t.value)return;S.dpas[+ds.dpaslot].slot=t.value;const re=replanAfterDpa();save();renderAll();if(re)toast("プランを組み直しました");return;}
-  if(ds.dpabought!=null){if(!t.value)return;S.dpas[+ds.dpabought].bought=t.value;const re=replanAfterDpa();save();renderAll();if(re)toast("プランを組み直しました");return;}
+  if(ds.dpaslot!=null||ds.dpabought!=null){const i=+(ds.dpaslot??ds.dpabought);const x=S.dpas[i];if(!t.value||!x)return;
+    const slot=ds.dpaslot!=null?t.value:x.slot,bought=ds.dpabought!=null?t.value:x.bought;
+    const err=validateDpa(x.id,slot,bought,i);if(err){toast(err);renderDpa();return;}
+    x.slot=slot;x.bought=bought;const re=replanAfterDpa();save();renderAll();if(re)toast("組み直しました");return;}
   if(ds.pop){S.pop[ds.pop]=t.value;save();return;}
   if(t.id==="exitTime"){S.exit=t.value||"19:00";save();renderAll();return;}
   if(t.id==="startTime"){S.start=t.value;save();return;}
-  if(t.id==="height"){S.height=t.value;save();renderAll();return;}
+  if(t.id==="height"){S.height=t.value;const re=replanAfterDpa();save();renderAll();if(re)toast("組み直しました");return;}
   if(t.id==="dpaBudget"){S.dpaBudget=t.value;save();renderAll();return;}
   if(t.id==="cWeather"){S.cond.weather=t.value;save();renderAll();return;}
   if(t.id==="cCrowd"){S.cond.crowd=t.value;save();renderAll();return;}
