@@ -1,8 +1,8 @@
 name: TDS wait times
 
-# 東京ディズニーシーの待ち時間を queue-times.com から5分ごとに取り、live-data ブランチの tds.json に書く。
+# 東京ディズニーシーの待ち時間を queue-times.com から1分ごとに取り、live-data ブランチの tds.json に書く。
 # シー立ち回りナビ（disney-sea/）がこのJSONを読む。
-# GitHub の schedule は遅れたり走らなかったりするので、1回の実行の中で5分おきに取り続け（最長5時間半）、
+# GitHub の schedule は遅れたり走らなかったりするので、1回の実行の中で1分おきに取り続け（最長5時間半）、
 # 終わる前に自分で次の実行を起動して途切れないようにする。schedule は保険（止まっていたら毎時起こす）。
 on:
   schedule:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
-      - name: Fetch every 5 minutes and publish to live-data
+      - name: Fetch every minute and publish to live-data
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -47,7 +47,7 @@ jobs:
             else
               echo "fetch failed $(date -u +%T)"
             fi
-            sleep 300
+            sleep 60
           done
       - name: Start the next run
         if: always()
