@@ -354,7 +354,7 @@ function bind() {
       }).catch(function (e) { $('addGo').disabled = false; toast(e.message); });
     };
     $('addGo').onclick = add;
-    $('newName').onkeydown = function (ev) { if (ev.key === 'Enter' && !ev.isComposing) add(); };
+    $('newName').onkeydown = function (ev) { if (ev.key === 'Enter' && !ev.isComposing && ev.keyCode !== 229) add(); };
   }
   [].forEach.call(app.querySelectorAll('[data-del]'), function (b) {
     b.onclick = function () {
@@ -411,6 +411,7 @@ function readEdit() {
     if (k === 'amount' || k === 'accountNumber') v = v.replace(/[０-９．]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
     if (k === 'amount') { var n = parseFloat(v.replace(/[^\d.]/g, '')); v = isFinite(n) ? String(Math.round(n)) : ''; }
     if (k === 'accountNumber') v = v.replace(/\D/g, '');
+    if (String(S.f[k] == null ? '' : S.f[k]) !== v) S.sid = null; // 直したら別の登録として送る
     S.f[k] = v;
   });
 }
@@ -464,18 +465,23 @@ $('file').addEventListener('change', function () {
     var good = ps.filter(Boolean);
     if (good.length < ps.length) toast((ps.length - good.length) + '枚を開けませんでした');
     if (!good.length) return;
+    good.forEach(function (pg) { pg.id = ++PAGE_SEQ; });
     S.pages = S.pages.concat(good);
-    if (S.view !== 'photo') go('photo'); else render();
-    prefetch();
+    if (S.view !== 'photo') { S.reqId++; S.f = null; S.sid = null; prefetch(); go('photo'); } // 読み取り中に写真が増えたら、その読み取りは使わない
+    else { prefetch(); render(); }
   }).catch(function (e) { S.error = e.message; render(); });
 });
 
 // 写真がそろったら裏で読み取りを始めておく（「これで読み取る」を押した時にはもう終わっていることが多い）
-function pageKey() { return S.pages.map(function (pg) { return pg.b64.length + ':' + pg.b64.slice(-24); }).join('|'); }
-function prefetch() {
+var PAGE_SEQ = 0, preTimer = null;
+function pageKey() { return S.pages.map(function (pg) { return pg.id; }).join('|'); }
+// 続けて何枚も足す時に毎回読まないよう、最後の変更から1.5秒待ってから読む（「これで読み取る」は待たずにすぐ）
+function prefetch(now) {
+  clearTimeout(preTimer);
   if (!S.pages.length) { S.pre = null; return; }
   var key = pageKey();
   if (S.pre && S.pre.key === key && !S.pre.failed) return;
+  if (!now) { S.pre = null; preTimer = setTimeout(function () { prefetch(true); }, 1500); return; }
   var pre = { key: key, done: false };
   pre.promise = run('analyze', S.pages.map(function (pg) { return { b64: pg.b64, mime: pg.mime, name: pg.name }; }));
   pre.promise.then(function () { pre.done = true; if (S.pre === pre && $('ready')) $('ready').hidden = false; }, function () { pre.failed = true; });
@@ -483,7 +489,7 @@ function prefetch() {
 }
 function startRead() {
   if (!S.pages.length) return;
-  prefetch();
+  prefetch(true);
   var id = ++S.reqId, pre = S.pre;
   if (!pre.done) {
     go('reading');
