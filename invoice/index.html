@@ -190,7 +190,7 @@ function run(fn) {
   var args = [].slice.call(arguments, 1);
   if (HOSTED) {
     return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
-      .then(function (r) { if (!r.ok) throw new Error('通信に失敗しました（' + r.status + '）'); return r.json(); },
+      .then(function (r) { if (!r.ok) throw new Error('通信に失敗しました（' + r.status + '）'); return r.json().catch(function () { throw new Error('混み合っています。少し待ってからもう一度'); }); },
         function () { throw new Error('通信できませんでした。電波の良い所でもう一度'); })
       .then(function (j) { if (!j.ok) throw new Error(j.error); return j.result; });
   }
@@ -222,9 +222,10 @@ function go(v) {
   window.scrollTo(0, 0);
 }
 $('back').onclick = function () {
+  if (S.busy) return;
   if (S.view === 'name') go('store');
   else if (S.view === 'photo') go('name');
-  else if (S.view === 'edit') go('confirm');
+  else if (S.view === 'edit') { readEdit(); go('confirm'); }
   else if (S.view === 'confirm') ask('この請求書をやめますか？', '入力した内容は消えます。', 'やめる', function () { resetDoc(); go('photo'); });
 };
 
@@ -294,8 +295,8 @@ function confirmHtml() {
     (f.note ? row('note', f.note) : '') + '</dl></div>' +
     '<div class="card"><dl style="margin:0"><div class="row"><dt>店舗・登録者</dt><dd>' + esc(S.store) + '・' + esc(S.name) + '</dd></div></dl></div>' +
     '<div class="stack bottom"><button class="btn primary" id="ok" type="button"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '登録中…' : (miss.length ? '足りない所を入れる' : 'これで登録')) + '</button>' +
-    '<div class="pair" style="margin:0"><button class="btn sub" id="fix" type="button">直す</button>' +
-    '<button class="btn sub" id="redo" type="button">やりなおす</button></div></div></div>';
+    '<div class="pair" style="margin:0"><button class="btn sub" id="fix" type="button"' + (S.busy ? ' disabled' : '') + '>直す</button>' +
+    '<button class="btn sub" id="redo" type="button"' + (S.busy ? ' disabled' : '') + '>やりなおす</button></div></div></div>';
   return h;
 }
 
@@ -407,7 +408,10 @@ function readEdit() {
     var k = i.id.slice(2), v = i.value.trim();
     if (k === 'accountName' && v !== S.f[k]) S.f.nameGuessed = false;
     if (k === 'dueDate' && v !== S.f[k]) S.f.dueGuessed = false;
-    S.f[k] = k === 'amount' || k === 'accountNumber' ? v.replace(/[^\d０-９]/g, '').replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }) : v;
+    if (k === 'amount' || k === 'accountNumber') v = v.replace(/[０-９．]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
+    if (k === 'amount') { var n = parseFloat(v.replace(/[^\d.]/g, '')); v = isFinite(n) ? String(Math.round(n)) : ''; }
+    if (k === 'accountNumber') v = v.replace(/\D/g, '');
+    S.f[k] = v;
   });
 }
 function mark() {
@@ -418,7 +422,7 @@ function mark() {
   if (nd && (left || !nd.hidden)) { nd.hidden = false; nd.textContent = left ? '黄色の欄を入れてください（残り' + left + 'か所）' : '入力がそろいました'; nd.style.background = left ? '' : 'var(--ok-bg)'; nd.style.color = left ? '' : 'var(--ok)'; }
 }
 function focusFirst() { setTimeout(function () { var e = app.querySelector('input.empty'); if (e) { e.focus(); e.scrollIntoView({ block: 'center' }); } }, 50); }
-function resetDoc() { S.pages = []; S.pre = null; S.f = null; S.error = ''; S.busy = false; S.reqId++; }
+function resetDoc() { S.pages = []; S.pre = null; S.f = null; S.error = ''; S.busy = false; S.sid = null; S.reqId++; }
 
 // 確認・ヘルプ用の下から出る画面
 function sheet(inner, buttons, onPick) {
@@ -440,7 +444,7 @@ $('help').onclick = function () {
 // 画像は長辺1600pxのJPEGに縮めてから送る（文字は十分読めて、送るのが速い）
 function prepare(file) {
   return new Promise(function (ok, ng) {
-    if (file.type === 'application/pdf') {
+    if (file.type === 'application/pdf' || (!file.type && /\.pdf$/i.test(file.name || ''))) {
       var r = new FileReader(); r.onload = function () { ok({ b64: r.result.split(',')[1], mime: 'application/pdf', url: null, name: file.name }); }; r.onerror = ng; r.readAsDataURL(file); return;
     }
     var img = new Image(); var u = URL.createObjectURL(file);
@@ -456,8 +460,11 @@ $('file').addEventListener('change', function () {
   var room = MAX_PAGES - S.pages.length;
   if (list.length > room) { toast(MAX_PAGES + '枚までです'); list = list.slice(0, room); }
   S.error = '';
-  Promise.all(list.map(prepare)).then(function (ps) {
-    S.pages = S.pages.concat(ps);
+  Promise.all(list.map(function (f) { return prepare(f).catch(function () { return null; }); })).then(function (ps) {
+    var good = ps.filter(Boolean);
+    if (good.length < ps.length) toast((ps.length - good.length) + '枚を開けませんでした');
+    if (!good.length) return;
+    S.pages = S.pages.concat(good);
     if (S.view !== 'photo') go('photo'); else render();
     prefetch();
   }).catch(function (e) { S.error = e.message; render(); });
@@ -468,10 +475,10 @@ function pageKey() { return S.pages.map(function (pg) { return pg.b64.length + '
 function prefetch() {
   if (!S.pages.length) { S.pre = null; return; }
   var key = pageKey();
-  if (S.pre && S.pre.key === key) return;
+  if (S.pre && S.pre.key === key && !S.pre.failed) return;
   var pre = { key: key, done: false };
   pre.promise = run('analyze', S.pages.map(function (pg) { return { b64: pg.b64, mime: pg.mime, name: pg.name }; }));
-  pre.promise.then(function () { pre.done = true; if (S.pre === pre && $('ready')) $('ready').hidden = false; }, function () {});
+  pre.promise.then(function () { pre.done = true; if (S.pre === pre && $('ready')) $('ready').hidden = false; }, function () { pre.failed = true; });
   S.pre = pre;
 }
 function startRead() {
@@ -493,14 +500,18 @@ function startRead() {
 }
 
 function submit() {
+  if (S.busy) return;
   S.busy = true; S.error = ''; render();
-  var v = { store: S.store, registrant: S.name };
+  var id = S.reqId;
+  S.sid = S.sid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); // 押し直しても1件だけ
+  var v = { store: S.store, registrant: S.name, submitId: S.sid };
   ['vendor', 'description', 'amount', 'invoiceDate', 'dueDate', 'payMethod', 'bank', 'branch', 'accountType', 'accountNumber', 'accountName', 'note'].forEach(function (k) { v[k] = String(S.f[k] || '').trim(); });
   if (v.payMethod !== '銀行振込') BANK.forEach(function (k) { v[k] = ''; });
   var files = S.pages.map(function (pg, i) { return { b64: pg.b64, mime: pg.mime, name: (pg.name || '請求書').replace(/\.[^.]+$/, '') + (pg.mime === 'application/pdf' ? '.pdf' : '.jpg') }; });
   run('register', v, files).then(function () {
+    if (S.reqId !== id) return;
     S.last = S.store + '・' + v.vendor + '・' + yen(v.amount); resetDoc(); go('done');
-  }).catch(function (e) { S.busy = false; S.error = e.message; render(); });
+  }).catch(function (e) { if (S.reqId !== id) return; S.busy = false; S.error = e.message; render(); });
 }
 
 // ---------- はじめ ----------
