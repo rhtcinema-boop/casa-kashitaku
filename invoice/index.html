@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="請求書入力">
+<meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1424" media="(prefers-color-scheme: dark)">
+<title>請求書かんたん入力</title>
+<style>
+/* 請求書かんたん入力: 店舗 → 名前 → 写真 → 確認 → 完了。文字は最小限、説明は「?」の中。 */
+:root{--bg:#f2f4f7;--panel:#fff;--fg:#14213d;--muted:#5f6b80;--line:#e3e7ee;--accent:#1f5fe0;--accent-soft:#e8effd;--accent-fg:#fff;
+ --ok:#0e7a43;--ok-bg:#e2f5ea;--warn:#8a4b00;--warn-bg:#fff2d9;--warn-line:#e8a33d;--bad:#c22b2b;--bad-bg:#fde7e7;--shadow:0 1px 2px rgba(20,33,61,.06),0 4px 14px rgba(20,33,61,.06);
+ --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1424;--panel:#172038;--fg:#eef2fb;--muted:#a3afc8;--line:#2a3658;--accent:#6c9dff;--accent-soft:#1d2b4f;--accent-fg:#0a1733;
+ --ok:#63d394;--ok-bg:#14372a;--warn:#ffc874;--warn-bg:#3a2b10;--warn-line:#a8752a;--bad:#ff8f86;--bad-bg:#45201d;--shadow:none;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+html{height:100%}
+body{min-height:100%;min-height:100dvh;display:flex;flex-direction:column}
+body{color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 8px}
+.bar{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:8px;min-height:44px}
+.bar h1{flex:1;font-size:17px;margin:0;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:44px;height:44px;border:0;border-radius:50%;background:transparent;display:grid;place-items:center;cursor:pointer;flex:none}
+.icon:active{background:var(--line)}
+.icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.icon.ghost{visibility:hidden}
+.steps{max-width:520px;margin:6px auto 0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.steps i{display:block;height:4px;border-radius:4px;background:var(--line);transition:background .25s}
+.steps i.on{background:var(--accent)}
+.wrap{flex:1;display:flex;flex-direction:column;width:100%;max-width:560px;margin:0 auto;padding:6px 16px calc(16px + env(safe-area-inset-bottom))}
+.screen{flex:1;display:flex;flex-direction:column;animation:in .22s ease-out}
+.grow{flex:1}
+.grid.fill{flex:1;grid-auto-rows:minmax(76px,1fr)}
+.grid.fill .tile{font-size:clamp(18px,5.4vw,24px)}
+.bottom{position:sticky;bottom:0;margin:auto -16px 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--bg) 18px);z-index:4}
+.bottom.stack>*+*{margin-top:8px}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{font-size:22px;margin:8px 2px 14px;font-weight:800;letter-spacing:.01em;display:flex;align-items:baseline;gap:10px}
+h2 .pos{margin-left:auto;font-size:14px;color:var(--muted);font-weight:800}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:14px;font-weight:700;cursor:pointer}
+.chip small{color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{position:relative;min-height:76px;border:1.5px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:var(--shadow);font-size:18px;font-weight:800;cursor:pointer;padding:12px 10px;text-align:center;word-break:keep-all;overflow-wrap:anywhere;line-height:1.3;transition:transform .08s}
+.tile:active{transform:scale(.97)}
+.tile.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.tile .tag{position:absolute;top:6px;right:8px;font-size:11px;font-weight:700;color:var(--accent)}
+.tile.add{color:var(--accent);border-style:dashed;box-shadow:none;background:transparent}
+.addrow{display:flex;gap:8px;margin-top:10px}
+.addrow input{flex:1}
+.drop{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:260px;border:2px dashed var(--line);border-radius:22px;background:var(--panel);text-align:center;cursor:pointer;padding:24px}
+.drop:active{background:var(--accent-soft)}
+.drop svg{width:56px;height:56px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.drop b{font-size:20px}
+.drop span{color:var(--muted);font-size:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:4px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.status{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:300px;color:var(--muted);text-align:center}
+.status img{max-width:60%;max-height:40vh;border-radius:12px;opacity:.9}
+.spin{width:40px;height:40px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.amount{text-align:center;padding:16px 0 10px;border-bottom:1px solid var(--line)}
+.amount small{display:block;color:var(--muted);font-size:13px;font-weight:700}
+.amount b{font-size:34px;letter-spacing:.01em}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row dt{color:var(--muted);font-size:14px;font-weight:700;flex:none}
+.row dd{margin:0;text-align:right;font-weight:700;word-break:break-all}
+.row dd .sub{display:block;font-size:13px;color:var(--warn);font-weight:800;margin-top:2px}
+.row.miss dd{color:var(--warn)}
+.thumb{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.thumb img{width:56px;height:56px;object-fit:cover;border-radius:10px;background:var(--bg)}
+.thumb span{flex:1;font-weight:700}
+.thumb em{font-style:normal;color:var(--accent);font-size:14px;font-weight:700}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700;margin-bottom:12px}
+.err{background:var(--bad-bg);color:var(--bad);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700;margin-bottom:12px}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;border:0;border-radius:16px;padding:14px;font-weight:800;font-size:17px;min-height:54px;cursor:pointer;transition:transform .08s,opacity .2s}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);color:var(--accent-fg)}
+.btn.sub{background:var(--panel);color:var(--fg);border:1.5px solid var(--line)}
+.btn.text{background:transparent;color:var(--fg);min-height:48px;font-size:16px;text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--line)}
+.btn:disabled{opacity:.45}
+.btn.small{width:auto;min-height:46px;padding:10px 16px;font-size:15px;border-radius:12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.stack>*+*{margin-top:10px}
+label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:var(--muted);margin:12px 0;min-width:0}
+input,select{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;min-height:48px;width:100%;min-width:0;appearance:none;-webkit-appearance:none}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 21px,calc(100% - 13px) 21px;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+input.empty,select.empty{border-color:var(--warn-line);background:var(--warn-bg)}
+.hint{font-size:13px;color:var(--warn);font-weight:800}
+.paper{position:relative;display:block;width:100%;height:230px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--panel);margin-bottom:12px;padding:0;cursor:zoom-in;box-shadow:var(--shadow)}
+.paper img{width:100%;height:100%;object-fit:contain;display:block;background:var(--bg)}
+.paper span{position:absolute;right:10px;bottom:10px;background:rgba(10,16,30,.72);color:#fff;font-size:14px;font-weight:800;padding:8px 12px;border-radius:999px;min-height:36px;display:flex;align-items:center;gap:6px}
+.paper.pdf{display:grid;place-items:center;height:72px;cursor:default;font-weight:800;color:var(--muted)}
+.viewer{position:fixed;inset:0;z-index:25;background:#000;display:flex;flex-direction:column}
+.viewer .vbar{display:flex;justify-content:space-between;align-items:center;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;color:#fff}
+.viewer .vbar b{font-size:15px}
+.viewer .vbar button{min-height:44px;min-width:88px;border:0;border-radius:999px;background:#fff;color:#111;font-weight:800;font-size:16px;cursor:pointer}
+.viewer .vbody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom}
+.viewer img{display:block;width:100%;height:auto}
+.viewer img.big{width:220%;max-width:none}
+.slow{font-size:14px;color:var(--muted);max-width:260px}
+.pages{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+.pg{position:relative;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+.pg img{width:100%;height:100%;object-fit:cover;display:block}
+.pg .pdf{display:grid;place-items:center;height:100%;font-weight:800;color:var(--muted);padding:8px;text-align:center;word-break:break-all;font-size:14px}
+.pg .no{position:absolute;left:8px;top:8px;background:rgba(10,16,30,.72);color:#fff;font-size:13px;font-weight:800;border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center;padding:0 8px}
+.pg .rm{position:absolute;right:4px;top:4px;width:44px;height:44px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center}
+.pg .rm i{width:30px;height:30px;border-radius:50%;background:rgba(10,16,30,.72);color:#fff;display:grid;place-items:center;font-style:normal;font-size:18px;font-weight:800}
+.pg.add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--line);background:transparent;box-shadow:none;color:var(--accent);font-weight:800;cursor:pointer}
+.pg.add svg{width:34px;height:34px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
+.ready{font-size:13px;font-weight:800;color:var(--ok);text-align:center;margin-bottom:6px}
+.carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;margin:0 0 12px;scrollbar-width:none}
+.carousel::-webkit-scrollbar{display:none}
+.carousel .paper{flex:0 0 100%;scroll-snap-align:center;margin:0}
+.paper .cnt{left:10px;right:auto}
+.viewer .vbody img+img{margin-top:8px}
+.dots{display:flex;justify-content:center;gap:6px;margin:-4px 0 12px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .2s}
+.dots i.on{background:var(--accent)}
+.need{background:var(--warn-bg);color:var(--warn);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:800;margin-bottom:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{min-height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);font-weight:800;cursor:pointer}
+.seg button.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 10px 20px}
+.done .mark{width:96px;height:96px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;margin:0 auto 14px;animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+.done .mark svg{width:40px;height:40px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.done b{font-size:24px}
+.done p{color:var(--muted);margin:6px 0 0;font-size:15px}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.li{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-bottom:1px solid var(--line);min-height:60px}
+.li:last-child{border-bottom:0}
+.li span{flex:1;font-weight:800;font-size:17px;word-break:break-all}
+.li .icon{width:44px;height:44px}
+.li .del{color:var(--bad)}
+.li .icon:disabled{opacity:.25}
+.empty-msg{padding:20px;text-align:center;color:var(--muted)}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(10,16,30,.45);display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet>div{background:var(--panel);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));animation:up .25s ease-out;max-height:90vh;overflow:auto}
+@keyframes up{from{transform:translateY(30px)}}
+.sheet h3{margin:0 0 10px;font-size:18px}
+.sheet p{margin:0 0 8px;color:var(--muted);font-size:15px}
+.sheet img{width:100%;border-radius:12px;display:block}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:700;z-index:30;animation:fade .2s}
+.foot{text-align:center;margin-top:22px}
+.foot a{color:var(--muted);font-size:13px;font-weight:700;text-decoration:none;display:inline-block;padding:12px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <button class="icon" id="back" type="button" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <h1 id="title">請求書かんたん入力</h1>
+    <button class="icon" id="help" type="button" aria-label="使い方"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.2-2.4 3.7"/><path d="M12 17.2h.01"/></svg></button>
+  </div>
+  <div class="steps" id="steps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+</header>
+
+<main class="wrap" id="app"></main>
+
+<input id="file" type="file" accept="image/*,application/pdf" multiple hidden>
+
+<script>
+var INIT = null;
+// GitHub Pages 版（Googleの帯なし）は INIT が無いので、ここで作って裏で最新の名前一覧を取る
+var API_URL = 'https://script.google.com/macros/s/AKfycbx7QWD5YKKV45DEEBYmDwhxWFfLDeibupcTuJOSVYxOcd2IuL3_Bnz2cJbHrsLUr_Xi/exec';
+var HOSTED = !(window.google && google.script && google.script.run);
+if (!INIT) {
+  var cached = null; try { cached = JSON.parse(localStorage.getItem('ciq_names') || 'null'); } catch (e) {}
+  if (!cached || !cached.length) cached = ['まゆか', 'かずき(札幌)', 'こたろう', 'みずき', 'なす', 'りょう']; // 初回だけ。すぐ最新に置き換わる
+  INIT = { stores: ['上野店', '渋谷店', '大宮店', '札幌店'], registrants: cached, admin: /[?&]page=admin/.test(location.search), url: location.origin + location.pathname };
+}
+var $ = function (id) { return document.getElementById(id); };
+var app = $('app');
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
+function yen(n) { return n ? '¥' + Number(String(n).replace(/\D/g, '')).toLocaleString() : ''; }
+function jd(s) { var m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? Number(m[1]) + '/' + Number(m[2]) + '/' + Number(m[3]) : ''; }
+function toast(t) { var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 2200); }
+function run(fn) {
+  var args = [].slice.call(arguments, 1);
+  if (HOSTED) {
+    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { if (!r.ok) throw new Error('通信に失敗しました（' + r.status + '）'); return r.json(); },
+        function () { throw new Error('通信できませんでした。電波の良い所でもう一度'); })
+      .then(function (j) { if (!j.ok) throw new Error(j.error); return j.result; });
+  }
+  return new Promise(function (ok, ng) { google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { ng(new Error(e && e.message || String(e))); })[fn].apply(null, args); });
+}
+
+var S = {
+  view: '', store: ls('ciq_store'), name: ls('ciq_name'),
+  registrants: INIT.registrants || [], adding: false,
+  pages: [], f: null, error: '', busy: false, reqId: 0,
+  pre: null // 先読み: { key, promise } 写真がそろった時点で読み取りを始めておく
+};
+var MAX_PAGES = 10;
+var NEED = ['vendor', 'description', 'amount', 'invoiceDate', 'dueDate', 'payMethod'];
+var BANK = ['bank', 'branch', 'accountType', 'accountNumber', 'accountName'];
+var LABEL = { vendor: '取引先', description: '請求内容', amount: '金額', invoiceDate: '請求日', dueDate: '支払期限', payMethod: '支払方法', bank: '銀行', branch: '支店', accountType: '種別', accountNumber: '口座番号', accountName: '口座名義', note: '備考' };
+function needed() { return NEED.concat(S.f && S.f.payMethod === '銀行振込' ? BANK : []); }
+function missing() { return needed().filter(function (k) { return !String(S.f[k] || '').trim(); }); }
+
+// ---------- 画面の切り替え ----------
+var ORDER = { store: 1, name: 2, photo: 3, reading: 3, confirm: 4, edit: 4, done: 4 };
+function go(v) {
+  S.view = v;
+  var n = ORDER[v] || 0;
+  [].forEach.call($('steps').children, function (el, i) { el.classList.toggle('on', i < n); });
+  $('steps').hidden = !n || INIT.admin;
+  $('back').classList.toggle('ghost', !(v === 'name' || v === 'photo' || v === 'edit' || v === 'confirm'));
+  render();
+  window.scrollTo(0, 0);
+}
+$('back').onclick = function () {
+  if (S.view === 'name') go('store');
+  else if (S.view === 'photo') go('name');
+  else if (S.view === 'edit') go('confirm');
+  else if (S.view === 'confirm') ask('この請求書をやめますか？', '入力した内容は消えます。', 'やめる', function () { resetDoc(); go('photo'); });
+};
+
+function saveNames(list) { S.registrants = list; try { localStorage.setItem('ciq_names', JSON.stringify(list)); } catch (e) {} }
+function render() {
+  var v = S.view, h = '';
+  if (v === 'store') {
+    h = '<div class="screen"><h2>どの店舗？<span class="pos">1/4</span></h2><div class="grid fill">' + INIT.stores.map(function (s) {
+      return '<button class="tile' + (s === S.store ? ' sel' : '') + '" data-store="' + esc(s) + '">' + esc(s) + (s === S.store ? '<span class="tag">前回</span>' : '') + '</button>';
+    }).join('') + '</div></div>';
+  } else if (v === 'name') {
+    h = '<div class="screen">' + chips(['store']) + '<h2>だれが登録？<span class="pos">2/4</span></h2><div class="grid fill">' + S.registrants.map(function (n) {
+      return '<button class="tile' + (n === S.name ? ' sel' : '') + '" data-name="' + esc(n) + '">' + esc(n).replace(/[（(]/, '<wbr>$&') + (n === S.name ? '<span class="tag">前回</span>' : '') + '</button>';
+    }).join('') + '<button class="tile add" id="addOpen" type="button">＋ 追加</button></div>' +
+      (S.adding ? '<div class="addrow"><input id="newName" maxlength="20" placeholder="名前" autocomplete="off" enterkeyhint="done"><button class="btn primary small" id="addGo" type="button">追加</button></div>' : '') +
+      '</div>';
+  } else if (v === 'photo') {
+    var cam = '<svg viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h2l1.6-2h5.8l1.6 2h2A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.6"/></svg>';
+    h = '<div class="screen">' + chips(['store', 'name']) + (S.error ? '<div class="err">' + esc(S.error) + '</div>' : '') +
+      '<h2>請求書を撮る<span class="pos">3/4</span></h2>' +
+      (!S.pages.length ? '<label class="drop" for="file">' + cam + '<b>カメラを開く</b><span>写真・PDFも選べます（複数枚OK）</span></label>' :
+        '<div class="pages">' + S.pages.map(function (pg, i) {
+          return '<div class="pg">' + (pg.url ? '<img src="' + pg.url + '" alt="">' : '<div class="pdf">PDF<br>' + esc(pg.name) + '</div>') +
+            '<span class="no">' + (i + 1) + '</span><button class="rm" type="button" data-rm="' + i + '" aria-label="' + (i + 1) + '枚目を外す"><i>×</i></button></div>';
+        }).join('') + (S.pages.length < MAX_PAGES ? '<label class="pg add" for="file"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>もう1枚</label>' : '') + '</div>' +
+        '<div class="bottom">' + '<div class="ready" id="ready"' + (S.pre && S.pre.done ? '' : ' hidden') + '>' + (S.pages.length > 1 ? S.pages.length + '枚まとめて' : '') + '読み取り済み</div>' +
+        '<button class="btn primary" id="readGo" type="button">これで読み取る（' + S.pages.length + '枚）</button></div>') + '</div>';
+  } else if (v === 'reading') {
+    var first = S.pages[0];
+    h = '<div class="screen status">' + (first && first.url ? '<img src="' + first.url + '" alt="">' : '') + '<div class="spin"></div><div>読み取り中…' + (S.pages.length > 1 ? '（' + S.pages.length + '枚）' : '') + '</div><div class="slow" id="slow" hidden>時間がかかっています。もう少しお待ちください</div><button class="btn text" id="cancelRead" type="button" style="width:auto">やめる</button></div>';
+  } else if (v === 'confirm') {
+    h = confirmHtml();
+  } else if (v === 'edit') {
+    h = editHtml();
+  } else if (v === 'done') {
+    h = '<div class="screen"><div class="done"><div class="mark"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><b>登録しました</b><p>' + esc(S.last) + '</p></div>' +
+      '<div class="stack bottom"><button class="btn primary" id="again" type="button">続けて登録</button><button class="btn text" id="restart" type="button">店舗・名前を変える</button></div></div>';
+  } else if (v === 'admin') {
+    h = adminHtml();
+  }
+  app.innerHTML = h;
+  bind();
+}
+
+function chips(which) {
+  return '<div class="chips">' + which.map(function (k) {
+    return '<button class="chip" data-chip="' + k + '" type="button">' + esc(k === 'store' ? S.store : S.name) + ' <small>変更</small></button>';
+  }).join('') + '</div>';
+}
+
+function confirmHtml() {
+  var f = S.f, miss = missing();
+  var row = function (k, val, sub) {
+    var m = miss.indexOf(k) >= 0;
+    return '<div class="row' + (m ? ' miss' : '') + '"><dt>' + LABEL[k] + '</dt><dd>' + (m ? '未入力' : esc(val)) + (sub && !m ? '<span class="sub">' + sub + '</span>' : '') + '</dd></div>';
+  };
+  var bank = f.payMethod === '銀行振込';
+  var h = '<div class="screen"><h2>これでいいですか？<span class="pos">4/4</span></h2>' + (S.error ? '<div class="err">' + esc(S.error) + '</div>' : '') + paperHtml() +
+    (miss.length ? '<div class="note">' + miss.map(function (k) { return LABEL[k]; }).join('・') + ' が読めませんでした</div>' : '') +
+    '<div class="card"><div class="amount' + (miss.indexOf('amount') >= 0 ? ' miss' : '') + '"><small>金額（税込）</small><b>' + (f.amount ? yen(f.amount) : '<span style="color:var(--warn)">未入力</span>') + '</b></div><dl style="margin:0">' +
+    row('vendor', f.vendor) + row('description', f.description) +
+    row('invoiceDate', jd(f.invoiceDate)) + row('dueDate', jd(f.dueDate), f.dueGuessed ? '記載なし→翌月末' : '') +
+    '</dl></div><div class="card"><dl style="margin:0">' + row('payMethod', f.payMethod) +
+    (bank ? row('bank', [f.bank, f.branch].filter(Boolean).join(' ')).replace('<dt>銀行</dt>', '<dt>振込先</dt>') +
+      row('accountNumber', [f.accountType, f.accountNumber].filter(Boolean).join(' ')) +
+      row('accountName', f.accountName, f.nameGuessed ? '取引先名から自動' : '') : '') +
+    (f.note ? row('note', f.note) : '') + '</dl></div>' +
+    '<div class="card"><dl style="margin:0"><div class="row"><dt>店舗・登録者</dt><dd>' + esc(S.store) + '・' + esc(S.name) + '</dd></div></dl></div>' +
+    '<div class="stack bottom"><button class="btn primary" id="ok" type="button"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '登録中…' : (miss.length ? '足りない所を入れる' : 'これで登録')) + '</button>' +
+    '<div class="pair" style="margin:0"><button class="btn sub" id="fix" type="button">直す</button>' +
+    '<button class="btn sub" id="redo" type="button">やりなおす</button></div></div></div>';
+  return h;
+}
+
+function paperHtml() {
+  var n = S.pages.length;
+  return '<div class="carousel">' + S.pages.map(function (pg, i) {
+    var cnt = n > 1 ? '<span class="cnt">' + (i + 1) + '/' + n + '</span>' : '';
+    if (pg.url) return '<button class="paper" data-see="' + i + '" type="button" aria-label="' + (i + 1) + '枚目を大きく見る"><img src="' + pg.url + '" alt="">' + cnt + '<span>タップで拡大</span></button>';
+    return '<div class="paper pdf">PDF：' + esc(pg.name) + '</div>';
+  }).join('') + '</div>' + (n > 1 ? '<div class="dots" aria-hidden="true">' + S.pages.map(function (_, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '');
+}
+
+function editHtml() {
+  var f = S.f, miss = missing();
+  var inp = function (k, attrs) { return '<label>' + LABEL[k] + '<input id="e_' + k + '" value="' + esc(f[k]) + '" ' + (attrs || '') + '>' + '</label>'; };
+  var bank = f.payMethod === '銀行振込';
+  return '<div class="screen"><h2>直す</h2>' + '<div class="need" id="need"' + (miss.length ? '' : ' hidden') + '>黄色の欄を入れてください（残り' + miss.length + 'か所）</div>' + paperHtml() + '<div class="card">' +
+    inp('vendor', 'autocomplete="off"') + inp('description', 'placeholder="例: 10月ドリンク" autocomplete="off"') +
+    inp('amount', 'inputmode="numeric" autocomplete="off"') +
+    '<label>請求日<input id="e_invoiceDate" type="date" value="' + esc(f.invoiceDate) + '"></label>' +
+    '<label>支払期限<input id="e_dueDate" type="date" value="' + esc(f.dueDate) + '"></label></div>' +
+    '<div class="card"><label>支払方法<div class="seg" id="payseg">' + ['銀行振込', 'ペイジー'].map(function (m) { return '<button type="button" data-pay="' + m + '" class="' + (f.payMethod === m ? 'sel' : '') + '">' + m + '</button>'; }).join('') + '</div></label>' +
+    (bank ? '<div class="pair">' + inp('bank', 'autocomplete="off"') + inp('branch', 'autocomplete="off"') + '</div>' +
+      '<div class="pair"><label>種別<div class="seg" id="typeseg">' + ['普通', '当座'].map(function (m) { return '<button type="button" data-type="' + m + '" class="' + (f.accountType === m ? 'sel' : '') + '">' + m + '</button>'; }).join('') + '</div></label>' +
+      inp('accountNumber', 'inputmode="numeric" autocomplete="off"') + '</div>' + inp('accountName', 'autocomplete="off"') : '') +
+    inp('note', 'autocomplete="off"') + '</div>' +
+    '<div class="bottom"><button class="btn primary" id="editDone" type="button">確認へ</button></div></div>';
+}
+
+function adminHtml() {
+  return '<div class="screen"><h2>登録者名の管理</h2><p class="slow" style="margin:-6px 2px 12px;max-width:none">∧∨ 並び順　ゴミ箱 削除</p><div class="list">' + (S.registrants.length ? S.registrants.map(function (n, i) {
+    return '<div class="li"><span>' + esc(n) + '</span>' +
+      '<button class="icon" data-up="' + esc(n) + '" type="button" aria-label="上へ"' + (i === 0 ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>' +
+      '<button class="icon" data-down="' + esc(n) + '" type="button" aria-label="下へ"' + (i === S.registrants.length - 1 ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>' +
+      '<button class="icon del" data-del="' + esc(n) + '" type="button" aria-label="' + esc(n) + 'を削除"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg></button></div>';
+  }).join('') : '<div class="empty-msg">まだいません</div>') + '</div>' +
+    '<div class="addrow"><input id="newName" maxlength="20" placeholder="名前を追加" autocomplete="off" enterkeyhint="done"><button class="btn primary small" id="addGo" type="button">追加</button></div>' +
+    '<div class="foot"><a href="' + esc(INIT.url) + '" target="_top">入力画面へ</a></div></div>';
+}
+
+// ---------- 操作 ----------
+function bind() {
+  [].forEach.call(app.querySelectorAll('[data-store]'), function (b) { b.onclick = function () { S.store = b.dataset.store; ls('ciq_store', S.store); go('name'); }; });
+  [].forEach.call(app.querySelectorAll('[data-name]'), function (b) { b.onclick = function () { S.name = b.dataset.name; ls('ciq_name', S.name); S.adding = false; go('photo'); }; });
+  [].forEach.call(app.querySelectorAll('[data-chip]'), function (b) { b.onclick = function () { go(b.dataset.chip === 'store' ? 'store' : 'name'); }; });
+  if ($('addOpen')) $('addOpen').onclick = function () { S.adding = !S.adding; render(); if (S.adding) $('newName').focus(); };
+  if ($('addGo')) {
+    var add = function () {
+      var n = $('newName').value.trim(); if (!n) { $('newName').focus(); return; }
+      $('addGo').disabled = true;
+      run('addRegistrant', n).then(function (list) {
+        saveNames(list); S.adding = false;
+        if (INIT.admin) { render(); toast('追加しました'); }
+        else { S.name = n; ls('ciq_name', n); go('photo'); }
+      }).catch(function (e) { $('addGo').disabled = false; toast(e.message); });
+    };
+    $('addGo').onclick = add;
+    $('newName').onkeydown = function (ev) { if (ev.key === 'Enter' && !ev.isComposing) add(); };
+  }
+  [].forEach.call(app.querySelectorAll('[data-del]'), function (b) {
+    b.onclick = function () {
+      var n = b.dataset.del;
+      ask(n + ' を削除しますか？', 'どの端末の一覧からも消えます。', '削除', function () {
+        run('removeRegistrant', n).then(function (list) { saveNames(list); render(); toast('削除しました'); }).catch(function (e) { toast(e.message); });
+      }, true);
+    };
+  });
+  [].forEach.call(app.querySelectorAll('[data-up],[data-down]'), function (b) {
+    b.onclick = function () {
+      var up = 'up' in b.dataset; b.disabled = true;
+      run('moveRegistrant', up ? b.dataset.up : b.dataset.down, up ? -1 : 1).then(function (list) { saveNames(list); render(); }).catch(function (e) { toast(e.message); });
+    };
+  });
+  if ($('ok')) $('ok').onclick = function () { if (missing().length) { go('edit'); focusFirst(); } else submit(); };
+  if ($('fix')) $('fix').onclick = function () { go('edit'); };
+  if ($('redo')) $('redo').onclick = function () { ask('撮り直しますか？', '写真と読み取った内容は消えます。', '撮り直す', function () { resetDoc(); go('photo'); }); };
+  [].forEach.call(app.querySelectorAll('[data-see]'), function (b) {
+    b.onclick = function () {
+      if (S.view === 'edit') readEdit();
+      var d = document.createElement('div'); d.className = 'viewer';
+      d.innerHTML = '<div class="vbar"><b>タップで拡大・縮小</b><button type="button">閉じる</button></div><div class="vbody">' +
+        S.pages.filter(function (pg) { return pg.url; }).map(function (pg) { return '<img src="' + pg.url + '" alt="請求書">'; }).join('') + '</div>';
+      d.querySelector('button').onclick = function () { d.remove(); };
+      [].forEach.call(d.querySelectorAll('img'), function (im) { im.onclick = function () { this.classList.toggle('big'); }; });
+      document.body.appendChild(d);
+      var target = d.querySelectorAll('img')[S.pages.slice(0, Number(b.dataset.see)).filter(function (pg) { return pg.url; }).length];
+      if (target) setTimeout(function () { target.scrollIntoView(); }, 30);
+    };
+  });
+  [].forEach.call(app.querySelectorAll('[data-rm]'), function (b) {
+    b.onclick = function () { S.pages.splice(Number(b.dataset.rm), 1); S.error = ''; prefetch(); render(); };
+  });
+  if ($('readGo')) $('readGo').onclick = startRead;
+  var car = app.querySelector('.carousel'), dots = app.querySelectorAll('.dots i');
+  if (car && dots.length) car.onscroll = function () { var k = Math.round(car.scrollLeft / car.clientWidth); [].forEach.call(dots, function (d, i) { d.classList.toggle('on', i === k); }); };
+  if (S.view === 'edit') {
+    [].forEach.call(app.querySelectorAll('input'), function (i) { i.oninput = function () { mark(); }; });
+    [].forEach.call(app.querySelectorAll('[data-pay]'), function (b) { b.onclick = function () { readEdit(); S.f.payMethod = b.dataset.pay; if (S.f.payMethod === '銀行振込' && !S.f.accountType) S.f.accountType = '普通'; render(); mark(); }; });
+    [].forEach.call(app.querySelectorAll('[data-type]'), function (b) { b.onclick = function () { readEdit(); S.f.accountType = b.dataset.type; render(); mark(); }; });
+    $('editDone').onclick = function () { readEdit(); S.error = ''; go('confirm'); };
+    mark();
+  }
+  if ($('cancelRead')) $('cancelRead').onclick = function () { S.reqId++; go('photo'); };
+  if ($('again')) $('again').onclick = function () { resetDoc(); go('photo'); };
+  if ($('restart')) $('restart').onclick = function () { resetDoc(); go('store'); };
+}
+function readEdit() {
+  [].forEach.call(app.querySelectorAll('input[id^="e_"]'), function (i) {
+    var k = i.id.slice(2), v = i.value.trim();
+    if (k === 'accountName' && v !== S.f[k]) S.f.nameGuessed = false;
+    if (k === 'dueDate' && v !== S.f[k]) S.f.dueGuessed = false;
+    S.f[k] = k === 'amount' || k === 'accountNumber' ? v.replace(/[^\d０-９]/g, '').replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }) : v;
+  });
+}
+function mark() {
+  var need = needed();
+  [].forEach.call(app.querySelectorAll('input[id^="e_"]'), function (i) { i.classList.toggle('empty', need.indexOf(i.id.slice(2)) >= 0 && !i.value.trim()); });
+  var seg = $('payseg'); if (seg) seg.style.outline = S.f.payMethod ? '' : '2px solid var(--warn-line)';
+  var left = app.querySelectorAll('input.empty').length + (S.f.payMethod ? 0 : 1), nd = $('need');
+  if (nd && (left || !nd.hidden)) { nd.hidden = false; nd.textContent = left ? '黄色の欄を入れてください（残り' + left + 'か所）' : '入力がそろいました'; nd.style.background = left ? '' : 'var(--ok-bg)'; nd.style.color = left ? '' : 'var(--ok)'; }
+}
+function focusFirst() { setTimeout(function () { var e = app.querySelector('input.empty'); if (e) { e.focus(); e.scrollIntoView({ block: 'center' }); } }, 50); }
+function resetDoc() { S.pages = []; S.pre = null; S.f = null; S.error = ''; S.busy = false; S.reqId++; }
+
+// 確認・ヘルプ用の下から出る画面
+function sheet(inner, buttons, onPick) {
+  var d = document.createElement('div'); d.className = 'sheet';
+  d.innerHTML = '<div role="dialog" aria-modal="true">' + inner + '<div class="stack" style="margin-top:14px">' + buttons.map(function (b, i) { return '<button class="btn ' + b[1] + '" data-i="' + i + '" type="button">' + b[0] + '</button>'; }).join('') + '</div></div>';
+  d.onclick = function (ev) { var b = ev.target.closest('[data-i]'); if (ev.target === d || b) { d.remove(); if (b && onPick) onPick(Number(b.dataset.i)); } };
+  document.body.appendChild(d);
+}
+function ask(title, body, yes, fn, danger) {
+  sheet('<h3>' + esc(title) + '</h3><p>' + esc(body) + '</p>', [[yes, danger ? 'primary" style="background:var(--bad);color:#fff' : 'primary'], ['キャンセル', 'sub']], function (i) { if (i === 0) fn(); });
+}
+$('help').onclick = function () {
+  sheet(INIT.admin ? '<h3>登録者名の管理</h3><p>∧∨ で並び順を変えます。</p><p>ゴミ箱で消した名前は、どの端末の一覧からも消えます。</p>' :
+    '<h3>使い方</h3><p>1. 店舗と自分の名前を選ぶ</p><p>2. 請求書を撮る（写真・PDF）。同じ請求書が何枚かあるときは「もう1枚」で足すと、まとめて1件になります</p><p>3. 読み取った内容を見て「これで登録」</p><p>違う所は「直す」、写りが悪いときは「やりなおす」。</p><p>登録すると請求書管理に入り、担当者にメールが届きます。</p>',
+    INIT.admin ? [['閉じる', 'sub']] : [['閉じる', 'sub'], ['名前の管理', 'text']], function (i) { if (i === 1) window.open(INIT.url + '?page=admin', '_top'); });
+};
+
+// ---------- 読み取り ----------
+// 画像は長辺1600pxのJPEGに縮めてから送る（文字は十分読めて、送るのが速い）
+function prepare(file) {
+  return new Promise(function (ok, ng) {
+    if (file.type === 'application/pdf') {
+      var r = new FileReader(); r.onload = function () { ok({ b64: r.result.split(',')[1], mime: 'application/pdf', url: null, name: file.name }); }; r.onerror = ng; r.readAsDataURL(file); return;
+    }
+    var img = new Image(); var u = URL.createObjectURL(file);
+    img.onload = function () {
+      var k = Math.min(1, 1600 / Math.max(img.width, img.height)); var c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); var d = c.toDataURL('image/jpeg', 0.82); URL.revokeObjectURL(u); ok({ b64: d.split(',')[1], mime: 'image/jpeg', url: d, name: file.name });
+    };
+    img.onerror = function () { ng(new Error('画像を開けませんでした')); }; img.src = u;
+  });
+}
+$('file').addEventListener('change', function () {
+  var list = [].slice.call(this.files || []); this.value = ''; if (!list.length) return;
+  var room = MAX_PAGES - S.pages.length;
+  if (list.length > room) { toast(MAX_PAGES + '枚までです'); list = list.slice(0, room); }
+  S.error = '';
+  Promise.all(list.map(prepare)).then(function (ps) {
+    S.pages = S.pages.concat(ps);
+    if (S.view !== 'photo') go('photo'); else render();
+    prefetch();
+  }).catch(function (e) { S.error = e.message; render(); });
+});
+
+// 写真がそろったら裏で読み取りを始めておく（「これで読み取る」を押した時にはもう終わっていることが多い）
+function pageKey() { return S.pages.map(function (pg) { return pg.b64.length + ':' + pg.b64.slice(-24); }).join('|'); }
+function prefetch() {
+  if (!S.pages.length) { S.pre = null; return; }
+  var key = pageKey();
+  if (S.pre && S.pre.key === key) return;
+  var pre = { key: key, done: false };
+  pre.promise = run('analyze', S.pages.map(function (pg) { return { b64: pg.b64, mime: pg.mime, name: pg.name }; }));
+  pre.promise.then(function () { pre.done = true; if (S.pre === pre && $('ready')) $('ready').hidden = false; }, function () {});
+  S.pre = pre;
+}
+function startRead() {
+  if (!S.pages.length) return;
+  prefetch();
+  var id = ++S.reqId, pre = S.pre;
+  if (!pre.done) {
+    go('reading');
+    setTimeout(function () { if (S.reqId === id && S.view === 'reading' && $('slow')) $('slow').hidden = false; }, 12000);
+  }
+  pre.promise.then(function (res) {
+    if (S.reqId !== id) return;
+    S.f = res.fields; S.f.note = ''; go('confirm');
+  }).catch(function (e) {
+    if (S.reqId !== id) return;
+    if (S.pre === pre) S.pre = null; // 失敗した読み取りは使い回さない
+    S.error = e.message; go('photo');
+  });
+}
+
+function submit() {
+  S.busy = true; S.error = ''; render();
+  var v = { store: S.store, registrant: S.name };
+  ['vendor', 'description', 'amount', 'invoiceDate', 'dueDate', 'payMethod', 'bank', 'branch', 'accountType', 'accountNumber', 'accountName', 'note'].forEach(function (k) { v[k] = String(S.f[k] || '').trim(); });
+  if (v.payMethod !== '銀行振込') BANK.forEach(function (k) { v[k] = ''; });
+  var files = S.pages.map(function (pg, i) { return { b64: pg.b64, mime: pg.mime, name: (pg.name || '請求書').replace(/\.[^.]+$/, '') + (pg.mime === 'application/pdf' ? '.pdf' : '.jpg') }; });
+  run('register', v, files).then(function () {
+    S.last = S.store + '・' + v.vendor + '・' + yen(v.amount); resetDoc(); go('done');
+  }).catch(function (e) { S.busy = false; S.error = e.message; render(); });
+}
+
+// ---------- はじめ ----------
+if (INIT.admin) { $('title').textContent = '登録者名の管理'; go('admin'); $('back').classList.add('ghost'); }
+else go('store'); // いつも 店舗 → 名前 → 写真 の順（前回の選択は印つき）
+if (HOSTED) run('getInit').then(function (r) {
+  saveNames(r.registrants);
+  if (S.view === 'name' || S.view === 'admin') render();
+}).catch(function () { if (!S.registrants.length) toast('名前の一覧を読み込めませんでした'); });
+else saveNames(S.registrants);
+</script>
+</body>
+</html>
