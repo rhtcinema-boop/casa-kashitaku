@@ -111,6 +111,7 @@ input.empty,select.empty{border-color:var(--warn-line);background:var(--warn-bg)
 .pages{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
 .pg{position:relative;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow)}
 .pg img{width:100%;height:100%;object-fit:cover;display:block}
+.pg .pdftag{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:2px 7px;border-radius:999px}
 .pg .pdf{display:grid;place-items:center;height:100%;font-weight:800;color:var(--muted);padding:8px;text-align:center;word-break:break-all;font-size:14px}
 .pg .no{position:absolute;left:8px;top:8px;background:rgba(10,16,30,.72);color:#fff;font-size:13px;font-weight:800;border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center;padding:0 8px}
 .pg .rm{position:absolute;right:4px;top:4px;width:44px;height:44px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center}
@@ -368,7 +369,7 @@ var S = {
   pages: [], f: null, error: '', busy: false, reqId: 0,
   pre: null // 先読み: { key, promise } 写真がそろった時点で読み取りを始めておく
 };
-var MAX_PAGES = 10;
+var MAX_PAGES = 20;
 var NEED = ['vendor', 'description', 'amount', 'invoiceDate', 'dueDate', 'payMethod'];
 var BANK = ['bank', 'branch', 'accountType', 'accountNumber', 'accountName'];
 var LABEL = { vendor: '取引先', description: '請求内容', amount: '金額', invoiceDate: '請求日', dueDate: '支払期限', payMethod: '支払方法', bank: '銀行', branch: '支店', accountType: '種別', accountNumber: '口座番号', accountName: '口座名義', note: '備考' };
@@ -411,13 +412,13 @@ function render() {
     var cam = '<svg viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h2l1.6-2h5.8l1.6 2h2A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.6"/></svg>';
     h = '<div class="screen">' + chips(['store', 'name']) + (S.error ? '<div class="err">' + esc(S.error) + '</div>' : '') +
       '<h2>請求書を撮る<span class="pos">3/4</span></h2>' +
-      (!S.pages.length ? '<label class="drop" for="file">' + cam + '<b>カメラを開く</b><span>写真・PDFも選べます（複数枚OK）</span></label>' :
+      (!S.pages.length ? '<label class="drop" for="file">' + cam + '<b>カメラを開く</b><span>' + (S.opening ? 'PDFを開いています…' : '写真・PDFも選べます（複数枚OK）') + '</span></label>' :
         '<div class="pages">' + S.pages.map(function (pg, i) {
-          return '<div class="pg">' + (pg.url ? '<img src="' + pg.url + '" alt="">' : '<div class="pdf">PDF<br>' + esc(pg.name) + '</div>') +
+          return '<div class="pg">' + (pg.url ? '<img src="' + pg.url + '" alt="">' : '<div class="pdf">PDF<br>' + esc(pg.name) + '</div>') + (pg.doc ? '<span class="pdftag">PDF ' + pg.pno + '/' + pg.doc.n + '</span>' : '') +
             '<span class="no">' + (i + 1) + '</span><button class="rm" type="button" data-rm="' + i + '" aria-label="' + (i + 1) + '枚目を外す"><i>×</i></button></div>';
         }).join('') + (S.pages.length < MAX_PAGES ? '<label class="pg add" for="file"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>もう1枚</label>' : '') + '</div>' +
         '<div class="bottom">' + '<div class="ready" id="ready"' + (S.pre && S.pre.done ? '' : ' hidden') + '>' + (S.pages.length > 1 ? S.pages.length + '枚まとめて' : '') + '読み取り済み</div>' +
-        '<button class="btn primary" id="readGo" type="button">これで読み取る（' + S.pages.length + '枚）</button></div>') + '</div>';
+        '<button class="btn primary" id="readGo" type="button"' + (S.opening ? ' disabled' : '') + '>' + (S.opening ? 'PDFを開いています…' : 'これで読み取る（' + S.pages.length + '枚）') + '</button></div>') + '</div>';
   } else if (v === 'reading') {
     var first = S.pages[0];
     h = '<div class="screen status">' + (first && first.url ? '<img src="' + first.url + '" alt="">' : '') + '<div class="spin"></div><div id="stage">読み取り中…' + (S.pages.length > 1 ? '（' + S.pages.length + '枚）' : '') + '</div><div class="slow" id="slow" hidden>時間がかかっています。もう少しお待ちください</div><button class="btn text" id="cancelRead" type="button" style="width:auto">やめる</button></div>';
@@ -614,33 +615,81 @@ $('help').onclick = function () {
 
 // ---------- 読み取り ----------
 // 画像は長辺1600pxのJPEGに縮めてから送る（文字は十分読めて、送るのが速い）
-function prepare(file) {
+// PDFは全ページを1枚ずつ画像にして読ませる（1ページ目だけ読まれるのを防ぐ）。保存は元のPDFのまま
+var PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/', pdfLib = null;
+function loadPdfJs() {
+  if (!pdfLib) pdfLib = new Promise(function (ok, ng) {
+    var sc = document.createElement('script'); sc.src = PDFJS + 'build/pdf.min.js';
+    sc.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'build/pdf.worker.min.js'; ok(window.pdfjsLib); };
+    sc.onerror = function () { pdfLib = null; ng(new Error('PDFを開く部品を読み込めませんでした')); };
+    document.head.appendChild(sc);
+  });
+  return pdfLib;
+}
+function readB64(file) {
+  return new Promise(function (ok, ng) { var r = new FileReader(); r.onload = function () { ok(r.result.split(',')[1]); }; r.onerror = ng; r.readAsDataURL(file); });
+}
+function pdfPages(file, room) {
+  return readB64(file).then(function (b64) {
+    var raw = { b64: b64, mime: 'application/pdf', url: null, name: file.name };
+    return loadPdfJs().then(function (lib) {
+      var bin = atob(b64), u8 = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      return lib.getDocument({ data: u8, cMapUrl: PDFJS + 'cmaps/', cMapPacked: true, standardFontDataUrl: PDFJS + 'standard_fonts/' }).promise;
+    }).then(function (pdf) {
+      var n = pdf.numPages, take = Math.min(n, room), doc = { b64: b64, name: file.name, n: n }, out = [];
+      var one = function (no) {
+        return pdf.getPage(no).then(function (page) {
+          var v0 = page.getViewport({ scale: 1 }), k = Math.min(3, 1800 / Math.max(v0.width, v0.height)), v = page.getViewport({ scale: k });
+          var c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+          return page.render({ canvasContext: g, viewport: v }).promise.then(function () {
+            var d = c.toDataURL('image/jpeg', 0.85); c.width = c.height = 0;
+            out.push({ b64: d.split(',')[1], mime: 'image/jpeg', url: d, name: file.name, doc: doc, pno: no });
+          });
+        });
+      };
+      var chain = Promise.resolve();
+      for (var no = 1; no <= take; no++) chain = chain.then(one.bind(null, no));
+      return chain.then(function () { if (take < n) out.cut = n - take; pdf.destroy(); return out; });
+    }).catch(function () { return [raw]; }); // 開けないPDF（パスワード付きなど）はそのまま送る
+  });
+}
+function isPdf(file) { return file.type === 'application/pdf' || /\.pdf$/i.test(file.name || ''); }
+function prepare(file, room) {
+  if (isPdf(file)) return pdfPages(file, room);
   return new Promise(function (ok, ng) {
-    if (file.type === 'application/pdf' || (!file.type && /\.pdf$/i.test(file.name || ''))) {
-      var r = new FileReader(); r.onload = function () { ok({ b64: r.result.split(',')[1], mime: 'application/pdf', url: null, name: file.name }); }; r.onerror = ng; r.readAsDataURL(file); return;
-    }
     var img = new Image(); var u = URL.createObjectURL(file);
     img.onload = function () {
       var k = Math.min(1, 1600 / Math.max(img.width, img.height)); var c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); var d = c.toDataURL('image/jpeg', 0.82); URL.revokeObjectURL(u); ok({ b64: d.split(',')[1], mime: 'image/jpeg', url: d, name: file.name });
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); var d = c.toDataURL('image/jpeg', 0.82); URL.revokeObjectURL(u); ok([{ b64: d.split(',')[1], mime: 'image/jpeg', url: d, name: file.name }]);
     };
     img.onerror = function () { ng(new Error('画像を開けませんでした')); }; img.src = u;
   });
 }
 $('file').addEventListener('change', function () {
   var list = [].slice.call(this.files || []); this.value = ''; if (!list.length) return;
-  var room = MAX_PAGES - S.pages.length;
-  if (list.length > room) { toast(MAX_PAGES + '枚までです'); list = list.slice(0, room); }
+  var room = MAX_PAGES - S.pages.length, good = [], bad = 0, cut = 0;
+  if (list.length > room) { cut = list.length - room; list = list.slice(0, room); }
   S.error = '';
-  Promise.all(list.map(function (f) { return prepare(f).catch(function () { return null; }); })).then(function (ps) {
-    var good = ps.filter(Boolean);
-    if (good.length < ps.length) toast((ps.length - good.length) + '枚を開けませんでした');
-    if (!good.length) return;
+  var hasPdf = list.some(isPdf);
+  if (hasPdf && S.view === 'photo') { S.opening = true; render(); }
+  list.reduce(function (chain, f) {
+    return chain.then(function () {
+      var left = room - good.length;
+      if (left <= 0) { cut++; return; }
+      return prepare(f, left).then(function (ps) { good = good.concat(ps); cut += ps.cut || 0; }, function () { bad++; });
+    });
+  }, Promise.resolve()).then(function () {
+    S.opening = false;
+    if (bad) toast(bad + '枚を開けませんでした');
+    else if (cut) toast(MAX_PAGES + '枚までです（' + cut + '枚は入れていません）');
+    if (!good.length) { if (S.view === 'photo') render(); return; }
     good.forEach(function (pg) { pg.id = ++PAGE_SEQ; });
     S.pages = S.pages.concat(good);
     if (S.view !== 'photo') { S.reqId++; S.f = null; S.sid = null; prefetch(); go('photo'); } // 読み取り中に写真が増えたら、その読み取りは使わない
     else { prefetch(); render(); }
-  }).catch(function (e) { S.error = e.message; render(); });
+  }).catch(function (e) { S.opening = false; S.error = e.message; render(); });
 });
 
 // 写真がそろったら裏で読み取りを始めておく（「これで読み取る」を押した時にはもう終わっていることが多い）
@@ -692,7 +741,16 @@ function submit() {
   var v = { store: S.store, registrant: S.name, submitId: S.sid };
   ['vendor', 'description', 'amount', 'invoiceDate', 'dueDate', 'payMethod', 'bank', 'branch', 'accountType', 'accountNumber', 'accountName', 'note'].forEach(function (k) { v[k] = String(S.f[k] || '').trim(); });
   if (v.payMethod !== '銀行振込') BANK.forEach(function (k) { v[k] = ''; });
-  var files = S.pages.map(function (pg, i) { return { b64: pg.b64, mime: pg.mime, name: (pg.name || '請求書').replace(/\.[^.]+$/, '') + (pg.mime === 'application/pdf' ? '.pdf' : '.jpg') }; });
+  var files = [], seen = [];
+  S.pages.forEach(function (pg) {
+    var base = (pg.name || '請求書').replace(/\.[^.]+$/, '');
+    var d = pg.doc;
+    if (d && d.b64.length <= 12e6 && S.pages.filter(function (q) { return q.doc === d; }).length === d.n) {
+      if (seen.indexOf(d) < 0) { seen.push(d); files.push({ b64: d.b64, mime: 'application/pdf', name: base + '.pdf' }); }
+      return;
+    }
+    files.push({ b64: pg.b64, mime: pg.mime, name: base + (d ? '_p' + pg.pno : '') + (pg.mime === 'application/pdf' ? '.pdf' : '.jpg') });
+  });
   run('register', v, files).then(function () {
     if (S.reqId !== id) return;
     S.last = S.store + '・' + v.vendor + '・' + yen(v.amount); resetDoc(); go('done');
