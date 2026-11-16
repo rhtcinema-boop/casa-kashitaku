@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="請求書入力">
-<meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0e1424" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>請求書入力</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-32.png">
@@ -155,6 +155,139 @@ input.empty,select.empty{border-color:var(--warn-line);background:var(--warn-bg)
 .foot{text-align:center;margin-top:22px}
 .foot a{color:var(--muted);font-size:13px;font-weight:700;text-decoration:none;display:inline-block;padding:12px}
 [hidden]{display:none!important}
+/* ===== シフトアプリと同じ見た目（すりガラスのバー・白いカード・カプセル型ボタン・システムの青） ===== */
+:root{
+  --sys-blue:#0088ff; --sys-green:#34c759; --sys-red:#ff383c; --sys-orange:#ff8d28;
+  --label:#000; --label2:rgba(60,60,67,.6); --fill:rgba(120,120,128,.12); --fill2:rgba(120,120,128,.2);
+  --bg:#eef1f6; --panel:#fff; --fg:#000; --muted:rgba(60,60,67,.6); --line:rgba(60,60,67,.12);
+  --accent:var(--sys-blue); --accent-soft:rgba(0,136,255,.12); --accent-fg:#fff;
+  --ok:#248a3d; --ok-bg:rgba(52,199,89,.16); --warn:#c25700; --warn-bg:#fff6e0; --warn-line:#ffb340; --bad:#d70015; --bad-bg:rgba(255,56,60,.12);
+  --glass:rgba(255,255,255,.58); --glass-strong:rgba(250,250,252,.9); --glass-edge:rgba(255,255,255,.75);
+  --glass-shadow:0 10px 30px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(0,0,0,.04);
+  --card-shadow:0 1px 3px rgba(0,0,0,.06),0 10px 30px rgba(0,0,0,.06);
+  --blur:blur(28px) saturate(190%);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Hiragino Sans","Hiragino Kaku Gothic ProN","Helvetica Neue",system-ui,sans-serif;
+  --spring:cubic-bezier(.2,.9,.3,1.12);
+}
+@media (prefers-color-scheme:dark){:root{
+  --label:#fff; --label2:rgba(235,235,245,.6); --fill:rgba(120,120,128,.24); --fill2:rgba(120,120,128,.36);
+  --bg:#000; --panel:#1c1c1e; --fg:#fff; --muted:rgba(235,235,245,.6); --line:rgba(84,84,88,.6);
+  --accent:#0a84ff; --accent-soft:rgba(10,132,255,.22); --sys-blue:#0a84ff;
+  --ok:#30d158; --ok-bg:rgba(48,209,88,.18); --warn:#ffb340; --warn-bg:rgba(255,159,10,.16); --warn-line:#ff9f0a; --bad:#ff6961; --bad-bg:rgba(255,69,58,.18);
+  --glass:rgba(44,44,46,.62); --glass-strong:rgba(36,36,38,.94); --glass-edge:rgba(255,255,255,.08);
+  --glass-shadow:0 10px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);
+  --card-shadow:none; color-scheme:dark
+}}
+html,body{background:var(--bg)}
+body{font-family:var(--font);color:var(--label);background:
+  radial-gradient(1100px 600px at 8% -10%,rgba(0,136,255,.20),transparent 60%),
+  radial-gradient(900px 600px at 100% 0%,rgba(255,45,85,.13),transparent 55%),
+  radial-gradient(1000px 700px at 50% 120%,rgba(52,199,89,.16),transparent 60%),
+  var(--bg);background-attachment:fixed}
+@media (prefers-color-scheme:dark){body{background:
+  radial-gradient(1100px 600px at 8% -10%,rgba(10,132,255,.22),transparent 60%),
+  radial-gradient(900px 600px at 100% 0%,rgba(255,55,95,.12),transparent 55%),
+  radial-gradient(1000px 700px at 50% 120%,rgba(48,209,88,.12),transparent 60%),#000;background-attachment:fixed}}
+/* 上のバー: 浮いたすりガラスのカプセル */
+.top{background:transparent;padding:8px 10px 6px}
+.top .bar{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow);border-radius:24px;padding:4px;max-width:560px;position:relative}
+.top .bar::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 45%)}
+@media (prefers-color-scheme:dark){.top .bar::before{display:none}}
+.top .bar>*{position:relative}
+.bar h1{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.icon{color:var(--sys-blue)}
+.icon:active{background:var(--fill)}
+.steps{max-width:540px;padding:0 14px;margin-top:8px}
+.steps i{height:4px;background:var(--fill2)}
+.steps i.on{background:var(--sys-blue)}
+.wrap{max-width:560px}
+h2{font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--label)}
+h2 .pos{color:var(--label2);font-weight:700}
+/* 選ぶボタン（店舗・名前）: すりガラスのカード */
+.tile{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow);border-radius:22px;color:var(--label);font-weight:700;transition:transform .18s var(--spring),background .2s}
+.tile:active{transform:scale(.96)}
+.tile.sel{background:rgba(255,255,255,.92);color:var(--sys-blue);border-color:rgba(0,136,255,.45);box-shadow:0 0 0 2px var(--sys-blue),var(--glass-shadow)}
+@media (prefers-color-scheme:dark){.tile.sel{background:rgba(10,132,255,.22);color:#fff}}
+.tile .tag{color:var(--sys-blue);font-weight:800}
+.tile.add{background:rgba(255,255,255,.28);border:1.5px dashed rgba(0,136,255,.45);box-shadow:none;color:var(--sys-blue)}
+@media (prefers-color-scheme:dark){.tile.add{background:rgba(255,255,255,.04)}}
+/* チップ（店舗・名前の変更） */
+.chip{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-edge);box-shadow:0 2px 8px rgba(0,0,0,.06);color:var(--label);font-weight:600}
+.chip small{color:var(--sys-blue);font-weight:600}
+/* 写真を撮る */
+.drop{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1.5px dashed rgba(0,136,255,.4);box-shadow:var(--glass-shadow);border-radius:28px}
+.drop:active{background:rgba(255,255,255,.75)}
+.drop b{font-weight:700;color:var(--label)}
+.drop span{color:var(--label2)}
+.drop svg{stroke:var(--sys-blue)}
+.pg{border-radius:18px;border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow);background:var(--panel)}
+.pg.add{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1.5px dashed rgba(0,136,255,.45);color:var(--sys-blue)}
+.pg.add svg{stroke:var(--sys-blue)}
+/* 内容のカード: 白くくっきり */
+.card,.list{background:var(--panel);border:1px solid rgba(0,0,0,.06);box-shadow:var(--card-shadow);border-radius:20px}
+@media (prefers-color-scheme:dark){.card,.list{border-color:rgba(255,255,255,.06)}}
+.row{border-bottom:1px solid var(--line)}
+.row dt{color:var(--label2);font-weight:500}
+.row dd{font-weight:600;color:var(--label)}
+.amount{border-bottom:1px solid var(--line)}
+.amount small{color:var(--label2);font-weight:600}
+.amount b{font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.paper{border-radius:20px;border:1px solid rgba(0,0,0,.06);box-shadow:var(--card-shadow)}
+.paper span{background:rgba(30,30,32,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font-weight:600}
+.dots i.on{background:var(--sys-blue)}
+.need{border-radius:14px;font-weight:600}
+.err{border-radius:14px;font-weight:600}
+/* ボタン: カプセル */
+.btn{border-radius:999px;font-weight:600;letter-spacing:-.01em;transition:transform .18s var(--spring),opacity .2s,background .2s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--sys-blue);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,136,255,.3)}
+.btn.sub{background:var(--fill);color:var(--sys-blue);border:0}
+.btn.sub:active{background:var(--fill2)}
+.btn.text{color:var(--sys-blue);text-decoration:none}
+.bottom .btn.sub{background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.08),inset 0 0 0 1px rgba(0,0,0,.05)}
+@media (prefers-color-scheme:dark){.bottom .btn.sub{background:#2c2c2e;box-shadow:none}}
+.bottom{background:linear-gradient(to bottom,rgba(238,241,246,0),#eef1f6 18px)!important}
+@media (prefers-color-scheme:dark){.bottom{background:linear-gradient(to bottom,rgba(0,0,0,0),#000 18px)!important}}
+.btn.small{border-radius:999px}
+.bottom{background:linear-gradient(to bottom,transparent,rgba(238,241,246,.92) 22px)}
+@media (prefers-color-scheme:dark){.bottom{background:linear-gradient(to bottom,transparent,rgba(0,0,0,.9) 22px)}}
+/* 入力欄 */
+input,select{background:var(--fill);border:1.5px solid transparent;border-radius:12px;color:var(--label)}
+input:focus,select:focus{background:var(--panel);border-color:var(--sys-blue);box-shadow:0 0 0 4px var(--accent-soft)}
+input.empty,select.empty{background:var(--warn-bg);border-color:var(--warn-line)}
+label{color:var(--label2);font-weight:600}
+.seg{background:var(--fill);border-radius:999px;padding:3px;gap:3px}
+.seg button{border:0;border-radius:999px;background:transparent;color:var(--label);font-weight:600;min-height:42px}
+.seg button.sel{background:#fff;color:var(--label);box-shadow:0 2px 8px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.9)}
+@media (prefers-color-scheme:dark){.seg button.sel{background:#636366;color:#fff}}
+/* 管理画面 */
+.li{border-bottom:1px solid var(--line)}
+.li span{font-weight:600}
+.li .icon{color:var(--sys-blue)}
+.li .del{color:var(--sys-red)}
+/* 読みやすさ: 小さい文字を少し大きく・濃く */
+:root{--label2:rgba(60,60,67,.78)}
+@media (prefers-color-scheme:dark){:root{--label2:rgba(235,235,245,.75)}}
+.row dt{font-size:15px}.row dd{font-size:16px}.row dd .sub{font-size:13px}
+.amount small{font-size:14px} h2 .pos{font-size:15px} label{font-size:14px}
+.sheet p{font-size:16px;line-height:1.6} .chip{font-size:15px} .drop span{font-size:15px}
+.dupw{background:rgba(255,56,60,.10);color:var(--bad);border:1.5px solid rgba(255,56,60,.35);border-radius:14px;padding:10px 14px;margin-bottom:12px;font-size:14px;font-weight:600}
+.dupw b{display:inline-block;font-size:15px;margin-right:8px}
+/* 下から出る画面・トースト・拡大表示 */
+.sheet{background:rgba(0,0,0,.28)}
+.sheet>div{background:var(--glass-strong);-webkit-backdrop-filter:blur(40px) saturate(180%);backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow);border-radius:28px;margin:0 8px calc(8px + env(safe-area-inset-bottom));width:calc(100% - 16px);padding-bottom:18px;animation:up .32s cubic-bezier(.32,.72,0,1)}
+.sheet h3{font-weight:700}
+.sheet p{color:var(--label2)}
+.toast{background:rgba(30,30,32,.62);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);color:#fff;border:1px solid rgba(255,255,255,.18);font-weight:600}
+.viewer .vbar button{border-radius:999px;font-weight:600}
+.done .mark{background:var(--ok-bg);color:var(--sys-green)}
+.done b{font-weight:700}
+.ready{color:var(--ok);font-weight:700}
+.spin{border-color:var(--fill2);border-top-color:var(--sys-blue)}
+.status{color:var(--label2)}
+.slow{color:var(--label2)}
+.foot a{color:var(--sys-blue)}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){.top .bar,.tile,.chip,.drop,.sheet>div,.pg.add{background:rgba(255,255,255,.96)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -258,7 +391,7 @@ function render() {
         '<button class="btn primary" id="readGo" type="button">これで読み取る（' + S.pages.length + '枚）</button></div>') + '</div>';
   } else if (v === 'reading') {
     var first = S.pages[0];
-    h = '<div class="screen status">' + (first && first.url ? '<img src="' + first.url + '" alt="">' : '') + '<div class="spin"></div><div>読み取り中…' + (S.pages.length > 1 ? '（' + S.pages.length + '枚）' : '') + '</div><div class="slow" id="slow" hidden>時間がかかっています。もう少しお待ちください</div><button class="btn text" id="cancelRead" type="button" style="width:auto">やめる</button></div>';
+    h = '<div class="screen status">' + (first && first.url ? '<img src="' + first.url + '" alt="">' : '') + '<div class="spin"></div><div id="stage">読み取り中…' + (S.pages.length > 1 ? '（' + S.pages.length + '枚）' : '') + '</div><div class="slow" id="slow" hidden>時間がかかっています。もう少しお待ちください</div><button class="btn text" id="cancelRead" type="button" style="width:auto">やめる</button></div>';
   } else if (v === 'confirm') {
     h = confirmHtml();
   } else if (v === 'edit') {
@@ -287,6 +420,7 @@ function confirmHtml() {
   };
   var bank = f.payMethod === '銀行振込';
   var h = '<div class="screen"><h2>これでいいですか？<span class="pos">4/4</span></h2>' + (S.error ? '<div class="err">' + esc(S.error) + '</div>' : '') + paperHtml() +
+    (S.dup ? '<div class="dupw" role="alert"><b>登録済みかも</b>' + esc(S.dup.date) + '登録・' + esc(S.dup.store) + (S.dup.by ? '・' + esc(S.dup.by) : '') + '<br>' + esc(S.dup.vendor) + '・' + yen(S.dup.amount) + (S.dup.invoiceDate ? '・請求日' + esc(jd(S.dup.invoiceDate)) : '') + '</div>' : '') +
     (miss.length ? '<div class="note">' + miss.map(function (k) { return LABEL[k]; }).join('・') + ' が読めませんでした</div>' : '') +
     '<div class="card"><div class="amount' + (miss.indexOf('amount') >= 0 ? ' miss' : '') + '"><small>金額（税込）</small><b>' + (f.amount ? yen(f.amount) : '<span style="color:var(--warn)">未入力</span>') + '</b></div><dl style="margin:0">' +
     row('vendor', f.vendor) + row('description', f.description) +
@@ -426,7 +560,7 @@ function mark() {
   if (nd && (left || !nd.hidden)) { nd.hidden = false; nd.textContent = left ? '黄色の欄を入れてください（残り' + left + 'か所）' : '入力がそろいました'; nd.style.background = left ? '' : 'var(--ok-bg)'; nd.style.color = left ? '' : 'var(--ok)'; }
 }
 function focusFirst() { setTimeout(function () { var e = app.querySelector('input.empty'); if (e) { e.focus(); e.scrollIntoView({ block: 'center' }); } }, 50); }
-function resetDoc() { S.pages = []; S.pre = null; S.f = null; S.error = ''; S.busy = false; S.sid = null; S.reqId++; }
+function resetDoc() { S.dup = null; S.pages = []; S.pre = null; S.f = null; S.error = ''; S.busy = false; S.sid = null; S.reqId++; }
 
 // 確認・ヘルプ用の下から出る画面
 function sheet(inner, buttons, onPick) {
@@ -490,17 +624,25 @@ function prefetch(now) {
   pre.promise.then(function () { pre.done = true; if (S.pre === pre && $('ready')) $('ready').hidden = false; }, function () { pre.failed = true; });
   S.pre = pre;
 }
+// 読み取りの後、同じ請求書がもう登録されていないか裏で調べる（見つかったら確認画面に出す）
+function checkDup(id) {
+  S.dup = null;
+  run('findDuplicate', { amount: S.f.amount, vendor: S.f.vendor, invoiceDate: S.f.invoiceDate }).then(function (d) {
+    if (S.reqId !== id || !d) return; S.dup = d; if (S.view === 'confirm') render();
+  }).catch(function () {});
+}
 function startRead() {
   if (!S.pages.length) return;
   prefetch(true);
   var id = ++S.reqId, pre = S.pre;
   if (!pre.done) {
     go('reading');
+    setTimeout(function () { if (S.reqId === id && S.view === 'reading' && $('stage')) $('stage').textContent = '金額と振込先を確認中…'; }, 4000);
     setTimeout(function () { if (S.reqId === id && S.view === 'reading' && $('slow')) $('slow').hidden = false; }, 12000);
   }
   pre.promise.then(function (res) {
     if (S.reqId !== id) return;
-    S.f = res.fields; S.f.note = ''; go('confirm');
+    S.f = res.fields; S.f.note = ''; go('confirm'); checkDup(id);
   }).catch(function (e) {
     if (S.reqId !== id) return;
     if (S.pre === pre) S.pre = null; // 失敗した読み取りは使い回さない
