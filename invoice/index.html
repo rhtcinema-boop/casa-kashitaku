@@ -288,6 +288,32 @@ label{color:var(--label2);font-weight:600}
 .slow{color:var(--label2)}
 .foot a{color:var(--sys-blue)}
 @supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){.top .bar,.tile,.chip,.drop,.sheet>div,.pg.add{background:rgba(255,255,255,.96)}}
+/* ===== 表示チェックで見つかった所の修正 ===== */
+/* 青を少し深くして白い文字・白地の青文字を読みやすく（明るい所で4.5以上） */
+:root{--sys-blue:#0068d6;--accent:#0068d6;--muted:rgba(60,60,67,.78);--warn:#9a4300}
+@media (prefers-color-scheme:dark){:root{--warn:#ffb340;--bad:#ff8a80}}
+@media (prefers-color-scheme:dark){:root{--sys-blue:#4ea1ff;--accent:#4ea1ff;--muted:rgba(235,235,245,.75)}
+  .btn.primary{background:#0068d6;color:#fff}}
+.btn.primary{box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 6px rgba(0,104,214,.3)}
+.tile.sel{box-shadow:0 0 0 2px var(--sys-blue),var(--glass-shadow)}
+/* 押しやすさ: 44px以上 */
+.chip{min-height:44px;padding:8px 14px}
+.seg button{min-height:46px}
+.foot a{min-height:48px;display:inline-flex;align-items:center;padding:0 16px}
+/* 長い文字は折り返す欄 */
+textarea{font:inherit;font-size:16px;color:var(--label);background:var(--fill);border:1.5px solid transparent;border-radius:12px;padding:11px 12px;min-height:48px;width:100%;min-width:0;resize:none;overflow:hidden;line-height:1.45;display:block}
+textarea:focus{outline:none;background:var(--panel);border-color:var(--sys-blue);box-shadow:0 0 0 4px var(--accent-soft)}
+textarea.empty{background:var(--warn-bg);border-color:var(--warn-line)}
+@media (max-width:360px){.pair{grid-template-columns:1fr}.pair.wide,.pair{gap:0}}
+.pair.wide{align-items:start}
+.pair.acct{grid-template-columns:minmax(118px,.8fr) 1.2fr}
+/* 上のバーの下にスクロールした文字が透けないように */
+.top{background:linear-gradient(to bottom,var(--bg) 70%,rgba(238,241,246,0))}
+@media (prefers-color-scheme:dark){.top{background:linear-gradient(to bottom,#000 70%,rgba(0,0,0,0))}}
+/* 確認画面の長い値は折り返し、ラベルは縮めない */
+.row dd{min-width:0;overflow-wrap:anywhere}
+.dupw{overflow-wrap:anywhere}
+.done p{overflow-wrap:anywhere;max-width:100%}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -449,17 +475,18 @@ function paperHtml() {
 function editHtml() {
   var f = S.f, miss = missing();
   var inp = function (k, attrs) { return '<label>' + LABEL[k] + '<input id="e_' + k + '" value="' + esc(f[k]) + '" ' + (attrs || '') + '>' + '</label>'; };
+  var area = function (k, attrs) { return '<label>' + LABEL[k] + '<textarea id="e_' + k + '" rows="1" ' + (attrs || '') + '>' + esc(f[k]) + '</textarea></label>'; };
   var bank = f.payMethod === '銀行振込';
   return '<div class="screen"><h2>直す</h2>' + '<div class="need" id="need"' + (miss.length ? '' : ' hidden') + '>黄色の欄を入れてください（残り' + miss.length + 'か所）</div>' + paperHtml() + '<div class="card">' +
-    inp('vendor', 'autocomplete="off"') + inp('description', 'placeholder="例: 10月ドリンク" autocomplete="off"') +
+    area('vendor', 'autocomplete="off"') + area('description', 'placeholder="例: 10月ドリンク" autocomplete="off"') +
     inp('amount', 'inputmode="numeric" autocomplete="off"') +
     '<label>請求日<input id="e_invoiceDate" type="date" value="' + esc(f.invoiceDate) + '"></label>' +
     '<label>支払期限<input id="e_dueDate" type="date" value="' + esc(f.dueDate) + '"></label></div>' +
     '<div class="card"><label>支払方法<div class="seg" id="payseg">' + ['銀行振込', 'ペイジー'].map(function (m) { return '<button type="button" data-pay="' + m + '" class="' + (f.payMethod === m ? 'sel' : '') + '">' + m + '</button>'; }).join('') + '</div></label>' +
-    (bank ? '<div class="pair">' + inp('bank', 'autocomplete="off"') + inp('branch', 'autocomplete="off"') + '</div>' +
-      '<div class="pair"><label>種別<div class="seg" id="typeseg">' + ['普通', '当座'].map(function (m) { return '<button type="button" data-type="' + m + '" class="' + (f.accountType === m ? 'sel' : '') + '">' + m + '</button>'; }).join('') + '</div></label>' +
-      inp('accountNumber', 'inputmode="numeric" autocomplete="off"') + '</div>' + inp('accountName', 'autocomplete="off"') : '') +
-    inp('note', 'autocomplete="off"') + '</div>' +
+    (bank ? '<div class="pair wide">' + area('bank', 'autocomplete="off"') + area('branch', 'autocomplete="off"') + '</div>' +
+      '<div class="pair acct"><label>種別<div class="seg" id="typeseg">' + ['普通', '当座'].map(function (m) { return '<button type="button" data-type="' + m + '" class="' + (f.accountType === m ? 'sel' : '') + '">' + m + '</button>'; }).join('') + '</div></label>' +
+      inp('accountNumber', 'inputmode="numeric" autocomplete="off"') + '</div>' + area('accountName', 'autocomplete="off"') : '') +
+    area('note', 'autocomplete="off"') + '</div>' +
     '<div class="bottom"><button class="btn primary" id="editDone" type="button">確認へ</button></div></div>';
 }
 
@@ -530,7 +557,10 @@ function bind() {
   var car = app.querySelector('.carousel'), dots = app.querySelectorAll('.dots i');
   if (car && dots.length) car.onscroll = function () { var k = Math.round(car.scrollLeft / car.clientWidth); [].forEach.call(dots, function (d, i) { d.classList.toggle('on', i === k); }); };
   if (S.view === 'edit') {
-    [].forEach.call(app.querySelectorAll('input'), function (i) { i.oninput = function () { mark(); }; });
+    [].forEach.call(app.querySelectorAll('input,textarea'), function (i) {
+      i.oninput = function () { if (i.tagName === 'TEXTAREA') { i.value = i.value.replace(/[\r\n]+/g, ' '); grow(i); } mark(); };
+      if (i.tagName === 'TEXTAREA') { grow(i); i.onkeydown = function (ev) { if (ev.key === 'Enter') ev.preventDefault(); }; }
+    });
     [].forEach.call(app.querySelectorAll('[data-pay]'), function (b) { b.onclick = function () { readEdit(); S.f.payMethod = b.dataset.pay; if (S.f.payMethod === '銀行振込' && !S.f.accountType) S.f.accountType = '普通'; render(); mark(); }; });
     [].forEach.call(app.querySelectorAll('[data-type]'), function (b) { b.onclick = function () { readEdit(); S.f.accountType = b.dataset.type; render(); mark(); }; });
     $('editDone').onclick = function () { readEdit(); S.error = ''; go('confirm'); };
@@ -541,7 +571,7 @@ function bind() {
   if ($('restart')) $('restart').onclick = function () { resetDoc(); go('store'); };
 }
 function readEdit() {
-  [].forEach.call(app.querySelectorAll('input[id^="e_"]'), function (i) {
+  [].forEach.call(app.querySelectorAll('[id^="e_"]'), function (i) {
     var k = i.id.slice(2), v = i.value.trim();
     if (k === 'accountName' && v !== S.f[k]) S.f.nameGuessed = false;
     if (k === 'dueDate' && v !== S.f[k]) S.f.dueGuessed = false;
@@ -554,12 +584,13 @@ function readEdit() {
 }
 function mark() {
   var need = needed();
-  [].forEach.call(app.querySelectorAll('input[id^="e_"]'), function (i) { i.classList.toggle('empty', need.indexOf(i.id.slice(2)) >= 0 && !i.value.trim()); });
+  [].forEach.call(app.querySelectorAll('[id^="e_"]'), function (i) { i.classList.toggle('empty', need.indexOf(i.id.slice(2)) >= 0 && !i.value.trim()); });
   var seg = $('payseg'); if (seg) seg.style.outline = S.f.payMethod ? '' : '2px solid var(--warn-line)';
-  var left = app.querySelectorAll('input.empty').length + (S.f.payMethod ? 0 : 1), nd = $('need');
+  var left = app.querySelectorAll('.empty').length + (S.f.payMethod ? 0 : 1), nd = $('need');
   if (nd && (left || !nd.hidden)) { nd.hidden = false; nd.textContent = left ? '黄色の欄を入れてください（残り' + left + 'か所）' : '入力がそろいました'; nd.style.background = left ? '' : 'var(--ok-bg)'; nd.style.color = left ? '' : 'var(--ok)'; }
 }
-function focusFirst() { setTimeout(function () { var e = app.querySelector('input.empty'); if (e) { e.focus(); e.scrollIntoView({ block: 'center' }); } }, 50); }
+function grow(t) { t.style.height = 'auto'; t.style.height = Math.max(48, t.scrollHeight + 3) + 'px'; }
+function focusFirst() { setTimeout(function () { var e = app.querySelector('[id^="e_"].empty'); if (e) { e.focus(); e.scrollIntoView({ block: 'center' }); } }, 50); }
 function resetDoc() { S.dup = null; S.pages = []; S.pre = null; S.f = null; S.error = ''; S.busy = false; S.sid = null; S.reqId++; }
 
 // 確認・ヘルプ用の下から出る画面
@@ -570,7 +601,7 @@ function sheet(inner, buttons, onPick) {
   document.body.appendChild(d);
 }
 function ask(title, body, yes, fn, danger) {
-  sheet('<h3>' + esc(title) + '</h3><p>' + esc(body) + '</p>', [[yes, danger ? 'primary" style="background:var(--bad);color:#fff' : 'primary'], ['キャンセル', 'sub']], function (i) { if (i === 0) fn(); });
+  sheet('<h3>' + esc(title) + '</h3><p>' + esc(body) + '</p>', [[yes, danger ? 'primary" style="background:#c8001a;color:#fff;box-shadow:none' : 'primary'], ['キャンセル', 'sub']], function (i) { if (i === 0) fn(); });
 }
 $('help').onclick = function () {
   sheet(INIT.admin ? '<h3>登録者名の管理</h3><p>∧∨ で並び順を変えます。</p><p>ゴミ箱で消した名前は、どの端末の一覧からも消えます。</p>' :
