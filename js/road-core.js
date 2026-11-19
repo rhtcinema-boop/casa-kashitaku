@@ -68,7 +68,7 @@
       const cx = px + s * .8, cy = py + s * .2, R = Math.max(3.5, s * .15), r2 = R * .45;
       x.fillStyle = css('--natural'); x.beginPath();
       for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r2 : R; x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
-      x.closePath(); x.fill();
+      x.closePath(); x.fill(); x.lineWidth = Math.max(1, s * .03); x.strokeStyle = 'rgba(0,0,0,.55)'; x.stroke();
     }
   }
   function mark(x, kind, v, px, py, s) {
@@ -90,15 +90,17 @@
   }
   function drawBig(cv, a, s, box) {
     const p = place(a.cols), x = setup(cv, p.ncols, 6, s, box);
+    const lastCell = p.cells[p.cells.length - 1];
     p.cells.forEach(({ c, r, e }) => {
       const px = c * s + .5, py = r * s + .5; mark(x, 'ring', e.r, px, py, s);
       if (e.ties) {
-        x.strokeStyle = css('--green'); x.lineWidth = Math.max(3, s * .1); x.lineCap = 'round';
+        x.strokeStyle = css('--green'); x.lineWidth = Math.max(3, s * .13); x.lineCap = 'round';
         x.beginPath(); x.moveTo(px + s * .22, py + s * .78); x.lineTo(px + s * .78, py + s * .22); x.stroke();
         if (e.ties > 1) { x.fillStyle = css('--green'); x.font = `800 ${Math.round(s * .4)}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e.ties, px + s / 2, py + s / 2 + 1); }
       }
       pairs(x, px, py, s, e);
     });
+    return lastCell ? { x: lastCell.c * s, y: lastCell.r * s, s } : null;
   }
   function drawDerived(cv, seq, kind, s, box) {
     const p = place(group(seq)), x = setup(cv, p.ncols, 6, s, box);
