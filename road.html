@@ -77,7 +77,10 @@
   .status { grid-column: 1 / -1; font-size: 14px; font-weight: 600; color: var(--text2); min-height: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .status b { color: var(--text); }
   .sync { font-size: 12px; font-weight: 600; } .sync.ok { color: var(--green); } .sync.err { color: var(--red); } .sync.sending { color: var(--text2); }
-  .sync.ok::before { content: "● "; } .status > span:not(.pend) { margin-left: auto; } .status .pend { color: #fff; padding: 2px 10px; border-radius: 999px; background: var(--indigo); }
+  .sync.ok::before { content: "● "; }
+  .syncbtn { border: 0; border-radius: 999px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 700; padding: 6px 14px; min-height: 32px; }
+  .syncbtn[disabled] { opacity: .5; }
+  .syncbtn:active { transform: scale(.96); } .status > span:not(.pend) { margin-left: auto; } .status .pend { color: #fff; padding: 2px 10px; border-radius: 999px; background: var(--indigo); }
   .toast { display: none; } .toast.show { display: grid; grid-template-columns: 1fr auto; }
   .sub button[disabled] { opacity: 1; color: var(--text2); }
   button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
@@ -104,6 +107,7 @@
       <dt>キー</dt><dd>B / P / T、N でナチュラル、Backspace で戻す</dd>
       <dt>大路</dt><dd>同じ側が続くと下へ、変わると右の列へ。タイは緑の線</dd>
       <dt>下三路</dt><dd>赤＝規則的、青＝不規則（大眼仔○・小路●・小強路／）</dd>
+      <dt>同期</dt><dd>入力は自動でモニターへ送られます。「⟳ 同期」を押すと、この端末の記録を今すぐモニターへ送ってそろえます</dd>
       <dt>モニター</dt><dd>テレビ等で <a href="monitor.html" target="_blank" rel="noopener">monitor.html</a> を開くと、入力した結果が数秒で表示されます</dd>
       <dt>予測</dt><dd>勝ち負けの確率ではありません。次が B / P だった場合に、大眼仔・小路・小強路へ付く色を左から表示</dd>
     </dl>
@@ -203,10 +207,39 @@
     } catch (e) { sync = 'err'; }
     renderSync();
   }
+  // 同期ボタン: この端末の記録をモニターへ今すぐ送ってそろえる。この端末が空ならモニター側の記録を取り込む(消さない)
+  async function manualSync() {
+    if (state.sample) return toast('見本の表示中です。B・P・T で入力を始めてください', null, 2500);
+    clearTimeout(sendTimer); clearTimeout(retry);
+    for (let i = 0; sending && i < 50; i++) await new Promise(r => setTimeout(r, 200));
+    sending = true; again = false; sync = 'sending'; renderSync();
+    const snap = Road.encode(state.hands);
+    try {
+      if (!state.hands.length) {
+        const sv = await Road.pull();
+        if (sv.hands.length) {
+          state = { hands: sv.hands, sample: false, dirty: false }; save();
+          sending = false; sync = 'ok'; render();
+          return toast(`モニターの記録（${sv.hands.length}ゲーム）を取り込みました`, null, 2500);
+        }
+      }
+      await Road.push(Road.decode(snap));
+      if (Road.encode(state.hands) === snap) { state.dirty = false; save(); }
+      sync = 'ok';
+      toast(`モニターと同期しました（${Road.decode(snap).length}ゲーム）`, null, 2000);
+    } catch (e) {
+      sync = 'err'; retry = setTimeout(send, 4000);
+      toast('同期できませんでした。電波を確認してもう一度押してください', null, 3500);
+    }
+    sending = false; render();
+    if (again || Road.encode(state.hands) !== snap) queue(0);
+  }
+  $('status').addEventListener('click', e => { if (e.target.closest('#syncBtn')) manualSync(); });
   function renderSync() {
     const el = $('sync'); if (!el) return;
-    const t = { off: '', idle: '', sending: 'モニターへ送信中…', ok: 'モニター反映済み', err: '未送信・自動で再送します' }[sync];
+    const t = { off: '', idle: '', sending: '送信中…', ok: '反映済み', err: '未送信（自動で再送）' }[sync];
     el.textContent = state.sample ? '' : t; el.className = 'sync ' + sync;
+    const b = $('syncBtn'); if (b) b.disabled = sync === 'sending';
   }
 
   function render() {
@@ -229,14 +262,15 @@
     const last = hands[hands.length - 1], pn = [pend.nat && 'ナチュラル', pend.bp && 'Bペア', pend.pp && 'Pペア'].filter(Boolean).join('・');
     $('status').innerHTML = (pn ? `<span class="pend">${pn} 選択中 → 結果を押す</span>` : '')
       + (state.sample ? '<span>見本データ表示中</span>' : last ? `<span>直前：<b>${hands.length}ゲーム目 ${label(last)}</b></span>` : '<span>B・P・T で入力開始</span>')
-      + '<span class="sync" id="sync"></span>';
+      + '<span class="sync" id="sync"></span>'
+      + (Road.hasServer ? '<button class="syncbtn" id="syncBtn" type="button">⟳ 同期</button>' : '');
     renderSync();
   }
 
   // ---------- 操作 ----------
   let tt;
   let toastAct = null;
-  function toast(t, act) { $('toastT').textContent = t; toastAct = act || null; $('toastUndo').hidden = !act; const el = $('toast'); el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => { el.classList.remove('show'); toastAct = null; }, act ? 6000 : 1200); }
+  function toast(t, act, ms) { $('toastT').textContent = t; toastAct = act || null; $('toastUndo').hidden = !act; const el = $('toast'); el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => { el.classList.remove('show'); toastAct = null; }, ms || (act ? 6000 : 1200)); }
   $('toastUndo').onclick = () => { const a = toastAct; $('toast').classList.remove('show'); toastAct = null; if (a) a(); };
   const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
   const label = h => NAME[h.r] + (h.nat ? '・ナチュラル' : '') + (h.bp ? '・Bペア' : '') + (h.pp ? '・Pペア' : '');
