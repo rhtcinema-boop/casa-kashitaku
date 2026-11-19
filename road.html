@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="バカラ罫線">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="format-detection" content="telephone=no">
+<title>casa バカラ罫線</title>
+<link rel="icon" href="icon-180.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="css/style.css?v=20261119">
+<style>
+  :root { --green: #34c759; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
+  @media (prefers-color-scheme: dark) { :root { --green: #30d158; --grid: rgba(235, 235, 245, .09); } }
+  body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: calc(var(--sat) + 12px) max(16px, env(safe-area-inset-left)) calc(var(--sab) + 250px) max(16px, env(safe-area-inset-right)); display: flex; flex-direction: column; gap: 12px; }
+  header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 26px; margin: 0; font-weight: 700; letter-spacing: -.02em; }
+  .back { color: var(--blue); text-decoration: none; font-size: 17px; font-weight: 600; padding: 6px 2px; }
+  .hright { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .icon { border: 0; background: var(--fill); color: var(--blue); border-radius: 999px; min-width: 40px; height: 40px; padding: 0 14px; font-size: 16px; font-weight: 600; }
+  .icon.warn { background: var(--red); color: #fff; }
+  .note { font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 12px; background: var(--indigo-tint); color: var(--indigo); }
+  header { flex-wrap: nowrap; } header h1 { white-space: nowrap; }
+  @media (max-width: 420px) { header h1 { font-size: 22px; } .icon { padding: 0 12px; font-size: 15px; } }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stat { padding: 10px 12px; }
+  .stat span { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); font-weight: 600; }
+  .stat span i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .stat b { display: block; font-size: clamp(24px, 5vw, 32px); font-weight: 700; letter-spacing: -.02em; margin-top: 2px; }
+  .stat span em { font-style: normal; white-space: nowrap; } .stat .s { display: none; }
+  .stat .pct { display: block; font-size: 13px; color: var(--text2); font-weight: 600; min-height: 1.2em; }
+  @media (max-width: 560px) { .stat .l { display: none; } .stat .s { display: inline; } }
+
+  .road { padding: 10px; min-width: 0; }
+  .road h2 { font-size: 14px; color: var(--text2); font-weight: 600; margin: 0 2px 8px; display: flex; gap: 8px; align-items: center; }
+  .road h2 em { font-style: normal; font-size: 12px; font-weight: 500; }
+  .scroll { overflow-x: auto; scrollbar-width: thin; border-radius: 6px; }
+  canvas { display: block; }
+  .row2 { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
+  .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .ask { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .askbox { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--fill); font-size: 16px; font-weight: 700; }
+  .askr { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; } .askr small { font-size: 11px; color: var(--text2); font-weight: 600; letter-spacing: .02em; }
+  .askbox.b { color: var(--banker); } .askbox.p { color: var(--player); }
+  @media (max-width: 760px) {
+    .row2, .row3 { grid-template-columns: minmax(0, 1fr); }
+    .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .stat { padding: 8px 10px; }
+  }
+
+  .help { padding: 14px 16px; font-size: 15px; line-height: 1.7; }
+  .help dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+  .help dt { font-weight: 700; } .help dd { margin: 0; color: var(--text2); }
+
+  .pad { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--bar); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-top: .5px solid var(--sep);
+    padding: 10px max(16px, env(safe-area-inset-right)) calc(var(--sab) + 10px) max(16px, env(safe-area-inset-left)); }
+  .padin { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .key { border: 0; border-radius: 16px; color: #fff; padding: 12px 0; display: flex; flex-direction: column; align-items: center; line-height: 1; min-height: 76px; justify-content: center; }
+  .key b { font-size: 34px; font-weight: 800; } .key small { font-size: 13px; font-weight: 600; margin-top: 5px; opacity: .92; }
+  .kB { background: var(--banker); } .kP { background: var(--player); } .kT { background: var(--green); }
+  .key:active, .sub button:active { transform: scale(.96); }
+  .sub { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .sub button { border: 0; border-radius: 12px; background: var(--fill); font-size: 16px; font-weight: 600; padding: 12px 0; color: var(--text); }
+  .sub .tg.b { color: var(--banker); } .sub .tg.p { color: var(--player); }
+  .sub .tg[aria-pressed="true"] { color: #fff; } .sub .tg.b[aria-pressed="true"] { background: var(--banker); } .sub .tg.p[aria-pressed="true"] { background: var(--player); }
+  .sub .undo { color: var(--blue); }
+  .tg .ck { display: none; } .tg[aria-pressed="true"] .ck { display: inline; }
+  .status { grid-column: 1 / -1; font-size: 14px; font-weight: 600; color: var(--text2); min-height: 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .status b { color: var(--text); } .status > span:not(.pend) { margin-left: auto; } .status .pend { color: #fff; padding: 2px 10px; border-radius: 999px; background: var(--indigo); }
+  .toast { display: none; } .toast.show { display: grid; grid-template-columns: 1fr auto; }
+  .sub button[disabled] { opacity: 1; color: var(--text2); }
+  button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .toast { top: auto; bottom: calc(var(--sab) + 215px); }
+  @media (prefers-reduced-motion: reduce) { .key:active, .sub button:active { transform: none; } .toast.show { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" id="back" href="./" hidden>‹ 貸卓</a>
+    <h1>バカラ罫線</h1>
+    <div class="hright">
+      <button class="icon" id="helpBtn" aria-expanded="false" aria-label="使い方">?</button>
+      <button class="icon" id="clear">新しいシュー</button>
+    </div>
+  </header>
+
+  <div class="note" id="sample" hidden>見本を表示中。B・P・T を押すと新しいシューで始まります</div>
+
+  <div class="card help" id="help" hidden>
+    <dl>
+      <dt>入力</dt><dd>下の B・P・T を押す。ペアは先にペアを押してから結果を押す。</dd>
+      <dt>キー</dt><dd>B / P / T、Backspace で戻す</dd>
+      <dt>大路</dt><dd>同じ側が続くと下へ、変わると右の列へ。タイは緑の線</dd>
+      <dt>下三路</dt><dd>赤＝規則的、青＝不規則（大眼仔○・小路●・小強路／）</dd>
+      <dt>予測</dt><dd>勝ち負けの確率ではありません。次が B / P だった場合に、大眼仔・小路・小強路へ付く色を左から表示</dd>
+    </dl>
+  </div>
+
+  <div class="stats">
+    <div class="card stat"><span><i style="background:var(--banker)"></i><em class="l">バンカー</em><em class="s">B</em></span><b class="num" id="cB">0</b><small class="pct num" id="pB"></small></div>
+    <div class="card stat"><span><i style="background:var(--player)"></i><em class="l">プレイヤー</em><em class="s">P</em></span><b class="num" id="cP">0</b><small class="pct num" id="pP"></small></div>
+    <div class="card stat"><span><i style="background:var(--green)"></i><em class="l">タイ</em><em class="s">T</em></span><b class="num" id="cT">0</b></div>
+    <div class="card stat"><span><em class="l">ゲーム数</em><em class="s">ゲーム</em></span><b class="num" id="cN">0</b></div>
+  </div>
+
+  <div class="row2">
+    <section class="card road"><h2>珠盤路</h2><div class="scroll" id="sBead"><canvas id="bead" role="img" aria-label="珠盤路"></canvas></div></section>
+    <section class="card road"><h2>大路</h2><div class="scroll" id="sBig"><canvas id="big" role="img" aria-label="大路"></canvas></div></section>
+  </div>
+
+  <div class="row3">
+    <section class="card road"><h2>大眼仔 <em>○</em></h2><div class="scroll" id="sE"><canvas id="eye" role="img" aria-label="大眼仔"></canvas></div></section>
+    <section class="card road"><h2>小路 <em>●</em></h2><div class="scroll" id="sS"><canvas id="small" role="img" aria-label="小路"></canvas></div></section>
+    <section class="card road"><h2>小強路 <em>／</em></h2><div class="scroll" id="sC"><canvas id="roach" role="img" aria-label="小強路"></canvas></div></section>
+  </div>
+
+  <section class="card road">
+    <h2>次の予測</h2>
+    <div class="ask">
+      <div class="askbox b"><span>次が B</span><span class="askr"><canvas id="askB" role="img"></canvas><small id="askBt"></small></span></div>
+      <div class="askbox p"><span>次が P</span><span class="askr"><canvas id="askP" role="img"></canvas><small id="askPt"></small></span></div>
+    </div>
+  </section>
+</div>
+
+<div class="pad"><div class="padin">
+  <div class="status" id="status" aria-live="polite"></div>
+  <button class="key kB" id="kB"><b>B</b><small>バンカー</small></button>
+  <button class="key kP" id="kP"><b>P</b><small>プレイヤー</small></button>
+  <button class="key kT" id="kT"><b>T</b><small>タイ</small></button>
+  <div class="sub">
+    <button class="tg b" id="tBP" aria-pressed="false"><span class="ck">✓ </span>B ペア</button>
+    <button class="tg p" id="tPP" aria-pressed="false"><span class="ck">✓ </span>P ペア</button>
+    <button class="undo" id="undo">↶ 直前を戻す</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const KEY = 'casa-baccarat-road-v1';
+  const SAMPLE = 'BBPPPBTBBBBPBPPTBBPPPPPPPBPBBTPBBBPPBP';
+  let state = { hands: [], sample: false };
+  let pend = { bp: false, pp: false };
+
+  if (new URLSearchParams(location.search).get('from') === 'kt') {
+    $('back').hidden = false;
+    $('back').onclick = e => { if (history.length > 1) { e.preventDefault(); history.back(); } };
+  }
+
+  function load() {
+    try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.hands)) { state = s; return; } } catch (e) {}
+    state = { hands: [...SAMPLE].map((r, i) => ({ r, bp: i === 5, pp: i === 12 })), sample: true };
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  // ---------- 罫線の計算 ----------
+  function analyze(hands) {
+    const cols = []; let lead = 0;
+    for (const h of hands) {
+      if (h.r === 'T') { if (cols.length) { const c = cols[cols.length - 1]; c[c.length - 1].ties++; } else lead++; continue; }
+      const e = { r: h.r, ties: 0, bp: h.bp, pp: h.pp }, last = cols[cols.length - 1];
+      if (last && last[0].r === h.r) last.push(e); else cols.push([e]);
+    }
+    if (cols.length) cols[0][0].ties += lead;
+    const der = { 1: [], 2: [], 3: [] }, lens = [];
+    cols.forEach((col, c) => col.forEach((_, r) => { lens[c] = r + 1; for (const k of [1, 2, 3]) { const v = derive(lens, c, r, k); if (v) der[k].push(v); } }));
+    return { cols, der, lens, lead };
+  }
+  // 下三路: k=1 大眼仔, 2 小路, 3 小強路。R=赤, L=青
+  function derive(lens, c, r, k) {
+    if (r === 0) { if (c - 1 - k < 0) return null; return lens[c - 1] === lens[c - 1 - k] ? 'R' : 'L'; }
+    if (c - k < 0) return null;
+    const L = lens[c - k];
+    return L === r ? 'L' : 'R';
+  }
+  function predict(a, w) {
+    const L = a.lens.slice(); let c, r;
+    if (a.cols.length && a.cols[a.cols.length - 1][0].r === w) { c = a.cols.length - 1; r = L[c]; } else { c = a.cols.length; r = 0; }
+    L[c] = r + 1;
+    return [1, 2, 3].map(k => derive(L, c, r, k));
+  }
+  function group(seq) { const out = []; for (const v of seq) { const l = out[out.length - 1]; if (l && l[0].v === v) l.push({ v }); else out.push([{ v }]); } return out; }
+  // 6段で下が埋まったら右へ曲げる(ドラゴンテール)
+  function place(cols, rows = 6) {
+    const occ = new Set(), cells = []; let start = -1, maxc = -1;
+    for (const col of cols) {
+      let c = start + 1; while (occ.has(c + ',0')) c++; start = c;
+      let r = 0, turned = false;
+      col.forEach((e, i) => {
+        if (i > 0) { if (!turned && r + 1 < rows && !occ.has(c + ',' + (r + 1))) r++; else { turned = true; c++; } }
+        occ.add(c + ',' + r); cells.push({ c, r, e }); maxc = Math.max(maxc, c);
+      });
+    }
+    return { cells, ncols: maxc + 1 };
+  }
+
+  // ---------- 描画 ----------
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const FONT = '-apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif';
+  function setup(cv, cols, rows, cell, box) {
+    const fit = box ? Math.floor((box.clientWidth - 1) / cell) : 0;
+    const n = Math.max(cols + 1, fit, 1), W = n * cell, H = rows * cell, d = window.devicePixelRatio || 1;
+    cv.width = (W + 1) * d; cv.height = (H + 1) * d; cv.style.width = (W + 1) + 'px'; cv.style.height = (H + 1) + 'px';
+    const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, W + 1, H + 1);
+    g.strokeStyle = css('--grid'); g.lineWidth = 1;
+    for (let x = 0; x <= n; x++) { g.beginPath(); g.moveTo(x * cell + .5, 0); g.lineTo(x * cell + .5, H + 1); g.stroke(); }
+    for (let y = 0; y <= rows; y++) { g.beginPath(); g.moveTo(0, y * cell + .5); g.lineTo(W + 1, y * cell + .5); g.stroke(); }
+    return g;
+  }
+  const colorOf = v => css(v === 'B' || v === 'R' ? '--banker' : v === 'P' || v === 'L' ? '--player' : '--green');
+  function pairs(g, x, y, s, e) {
+    const rad = Math.max(2.5, s * .11);
+    if (e.bp) { g.fillStyle = css('--banker'); g.beginPath(); g.arc(x + s * .2, y + s * .2, rad, 0, 7); g.fill(); }
+    if (e.pp) { g.fillStyle = css('--player'); g.beginPath(); g.arc(x + s * .8, y + s * .8, rad, 0, 7); g.fill(); }
+  }
+  function mark(g, kind, v, x, y, s) {
+    const cx = x + s / 2, cy = y + s / 2, c = colorOf(v);
+    g.strokeStyle = c; g.fillStyle = c;
+    if (kind === 'ring') { g.lineWidth = Math.max(2.4, s * .15); g.beginPath(); g.arc(cx, cy, s * .32, 0, 7); g.stroke(); }
+    else if (kind === 'dot') { g.beginPath(); g.arc(cx, cy, s * .36, 0, 7); g.fill(); }
+    else { g.lineWidth = Math.max(2.6, s * .18); g.lineCap = 'round'; g.beginPath(); g.moveTo(x + s * .24, y + s * .76); g.lineTo(x + s * .76, y + s * .24); g.stroke(); }
+  }
+  function drawDerived(cv, box, seq, kind) {
+    const p = place(group(seq)), s = 16, g = setup(cv, p.ncols, 6, s, box);
+    p.cells.forEach(({ c, r, e }) => mark(g, kind, e.v, c * s + .5, r * s + .5, s));
+  }
+  function render() {
+    const hands = state.hands, a = analyze(hands);
+    const cnt = { B: 0, P: 0, T: 0 }; hands.forEach(h => cnt[h.r]++);
+    const bp = cnt.B + cnt.P;
+    $('cB').textContent = cnt.B; $('cP').textContent = cnt.P; $('cT').textContent = cnt.T; $('cN').textContent = hands.length;
+    $('pB').textContent = bp ? Math.round(cnt.B / bp * 100) + '%' : ''; $('pP').textContent = bp ? Math.round(cnt.P / bp * 100) + '%' : '';
+    $('sample').hidden = !state.sample;
+    // 珠盤路(左上から下へ6段)
+    { const s = 30, rows = 6, n = Math.ceil(hands.length / rows), narrow = window.innerWidth < 760;
+      const g = setup($('bead'), narrow ? n : Math.max(n - 1, 7), rows, s, narrow ? $('sBead') : null);
+      g.font = `800 ${Math.round(s * .46)}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      hands.forEach((h, i) => { const x = Math.floor(i / rows) * s + .5, y = (i % rows) * s + .5;
+        g.fillStyle = colorOf(h.r); g.beginPath(); g.arc(x + s / 2, y + s / 2, s * .4, 0, 7); g.fill();
+        g.fillStyle = '#fff'; g.fillText(h.r, x + s / 2, y + s / 2 + 1); pairs(g, x, y, s, h); }); }
+    // 大路
+    { const p = place(a.cols), s = 30, g = setup($('big'), p.ncols, 6, s, $('sBig'));
+      p.cells.forEach(({ c, r, e }) => { const x = c * s + .5, y = r * s + .5; mark(g, 'ring', e.r, x, y, s);
+        if (e.ties) { g.strokeStyle = css('--green'); g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(x + s * .22, y + s * .78); g.lineTo(x + s * .78, y + s * .22); g.stroke();
+          if (e.ties > 1) { g.fillStyle = css('--green'); g.font = `800 ${Math.round(s * .4)}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e.ties, x + s / 2, y + s / 2 + 1); } }
+        pairs(g, x, y, s, e); }); }
+    drawDerived($('eye'), $('sE'), a.der[1], 'ring');
+    drawDerived($('small'), $('sS'), a.der[2], 'dot');
+    drawDerived($('roach'), $('sC'), a.der[3], 'slash');
+    // 予測
+    for (const [w, id] of [['B', 'askB'], ['P', 'askP']]) {
+      const pr = predict(a, w), s = 24, d = window.devicePixelRatio || 1, cv = $(id);
+      cv.width = 3 * s * d; cv.height = s * d; cv.style.width = 3 * s + 'px'; cv.style.height = s + 'px';
+      const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, 3 * s, s);
+      const words = pr.map(v => v === 'R' ? '赤' : v === 'L' ? '青' : '－').join('・');
+      $(id + 't').textContent = words; cv.setAttribute('aria-label', '大眼仔・小路・小強路 ' + words);
+      ['ring', 'dot', 'slash'].forEach((k, i) => { if (pr[i]) mark(g, k, pr[i], i * s, 0, s); else { g.fillStyle = css('--text2'); g.beginPath(); g.arc(i * s + s / 2, s / 2, 2, 0, 7); g.fill(); } });
+    }
+    for (const [id, cell] of [['sBead', 30], ['sBig', 30], ['sE', 16], ['sS', 16], ['sC', 16]]) { const el = $(id); el.scrollLeft = Math.ceil(Math.max(0, el.scrollWidth - el.clientWidth) / cell) * cell; }
+    $('tBP').setAttribute('aria-pressed', pend.bp); $('tPP').setAttribute('aria-pressed', pend.pp);
+    $('undo').disabled = !hands.length || state.sample;
+    const last = hands[hands.length - 1], pn = [pend.bp && 'Bペア', pend.pp && 'Pペア'].filter(Boolean).join('・');
+    $('status').innerHTML = (pn ? `<span class="pend">${pn} 選択中 → 結果を押す</span>` : '')
+      + (state.sample ? '<span>見本データ表示中</span>' : last ? `<span>直前：<b>${hands.length}ゲーム目 ${label(last)}</b></span>` : '<span>B・P・T で入力開始</span>');
+  }
+
+  // ---------- 操作 ----------
+  let tt;
+  let toastAct = null;
+  function toast(t, act) { $('toastT').textContent = t; toastAct = act || null; $('toastUndo').hidden = !act; const el = $('toast'); el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => { el.classList.remove('show'); toastAct = null; }, act ? 6000 : 1200); }
+  $('toastUndo').onclick = () => { const a = toastAct; $('toast').classList.remove('show'); toastAct = null; if (a) a(); };
+  const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
+  const label = h => NAME[h.r] + (h.bp ? '・Bペア' : '') + (h.pp ? '・Pペア' : '');
+  function add(r) {
+    if (state.sample) state = { hands: [], sample: false };
+    const h = { r, bp: pend.bp, pp: pend.pp };
+    state.hands.push(h); pend = { bp: false, pp: false }; save(); render();
+    toast(`${state.hands.length}ゲーム目 ${label(h)}`);
+  }
+  function undo() {
+    if (state.sample || !state.hands.length) return;
+    const h = state.hands.pop(); save(); render(); toast(`戻しました（${label(h)}）`);
+  }
+  $('kB').onclick = () => add('B'); $('kP').onclick = () => add('P'); $('kT').onclick = () => add('T');
+  $('tBP').onclick = () => { pend.bp = !pend.bp; render(); };
+  $('tPP').onclick = () => { pend.pp = !pend.pp; render(); };
+  $('undo').onclick = undo;
+  $('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('helpBtn').setAttribute('aria-expanded', !h.hidden); };
+  let armed = null;
+  $('clear').onclick = () => {
+    const b = $('clear');
+    if (!armed) { b.textContent = 'もう一度押すと記録を消去'; b.classList.add('warn'); armed = setTimeout(() => { armed = null; b.textContent = '新しいシュー'; b.classList.remove('warn'); }, 5000); return; }
+    clearTimeout(armed); armed = null; b.textContent = '新しいシュー'; b.classList.remove('warn');
+    const prev = state; state = { hands: [], sample: false }; pend = { bp: false, pp: false }; save(); render();
+    if (prev.hands.length && !prev.sample) toast('新しいシューを開始', () => { state = prev; save(); render(); toast('記録を戻しました'); }); else toast('新しいシューを開始');
+  };
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return; const k = e.key.toLowerCase();
+    if (k === 'b') add('B'); else if (k === 'p') add('P'); else if (k === 't') add('T');
+    else if (k === 'backspace') { e.preventDefault(); undo(); }
+  });
+  window.addEventListener('resize', render);
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render); } catch (e) {}
+  window.addEventListener('storage', e => { if (e.key === KEY) { load(); render(); } });
+  load(); render();
+})();
+</script>
+</body>
+</html>
