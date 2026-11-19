@@ -133,18 +133,36 @@
     const t = ctl ? setTimeout(() => ctl.abort(), ms || 8000) : 0;
     try { return await fetch(url, ctl ? Object.assign({ signal: ctl.signal }, init) : init); } finally { clearTimeout(t); }
   }
+  // テスト用の置き場(?room=test など)。なければ本番
+  const ROOM = (new URLSearchParams(location.search).get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
   async function pull() {
     if (!URL_) throw new Error('no server');
-    const r = await timed(`${URL_}?road=1&_=${Date.now()}`, { cache: 'no-store' });
+    const r = await timed(`${URL_}?road=1&room=${ROOM}&_=${Date.now()}`, { cache: 'no-store' });
     const j = await r.json(); if (j.error) throw new Error(j.error);
     return { hands: decode(j.hands), rev: j.rev || 0, ts: j.ts || 0 };
   }
-  async function push(hands) {
+  async function post(body) {
     if (!URL_) throw new Error('no server');
-    const r = await timed(URL_, { method: 'POST', body: JSON.stringify({ op: 'road', hands: encode(hands) }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }, 15000);
+    body.room = ROOM;
+    const r = await timed(URL_, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }, 15000);
     const j = await r.json(); if (j.error) throw new Error(j.error);
     return j;
   }
+  // 記録を置き換える。base(最後に見た rev)を付けると、その後ほかの端末で増えていたら書かずに conflict:true が返る
+  function push(hands, base) {
+    const body = { op: 'road', hands: encode(hands) };
+    if (base != null) body.base = base;
+    return post(body);
+  }
+  // 1ゲーム足す(ほかの端末の記録は消さない)
+  function add(hand) { return post({ op: 'roadAdd', hand: encode([hand]) }); }
+  // 3者の突き合わせ(文字列): 前に見た記録(base)から、サーバーとこの端末の両方が足しただけなら両方の分を残す。
+  // それ以外(片方で戻した・新しいシュー)はこの端末を優先
+  function merge3(base, server, local) {
+    if (base == null) return local;
+    if (server.startsWith(base) && local.startsWith(base)) return base + server.slice(base.length) + local.slice(base.length);
+    return local;
+  }
 
-  g.Road = { analyze, predict, counts, drawBead, drawBig, drawDerived, drawAsk, scrollEnd, encode, decode, pull, push, hasServer: !!URL_ };
+  g.Road = { analyze, predict, counts, drawBead, drawBig, drawDerived, drawAsk, scrollEnd, encode, decode, pull, push, add, merge3, room: ROOM, hasServer: !!URL_ };
 })(window);
