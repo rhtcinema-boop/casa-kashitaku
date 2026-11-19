@@ -1,5 +1,5 @@
-# Fire TV 用「casa モニター」アプリ(APK)を組み立てて、リポジトリ直下の tv.apk に置く。
-# Downloader で https://rhtcinema-boop.github.io/casa-kashitaku/tv.apk を開けば入れられる。
+# Fire TV 用「casa バカラ」モニターアプリ(APK)を組み立てて、リリース「baccarat-tv」に置く(スロットと同じ配り方)。
+# Downloader で https://github.com/rhtcinema-boop/casa-kashitaku/releases/download/baccarat-tv/casa-baccarat-tv.apk を開けば入れられる。
 name: tv-apk
 on:
   push:
@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-  pages: write
+concurrency:
+  group: tv-apk
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,16 +40,12 @@ jobs:
           (cd out/dex && zip -q -u ../unsigned.apk classes.dex)
           "$BT/zipalign" -f 4 out/unsigned.apk out/aligned.apk
           echo "$TV_KS" | base64 -d > out/ks.p12
-          "$BT/apksigner" sign --ks out/ks.p12 --ks-type PKCS12 --ks-pass env:TV_KS_PASS --out ../tv.apk out/aligned.apk
-          "$BT/apksigner" verify ../tv.apk
+          "$BT/apksigner" sign --ks out/ks.p12 --ks-type PKCS12 --ks-pass env:TV_KS_PASS --out ../casa-baccarat-tv.apk out/aligned.apk
+          "$BT/apksigner" verify ../casa-baccarat-tv.apk
           rm -f out/ks.p12
-      - name: Commit tv.apk
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
-          git add tv.apk
-          git commit -m "tv.apk を更新 (build ${GITHUB_RUN_NUMBER})" || exit 0
-          git push
-      - name: Rebuild Pages
+      - name: Publish to release "baccarat-tv"
         env: { GH_TOKEN: '${{ github.token }}' }
-        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" || true
+        run: |
+          gh release view baccarat-tv >/dev/null 2>&1 || gh release create baccarat-tv -t "casa バカラ モニター Fire TV app" -n "Fire TV Stick 用 APK。Downloader で casa-baccarat-tv.apk の URL を開いてインストールします。"
+          gh release upload baccarat-tv casa-baccarat-tv.apk --clobber
+          gh release edit baccarat-tv -n "Fire TV Stick 用 APK（build ${GITHUB_RUN_NUMBER}）。Downloader で casa-baccarat-tv.apk の URL を開いてインストールします。"
