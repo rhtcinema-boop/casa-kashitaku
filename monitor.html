@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05080a">
+<title>casa バカラ モニター</title>
+<link rel="icon" href="icon-180.png" type="image/png">
+<style>
+  /* 卓横のテレビに出す電光掲示板。暗い店内で見る前提で黒地のみ */
+  :root {
+    color-scheme: dark;
+    --bg: #05080a; --panel: #10161a; --panel2: #172027; --text: #f4f7f8; --text2: rgba(235, 240, 245, .58);
+    --grid: rgba(235, 240, 245, .1); --banker: #ff453a; --player: #0a84ff; --green: #30d158; --natural: #ffd60a; --line: rgba(235, 240, 245, .08);
+    --gap: clamp(8px, 1.1vw, 16px);
+  }
+  * { box-sizing: border-box; } [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
+  body.idle { cursor: none; }
+  .screen { height: 100%; display: grid; gap: var(--gap); padding: var(--gap) max(var(--gap), env(safe-area-inset-right)) var(--gap) max(var(--gap), env(safe-area-inset-left));
+    grid-template-columns: minmax(240px, 24vw) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas: "head head" "last big" "side lower"; }
+  header { grid-area: head; display: flex; align-items: center; gap: var(--gap); min-width: 0; }
+  header h1 { margin: 0; font-size: clamp(18px, 2vw, 30px); font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+  header h1 span { color: var(--text2); font-weight: 600; margin-left: .4em; }
+  .stats { display: flex; gap: var(--gap); margin-left: auto; }
+  .st { display: flex; align-items: baseline; gap: .35em; background: var(--panel); border-radius: 12px; padding: .3em .8em; font-size: clamp(16px, 1.7vw, 28px); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .st i { width: .6em; height: .6em; border-radius: 50%; display: inline-block; align-self: center; }
+  .st small { font-size: .6em; color: var(--text2); font-weight: 700; }
+  .conn { font-size: clamp(12px, 1vw, 16px); font-weight: 700; color: var(--text2); white-space: nowrap; display: flex; align-items: center; gap: .4em; }
+  .conn i { width: .7em; height: .7em; border-radius: 50%; background: var(--green); }
+  .conn.bad { color: var(--banker); } .conn.bad i { background: var(--banker); animation: blink 1s infinite; }
+  .fs { border: 0; background: var(--panel); color: var(--text2); border-radius: 10px; padding: .45em .8em; font: inherit; font-size: clamp(12px, 1vw, 15px); font-weight: 700; cursor: pointer; }
+  .fs:focus-visible { outline: 3px solid var(--player); }
+
+  .card { background: var(--panel); border-radius: 16px; padding: clamp(8px, 1vw, 14px); min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  .card h2 { margin: 0 0 .5em; font-size: clamp(12px, 1.05vw, 17px); color: var(--text2); font-weight: 700; letter-spacing: .06em; display: flex; gap: .6em; align-items: center; }
+  .fill { flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: flex-start; justify-content: flex-start; }
+  canvas { display: block; }
+
+  .last { grid-area: last; justify-content: center; align-items: center; text-align: center; position: relative; overflow: hidden; }
+  .last h2 { position: absolute; top: clamp(8px, 1vw, 14px); left: clamp(10px, 1.2vw, 16px); }
+  .ball { width: min(11vw, 22vh); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: min(6.4vw, 13vh); font-weight: 900; color: #fff; background: var(--panel2); position: relative; }
+  .ball.B { background: var(--banker); } .ball.P { background: var(--player); } .ball.T { background: var(--green); }
+  .ball .pr { position: absolute; width: 22%; height: 22%; border-radius: 50%; border: 3px solid var(--panel); }
+  .ball .pr.b { background: var(--banker); top: 4%; left: 4%; } .ball .nat { position: absolute; top: -2%; right: -2%; font-size: .32em; color: var(--natural); text-shadow: 0 0 6px rgba(0,0,0,.5); } .ball .pr.p { background: var(--player); bottom: 4%; right: 4%; }
+  .lastname { margin-top: .4em; font-size: clamp(20px, 2.6vw, 44px); font-weight: 800; }
+  .lastsub { font-size: clamp(13px, 1.2vw, 20px); color: var(--text2); font-weight: 700; margin-top: .2em; font-variant-numeric: tabular-nums; }
+  .last.pop .ball { animation: pop .7s cubic-bezier(.2, 1.4, .4, 1); }
+  .last.pop::after { content: ""; position: absolute; inset: 0; border-radius: 16px; box-shadow: inset 0 0 0 4px var(--flash, transparent); animation: fade 2.5s forwards; }
+  @keyframes pop { from { transform: scale(.6); opacity: .3; } }
+  @keyframes fade { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  .big { grid-area: big; }
+  .side { grid-area: side; }
+  .lower { grid-area: lower; display: grid; grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr)); gap: var(--gap); min-height: 0; }
+  .lower .card { min-height: 0; }
+  .ask { display: grid; gap: var(--gap); align-content: center; flex: 1; }
+  .askrow { display: flex; align-items: center; justify-content: space-between; gap: .6em; background: var(--panel2); border-radius: 12px; padding: .5em .8em; font-size: clamp(14px, 1.4vw, 24px); font-weight: 800; }
+  .askrow.b { color: var(--banker); } .askrow.p { color: var(--player); }
+  .askrow small { display: block; text-align: right; font-size: .55em; color: var(--text2); margin-top: .2em; font-weight: 700; }
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--text2); font-size: clamp(14px, 1.4vw, 22px); font-weight: 700; padding: 1em; }
+
+  /* 縦置きのモニター */
+  @media (orientation: portrait) {
+    .screen { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, .8fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, .7fr);
+      grid-template-areas: "head head" "last side" "big big" "lower lower" "lower lower"; }
+    .lower { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+    .ball { width: min(22vw, 16vh); font-size: min(12vw, 9vh); }
+    .stats .st:nth-child(4) { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .last.pop .ball, .last.pop::after, .conn.bad i { animation: none; } }
+</style>
+</head>
+<body>
+<div class="screen">
+  <header>
+    <h1>casa<span>BACCARAT</span></h1>
+    <div class="stats">
+      <div class="st"><i style="background:var(--banker)"></i>B <span id="cB">0</span><small id="pB"></small></div>
+      <div class="st"><i style="background:var(--player)"></i>P <span id="cP">0</span><small id="pP"></small></div>
+      <div class="st"><i style="background:var(--green)"></i>T <span id="cT">0</span></div>
+      <div class="st"><small>GAME</small> <span id="cN">0</span></div>
+    </div>
+    <div class="conn" id="conn"><i></i><span id="connT">接続中…</span></div>
+    <button class="fs" id="fs">全画面</button>
+  </header>
+
+  <section class="card last" id="last">
+    <h2>最新</h2>
+    <div class="ball" id="ball"></div>
+    <div class="lastname" id="lastName"></div>
+    <div class="lastsub" id="lastSub"></div>
+    <div class="empty" id="empty" hidden>入力を待っています</div>
+  </section>
+
+  <section class="card big"><h2>大路</h2><div class="fill" id="fBig"><canvas id="big" role="img" aria-label="大路"></canvas></div></section>
+
+  <section class="card side">
+    <h2>次の予測</h2>
+    <div class="ask">
+      <div class="askrow b"><span>次が B</span><span><canvas id="askB" role="img"></canvas><small id="askBt"></small></span></div>
+      <div class="askrow p"><span>次が P</span><span><canvas id="askP" role="img"></canvas><small id="askPt"></small></span></div>
+    </div>
+  </section>
+
+  <div class="lower">
+    <section class="card"><h2>珠盤路</h2><div class="fill" id="fBead"><canvas id="bead" role="img" aria-label="珠盤路"></canvas></div></section>
+    <section class="card"><h2>大眼仔 ○</h2><div class="fill" id="fE"><canvas id="eye" role="img" aria-label="大眼仔"></canvas></div></section>
+    <section class="card"><h2>小路 ●</h2><div class="fill" id="fS"><canvas id="small" role="img" aria-label="小路"></canvas></div></section>
+    <section class="card"><h2>小強路 ／</h2><div class="fill" id="fC"><canvas id="roach" role="img" aria-label="小強路"></canvas></div></section>
+  </div>
+</div>
+
+<script src="config.js?v=20261119b"></script>
+<script src="js/road-core.js?v=20261119b"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
+  const POLL = 2000;
+  let hands = [], rev = -1, lastOk = 0, first = true;
+
+  // 枠の高さに6段がちょうど収まるマスの大きさ
+  // 横は最低 minCols 列は見えるようにする
+  const cellFor = (box, min, max, minCols) => Math.max(min, Math.min(max, Math.floor((box.clientHeight - 1) / 6), Math.floor((box.clientWidth - 1) / (minCols || 1))));
+  // 右端に最新が来るよう、収まらない古い列は左へ送る(テレビはスクロールできないため)
+  function fitRight(cv, box, cell) { const over = cv.offsetWidth - box.clientWidth; cv.style.marginLeft = over > 0 ? -(Math.ceil(over / cell) * cell) + 'px' : '0'; }
+
+  function render(isNew) {
+    const a = Road.analyze(hands), n = Road.counts(hands), bp = n.B + n.P;
+    $('cB').textContent = n.B; $('cP').textContent = n.P; $('cT').textContent = n.T; $('cN').textContent = hands.length;
+    $('pB').textContent = bp ? Math.round(n.B / bp * 100) + '%' : ''; $('pP').textContent = bp ? Math.round(n.P / bp * 100) + '%' : '';
+
+    const h = hands[hands.length - 1];
+    $('empty').hidden = !!h;
+    $('ball').hidden = $('lastName').hidden = $('lastSub').hidden = !h;
+    if (h) {
+      $('ball').className = 'ball ' + h.r;
+      $('ball').innerHTML = h.r + (h.bp ? '<i class="pr b"></i>' : '') + (h.pp ? '<i class="pr p"></i>' : '') + (h.nat ? '<i class="nat">★</i>' : '');
+      $('lastName').textContent = NAME[h.r];
+      $('lastName').style.color = `var(--${h.r === 'B' ? 'banker' : h.r === 'P' ? 'player' : 'green'})`;
+      $('lastSub').textContent = `${hands.length}ゲーム目` + (h.nat ? '・ナチュラル' : '') + (h.bp ? '・Bペア' : '') + (h.pp ? '・Pペア' : '');
+    }
+    if (isNew && h) {
+      const el = $('last'); el.style.setProperty('--flash', `var(--${h.r === 'B' ? 'banker' : h.r === 'P' ? 'player' : 'green'})`);
+      el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+    }
+
+    const sb = cellFor($('fBig'), 18, 90, 20);
+    Road.drawBig($('big'), a, sb, $('fBig')); fitRight($('big'), $('fBig'), sb);
+    const sd = cellFor($('fBead'), 16, 70, 8);
+    Road.drawBead($('bead'), hands, sd, $('fBead'), 0); fitRight($('bead'), $('fBead'), sd);
+    for (const [cv, box, seq, kind] of [['eye', 'fE', a.der[1], 'ring'], ['small', 'fS', a.der[2], 'dot'], ['roach', 'fC', a.der[3], 'slash']]) {
+      const s = cellFor($(box), 8, 34, 12); Road.drawDerived($(cv), seq, kind, s, $(box)); fitRight($(cv), $(box), s);
+    }
+    const sa = Math.max(20, Math.min(48, Math.round(window.innerHeight / 22)));
+    $('askBt').textContent = Road.drawAsk($('askB'), Road.predict(a, 'B'), sa);
+    $('askPt').textContent = Road.drawAsk($('askP'), Road.predict(a, 'P'), sa);
+  }
+
+  function setConn() {
+    const ok = Date.now() - lastOk < 10000;
+    $('conn').classList.toggle('bad', !ok && !first);
+    $('connT').textContent = first ? '接続中…' : ok ? 'リアルタイム表示中' : '接続が切れています・再接続中';
+  }
+  async function poll() {
+    try {
+      const sv = await Road.pull();
+      lastOk = Date.now();
+      if (sv.rev !== rev) {
+        const grew = !first && sv.hands.length > hands.length;
+        hands = sv.hands; rev = sv.rev; render(grew);
+      }
+      first = false;
+    } catch (e) { first = false; }
+    setConn();
+    setTimeout(poll, POLL);
+  }
+
+  // 見本(?demo): サーバーを見ずに見本を表示
+  if (new URLSearchParams(location.search).has('demo')) {
+    hands = Road.decode('aeiiiaqeacaeiaiiqaeiiiiimiaiaaqiaeaiiam'); first = false; lastOk = Date.now(); render(true); setConn();
+  } else { render(false); poll(); }
+
+  setInterval(setConn, 1000);
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => render(false), 120); });
+  $('fs').onclick = () => {
+    const d = document;
+    try { if (d.fullscreenElement) d.exitFullscreen(); else d.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
+  };
+  document.addEventListener('fullscreenchange', () => { $('fs').textContent = document.fullscreenElement ? '全画面を終了' : '全画面'; });
+  // マウスを動かさなければカーソルを隠す
+  let it; const wake = () => { document.body.classList.remove('idle'); clearTimeout(it); it = setTimeout(() => document.body.classList.add('idle'), 3000); };
+  document.addEventListener('mousemove', wake); wake();
+  // 画面が消えないように(対応ブラウザのみ)
+  async function keepOn() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
+  keepOn(); document.addEventListener('visibilitychange', () => { if (!document.hidden) keepOn(); });
+})();
+</script>
+</body>
+</html>
