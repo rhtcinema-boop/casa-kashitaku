@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.RenderProcessGoneDetail;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -21,7 +22,8 @@ import android.webkit.WebViewClient;
  * 公開中の monitor.html を全画面で表示するだけのアプリ。
  * - 画面を消さない(スクリーンセーバーを出さない)
  * - 通信が切れたら5秒ごとに読み直す
- * - リモコンのメニューボタン / 決定ボタンで読み直し
+ * - 画面の中身は公開ページなので、更新は自動(同じURLのまま)
+ * - リモコン: 決定=設定(画面サイズ)、戻る=設定を閉じる/アプリ終了、メニュー=読み直し
  */
 public class MainActivity extends Activity {
     private static final String URL = "https://rhtcinema-boop.github.io/casa-kashitaku/monitor.html?app=1";
@@ -58,7 +60,10 @@ public class MainActivity extends Activity {
                 if (failingUrl != null && failingUrl.startsWith(URL)) retryLater();
             }
         });
+        web.setFocusable(true);
+        web.setFocusableInTouchMode(true);
         setContentView(web);
+        web.requestFocus();
         hideBars();
         load();
     }
@@ -89,8 +94,15 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
             load();
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            // 設定が開いていればページ側で閉じる。開いていなければアプリを終了
+            web.evaluateJavascript("(window.casaBack && window.casaBack()) ? 1 : 0", new ValueCallback<String>() {
+                public void onReceiveValue(String v) { if (!"1".equals(v)) finish(); }
+            });
             return true;
         }
         return super.onKeyDown(keyCode, event);
