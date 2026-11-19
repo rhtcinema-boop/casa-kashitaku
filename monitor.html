@@ -155,6 +155,8 @@
   <div class="sbox">
     <h2>設定</h2>
     <div class="srow" data-k="scale"><span>画面サイズ<small>テレビの端が切れるときは小さく</small></span><span class="ctl"><button data-d="-2" aria-label="小さく">◀</button><em id="vScale">100%</em><button data-d="2" aria-label="大きく">▶</button></span></div>
+    <div class="srow" data-k="voice"><span>読み上げ<small>判定の結果を声で読む</small></span><span class="ctl"><em id="vVoice">ON</em></span></div>
+    <div class="srow" data-k="vtest"><span>声のテスト<small id="vInfo"></small></span></div>
     <div class="srow" data-k="reload"><span>読み直す</span></div>
     <div class="srow" data-k="close"><span>閉じる</span></div>
     <p class="shint">▲▼で選ぶ ・ ◀▶で調整 ・ 決定で実行 ・ 戻るで閉じる</p>
@@ -163,8 +165,8 @@
 </div>
 <div class="tip" id="tip">リモコンの決定ボタンで設定（画面サイズ）</div>
 
-<script src="config.js?v=20261120b"></script>
-<script src="js/road-core.js?v=20261120b"></script>
+<script src="config.js?v=20261120c"></script>
+<script src="js/road-core.js?v=20261120c"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -228,7 +230,9 @@
       lastOk = Date.now();
       if (sv.rev !== rev) {
         const grew = !first && sv.hands.length > hands.length;
+        const one = !first && sv.hands.length === hands.length + 1; // 1ゲーム増えたときだけ読む(開いた直後・まとめて同期したときは読まない)
         hands = sv.hands; rev = sv.rev; render(grew);
+        if (one) speak(sv.say && sv.sayRev === sv.rev ? sv.say : Road.handSay(hands[hands.length - 1]));
       }
       first = false;
     } catch (e) { first = false; }
@@ -274,9 +278,38 @@
   let idx = 0;
   const isOpen = () => !$('settings').hidden;
   function paint() { rows.forEach((r, i) => r.classList.toggle('on', i === idx)); }
-  function openSet() { $('settings').hidden = false; document.body.classList.add('setting'); idx = 0; paint(); $('tip').classList.add('hide'); }
+  // ---------- 読み上げ ----------
+  // テレビのアプリ(Fire TV)では端末の読み上げ(casaTTS)、ブラウザでは speechSynthesis を使う
+  const VOICE_KEY = 'casa-monitor-voice';
+  let voiceOn = true; try { voiceOn = localStorage.getItem(VOICE_KEY) !== '0'; } catch (e) {}
+  const nativeTTS = () => { try { return !!(window.casaTTS && window.casaTTS.ready()); } catch (e) { return false; } };
+  const canSpeak = () => nativeTTS() || ('speechSynthesis' in window && typeof SpeechSynthesisUtterance === 'function');
+  function applyVoice() {
+    $('vVoice').textContent = voiceOn ? 'ON' : 'OFF';
+    $('vInfo').textContent = canSpeak() ? '' : 'このテレビでは読み上げが使えません';
+    try { localStorage.setItem(VOICE_KEY, voiceOn ? '1' : '0'); } catch (e) {}
+  }
+  function speak(text, force) {
+    if ((!voiceOn && !force) || !text) return;
+    try {
+      if (nativeTTS()) { window.casaTTS.speak(text); return; }
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ja-JP'; u.rate = 1;
+        const ja = speechSynthesis.getVoices().find(v => /^ja/i.test(v.lang)); if (ja) u.voice = ja;
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+  applyVoice();
+  function openSet() { applyVoice(); $('settings').hidden = false; document.body.classList.add('setting'); idx = 0; paint(); $('tip').classList.add('hide'); }
   function closeSet() { $('settings').hidden = true; document.body.classList.remove('setting'); }
-  function act(k) { if (k === 'reload') location.reload(); else if (k === 'close') closeSet(); }
+  function act(k) {
+    if (k === 'reload') location.reload();
+    else if (k === 'close') closeSet();
+    else if (k === 'voice') { voiceOn = !voiceOn; applyVoice(); }
+    else if (k === 'vtest') speak('8対3で、プレイヤーの勝ちです。', true);
+  }
   $('gear').onclick = openSet;
   rows.forEach((r, i) => r.addEventListener('click', e => {
     idx = i; paint();
@@ -290,6 +323,7 @@
     if (k === 'ArrowUp') idx = (idx + rows.length - 1) % rows.length;
     else if (k === 'ArrowDown') idx = (idx + 1) % rows.length;
     else if ((k === 'ArrowLeft' || k === 'ArrowRight') && rows[idx].dataset.k === 'scale') { sc += k === 'ArrowLeft' ? -2 : 2; applySc(); }
+    else if ((k === 'ArrowLeft' || k === 'ArrowRight') && rows[idx].dataset.k === 'voice') act('voice');
     else if (k === 'Enter' || k === ' ') { if (rows[idx].dataset.k === 'scale') closeSet(); else act(rows[idx].dataset.k); }
     else if (k === 'Escape' || k === 'Backspace' || k === 'GoBack') closeSet();
     paint();
