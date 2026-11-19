@@ -19,6 +19,7 @@ var CONFIG_HEAD = ['date', 'key', 'value'];
 var MAX_INS = 12; // IN 内訳の列数(総収支タブに合わせる)
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.road) return json(getRoad());
   var date = (e && e.parameter && e.parameter.date) || todayJST();
   return json(state(date));
 }
@@ -28,6 +29,7 @@ function doPost(e) {
   lock.waitLock(20000);
   try {
     var body = JSON.parse(e.postData.contents || '{}');
+    if (body.op === 'road') return json(setRoad(body));
     var date = body.date || todayJST();
     switch (body.op) {
       case 'register': register(date, body.no, body.name); break;
@@ -267,3 +269,17 @@ function rowsOf(sh) {
 function dstr(v) { return v instanceof Date ? Utilities.formatDate(v, "Asia/Tokyo", "yyyy-MM-dd") : String(v); }
 function todayJST() { return Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd'); }
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+
+// ---------- バカラ罫線(モニター表示用。シートには書かない) ----------
+// hands は1ゲーム1文字の文字列(road.html の encode と同じ)。rev は増え続ける番号。
+function getRoad() {
+  var v = PropertiesService.getScriptProperties().getProperty('road');
+  return v ? JSON.parse(v) : { hands: '', rev: 0, ts: 0 };
+}
+function setRoad(body) {
+  var hands = String(body.hands || '').replace(/[^a-x]/g, '').slice(0, 200);
+  var cur = getRoad();
+  var next = { hands: hands, rev: (cur.rev || 0) + 1, ts: Date.now() };
+  PropertiesService.getScriptProperties().setProperty('road', JSON.stringify(next));
+  return next;
+}
