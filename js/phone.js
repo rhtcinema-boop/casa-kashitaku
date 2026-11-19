@@ -496,7 +496,9 @@
     const name = { player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner] + (r.natural ? '・ナチュラル' : '');
     drawSending = true; renderDraw();
     try {
-      const res = await fetch(CFG.GAS_URL, { method: 'POST', body: JSON.stringify({ op: 'roadAdd', hand: ch, room }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+      // モニターが読み上げる一言(罫線アプリと同じ言い方)
+      const say = (r.natural ? `ナチュラル${Math.max(r.pt, r.bt)}。` : '') + (r.winner === 'tie' ? `${r.pt}対${r.bt}、タイです。` : r.winner === 'player' ? `${r.pt}対${r.bt}で、プレイヤーの勝ちです。` : `${r.bt}対${r.pt}で、バンカーの勝ちです。${r.banker6 ? 'バンカー6、配当は半分です。' : ''}`);
+      const res = await fetch(CFG.GAS_URL, { method: 'POST', body: JSON.stringify({ op: 'roadAdd', hand: ch, room, say }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
       const j = await res.json(); if (j.error) throw new Error(j.error);
       toast('モニターに記録しました', `${(j.hands || '').length}ゲーム目 ${name}`);
       draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = [];
