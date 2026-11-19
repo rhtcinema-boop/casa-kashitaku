@@ -75,7 +75,22 @@
     .lower { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
     .stats .st:nth-child(4) { display: none; }
   }
-  body.app .fs { display: none; }
+  body.app .fs#fs { display: none; }
+  /* 画面サイズ(テレビの端が切れるとき用)。設定で 70〜100% */
+  .screen { transform: scale(var(--sc, 1)); transform-origin: 50% 50%; }
+  body.setting .screen { outline: 3px dashed var(--player); outline-offset: -2px; }
+  .settings { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(0, 0, 0, .55); }
+  .sbox { background: var(--panel); border-radius: 20px; padding: clamp(16px, 2.2vw, 34px); width: min(620px, 92vw); display: grid; gap: clamp(8px, 1vw, 14px); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); }
+  .sbox h2 { margin: 0 0 .2em; font-size: clamp(20px, 2vw, 34px); font-weight: 800; }
+  .srow { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: clamp(10px, 1.1vw, 16px) clamp(14px, 1.4vw, 22px); border-radius: 14px; background: var(--panel2); font-size: clamp(17px, 1.7vw, 28px); font-weight: 800; cursor: pointer; }
+  .srow.on { box-shadow: inset 0 0 0 4px var(--player); }
+  .srow small { display: block; font-size: .6em; color: var(--text2); font-weight: 700; margin-top: .2em; }
+  .ctl { display: flex; align-items: center; gap: .5em; font-variant-numeric: tabular-nums; }
+  .ctl button { border: 0; background: var(--bg); color: var(--text); width: 1.8em; height: 1.8em; border-radius: 50%; font: inherit; font-size: .9em; cursor: pointer; }
+  .ctl em { font-style: normal; min-width: 3.4em; text-align: center; }
+  .shint { margin: .2em 0 0; color: var(--text2); font-size: clamp(13px, 1.2vw, 19px); font-weight: 700; }
+  .tip { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 40; background: var(--panel2); color: var(--text2); padding: .5em 1.1em; border-radius: 999px; font-size: clamp(13px, 1.2vw, 19px); font-weight: 700; transition: opacity .6s; white-space: nowrap; }
+  .tip.hide { opacity: 0; pointer-events: none; }
   @media (max-height: 600px) { .note { font-size: 12px; } .askrow { padding: .25em .6em; } .ask { gap: 6px; } }
   @media (prefers-reduced-motion: reduce) { .last.pop .ball, .last.pop::after, .conn.bad i, .hl.on { animation: none; } }
 </style>
@@ -91,6 +106,7 @@
       <div class="st"><small>GAME</small> <span id="cN">0</span></div>
     </div>
     <div class="conn" id="conn"><i></i><span id="connT">接続中…</span></div>
+    <button class="fs" id="gear">設定</button>
     <button class="fs" id="fs">全画面</button>
   </header>
 
@@ -102,27 +118,38 @@
     <div class="empty" id="empty" hidden>入力を待っています</div>
   </section>
 
-  <section class="card big"><h2>大路</h2><div class="fill" id="fBig"><canvas id="big" role="img" aria-label="大路"></canvas><i class="hl" id="hl"></i></div></section>
+  <section class="card big"><h2>BIG ROAD</h2><div class="fill" id="fBig"><canvas id="big" role="img" aria-label="BIG ROAD"></canvas><i class="hl" id="hl"></i></div></section>
 
   <section class="card side">
     <h2>次の結果で付く色</h2>
     <div class="ask">
       <div class="askrow b"><span>次が B</span><span><canvas id="askB" role="img"></canvas><small id="askBt"></small></span></div>
       <div class="askrow p"><span>次が P</span><span><canvas id="askP" role="img"></canvas><small id="askPt"></small></span></div>
-      <p class="note">大眼仔・小路・小強路に付く色です。勝敗の予測ではありません</p>
+      <p class="note">BIG EYE・SMALL ROAD・COCKROACH に付く色です。勝敗の予測ではありません</p>
     </div>
   </section>
 
   <div class="lower">
-    <section class="card"><h2>珠盤路</h2><div class="fill" id="fBead"><canvas id="bead" role="img" aria-label="珠盤路"></canvas></div></section>
-    <section class="card"><h2>大眼仔 ○</h2><div class="fill" id="fE"><canvas id="eye" role="img" aria-label="大眼仔"></canvas></div></section>
-    <section class="card"><h2>小路 ●</h2><div class="fill" id="fS"><canvas id="small" role="img" aria-label="小路"></canvas></div></section>
-    <section class="card"><h2>小強路 ／</h2><div class="fill" id="fC"><canvas id="roach" role="img" aria-label="小強路"></canvas></div></section>
+    <section class="card"><h2>BEAD ROAD</h2><div class="fill" id="fBead"><canvas id="bead" role="img" aria-label="BEAD ROAD"></canvas></div></section>
+    <section class="card"><h2>BIG EYE ○</h2><div class="fill" id="fE"><canvas id="eye" role="img" aria-label="BIG EYE"></canvas></div></section>
+    <section class="card"><h2>SMALL ROAD ●</h2><div class="fill" id="fS"><canvas id="small" role="img" aria-label="SMALL ROAD"></canvas></div></section>
+    <section class="card"><h2>COCKROACH ／</h2><div class="fill" id="fC"><canvas id="roach" role="img" aria-label="COCKROACH"></canvas></div></section>
   </div>
 </div>
 
-<script src="config.js?v=20261119c"></script>
-<script src="js/road-core.js?v=20261119c"></script>
+<div class="settings" id="settings" hidden role="dialog" aria-label="設定">
+  <div class="sbox">
+    <h2>設定</h2>
+    <div class="srow" data-k="scale"><span>画面サイズ<small>テレビの端が切れるときは小さく</small></span><span class="ctl"><button data-d="-2" aria-label="小さく">◀</button><em id="vScale">100%</em><button data-d="2" aria-label="大きく">▶</button></span></div>
+    <div class="srow" data-k="reload"><span>読み直す</span></div>
+    <div class="srow" data-k="close"><span>閉じる</span></div>
+    <p class="shint">▲▼で選ぶ ・ ◀▶で調整 ・ 決定で実行 ・ 戻るで閉じる</p>
+  </div>
+</div>
+<div class="tip" id="tip">リモコンの決定ボタンで設定（画面サイズ）</div>
+
+<script src="config.js?v=20261119d"></script>
+<script src="js/road-core.js?v=20261119d"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -218,6 +245,45 @@
   };
   document.addEventListener('fullscreenchange', () => { $('fs').textContent = document.fullscreenElement ? '全画面を終了' : '全画面'; });
   // マウスを動かさなければカーソルを隠す
+  // ---------- 設定(画面サイズ) ----------
+  const SC_KEY = 'casa-monitor-scale';
+  let sc = 100; try { sc = Number(localStorage.getItem(SC_KEY)) || 100; } catch (e) {}
+  function applySc() {
+    sc = Math.max(70, Math.min(100, sc));
+    document.documentElement.style.setProperty('--sc', sc / 100);
+    $('vScale').textContent = sc + '%';
+    try { localStorage.setItem(SC_KEY, sc); } catch (e) {}
+  }
+  applySc();
+  const rows = [...document.querySelectorAll('.srow')];
+  let idx = 0;
+  const isOpen = () => !$('settings').hidden;
+  function paint() { rows.forEach((r, i) => r.classList.toggle('on', i === idx)); }
+  function openSet() { $('settings').hidden = false; document.body.classList.add('setting'); idx = 0; paint(); $('tip').classList.add('hide'); }
+  function closeSet() { $('settings').hidden = true; document.body.classList.remove('setting'); }
+  function act(k) { if (k === 'reload') location.reload(); else if (k === 'close') closeSet(); }
+  $('gear').onclick = openSet;
+  rows.forEach((r, i) => r.addEventListener('click', e => {
+    idx = i; paint();
+    const b = e.target.closest('[data-d]'); if (b) { sc += Number(b.dataset.d); applySc(); return; }
+    act(r.dataset.k);
+  }));
+  $('settings').addEventListener('click', e => { if (e.target === $('settings')) closeSet(); });
+  document.addEventListener('keydown', e => {
+    const k = e.key;
+    if (!isOpen()) { if (k === 'Enter' || k === ' ' || k === 'ContextMenu') { e.preventDefault(); openSet(); } return; }
+    e.preventDefault();
+    if (k === 'ArrowUp') idx = (idx + rows.length - 1) % rows.length;
+    else if (k === 'ArrowDown') idx = (idx + 1) % rows.length;
+    else if ((k === 'ArrowLeft' || k === 'ArrowRight') && rows[idx].dataset.k === 'scale') { sc += k === 'ArrowLeft' ? -2 : 2; applySc(); }
+    else if (k === 'Enter' || k === ' ') { if (rows[idx].dataset.k === 'scale') closeSet(); else act(rows[idx].dataset.k); }
+    else if (k === 'Escape' || k === 'Backspace' || k === 'GoBack') closeSet();
+    paint();
+  });
+  // テレビのアプリの「戻る」: 設定が開いていれば閉じる(true)、閉じていればアプリ側で終了(false)
+  window.casaBack = () => { if (isOpen()) { closeSet(); return true; } return false; };
+  setTimeout(() => $('tip').classList.add('hide'), 8000);
+
   let it; const wake = () => { document.body.classList.remove('idle'); clearTimeout(it); it = setTimeout(() => document.body.classList.add('idle'), 3000); };
   document.addEventListener('mousemove', wake); wake();
   // 画面が消えないように(対応ブラウザのみ)
