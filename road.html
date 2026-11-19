@@ -14,7 +14,7 @@
 <link rel="manifest" href="road.webmanifest">
 <link rel="icon" href="road-icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="road-icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261119e">
+<link rel="stylesheet" href="css/style.css?v=20261120a">
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -83,8 +83,52 @@
   .syncbtn:active { transform: scale(.96); } .status > span:not(.pend) { margin-left: auto; } .status .pend { color: #fff; padding: 2px 10px; border-radius: 999px; background: var(--indigo); }
   .toast { display: none; } .toast.show { display: grid; grid-template-columns: 1fr auto; }
   .sub button[disabled] { opacity: 1; color: var(--text2); }
+  /* 3枚目の判定(貸卓アプリと同じ判定・同じ見た目) */
+  .sheet { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 30; }
+  .sheet .bg { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .45); }
+  .sheet .panel { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 760px; max-height: 94%; overflow: auto; background: var(--bg); border-radius: 22px 22px 0 0;
+    padding: 22px max(18px, env(safe-area-inset-right)) calc(var(--sab) + 18px) max(18px, env(safe-area-inset-left)); }
+  .panel h2 { margin: 0; font-size: 26px; font-weight: 700; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding-right: 44px; }
+  .panel h2 small { font-size: 14px; color: var(--text2); font-weight: 500; }
+  .panel .close { position: absolute; right: 16px; top: 18px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--fill); color: var(--text2); font-size: 16px; font-weight: 700; }
+  .bd-hands { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 10px; }
+  .bd-hand { background: var(--card); border-radius: 16px; padding: 10px; text-align: center; box-shadow: var(--shadow); min-width: 0; }
+  .bd-hand.p .bd-name { color: var(--blue); } .bd-hand.b .bd-name { color: var(--red); }
+  .bd-hand.turn { box-shadow: inset 0 0 0 2.5px var(--indigo), var(--shadow); }
+  .bd-hand.win { background: var(--blue-tint); }
+  .bd-hand.b.win { background: var(--red-tint); }
+  .bd-name { font-size: 17px; font-weight: 700; }
+  .bd-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 8px; font-size: 14px; color: var(--text2); }
+  .bd-v { min-width: 44px; padding: 4px 8px; border-radius: 10px; background: var(--bg); color: var(--text); font-size: clamp(20px, 5vw, 26px); text-align: center; }
+  .bd-v.empty { color: var(--text2); background: transparent; box-shadow: inset 0 0 0 1.5px var(--sep); }
+  .bd-v.next { color: var(--indigo); box-shadow: inset 0 0 0 2.5px var(--indigo); }
+  .bd-total { font-size: clamp(30px, 7vw, 44px); font-weight: 700; display: block; min-height: 1.1em; }
+  .bd-msg { text-align: center; font-size: 19px; padding: 10px; border-radius: 14px; background: var(--fill); margin-bottom: 8px; }
+  .bd-msg b { color: var(--indigo); }
+  .bd-msg.done { font-size: 26px; font-weight: 700; }
+  .bd-msg.done small { display: block; font-size: 16px; font-weight: 500; color: var(--text2); }
+  .bd-msg.done em { display: block; font-style: normal; font-size: 17px; color: var(--red); margin-top: 4px; }
+  .bd-msg.player { background: var(--blue-tint); color: var(--blue); } .bd-msg.banker { background: var(--red-tint); color: var(--red); } .bd-msg.tie { background: var(--fill2); }
+  .bd-say { background: var(--card); border-radius: 16px; padding: 12px 16px; margin-bottom: 10px; box-shadow: inset 0 0 0 2px var(--indigo), var(--shadow); }
+  .bd-say span { display: block; font-size: 13px; font-weight: 700; color: var(--indigo); margin-bottom: 4px; }
+  .bd-say p { margin: 2px 0; font-size: clamp(19px, 4.6vw, 26px); font-weight: 700; line-height: 1.35; }
+  .bd-say p.past { font-size: 15px; font-weight: 500; color: var(--text2); }
+  .bd-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .bd-keys button { border: 0; background: var(--card); color: var(--text); border-radius: 14px; padding: 16px 0; font-size: clamp(26px, 5vw, 36px); font-weight: 600; box-shadow: var(--shadow); min-width: 0; line-height: 1.1; }
+  .bd-keys button small { display: block; font-size: 12px; color: var(--text2); font-weight: 500; }
+  .bd-keys .bd-back { background: var(--fill); color: var(--blue); font-size: clamp(22px, 4.6vw, 30px); }
+  .bd-keys .bd-back small { color: var(--blue); }
+  .bd-keys .bd-back[disabled] { opacity: .35; }
+  .bd-keys button:active { background: var(--fill2); }
+  .bd-acts { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; }
+  .bd-acts .btn { padding: 18px 8px; font-size: 19px; border-radius: 16px; }
+  .bd-acts .rec { color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
+  .bd-acts .rec small { font-size: 13px; font-weight: 600; opacity: .9; }
+  .bd-acts .rec.B { background: var(--banker); } .bd-acts .rec.P { background: var(--player); } .bd-acts .rec.T { background: var(--green); }
+  @media (max-width: 420px) { header h1 { font-size: 20px; } header .icon { padding: 0 10px; font-size: 14px; } }
   button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .toast { top: auto; bottom: calc(var(--sab) + 215px); }
+  .toast.top { top: calc(var(--sat) + 12px); bottom: auto; z-index: 40; }
   @media (prefers-reduced-motion: reduce) { .key:active, .sub button:active { transform: none; } .toast.show { animation: none; } }
 </style>
 </head>
@@ -94,6 +138,7 @@
     <a class="back" id="back" href="./" hidden>‹ 貸卓</a>
     <h1>バカラ罫線</h1>
     <div class="hright">
+      <button class="icon" id="drawBtn">3枚目</button>
       <button class="icon" id="helpBtn" aria-expanded="false" aria-label="使い方">?</button>
       <button class="icon" id="clear">新しいシュー</button>
     </div>
@@ -103,6 +148,7 @@
 
   <div class="card help" id="help" hidden>
     <dl>
+      <dt>3枚目</dt><dd>2枚の合計と引いたカードを入れると、引く・引かないと勝ち負けを判定。「罫線に記録して次へ」でそのまま記録（ナチュラルも自動）</dd>
       <dt>入力</dt><dd>下の B・P・T を押す。ペア・ナチュラルは先に押してから結果を押す（★＝ナチュラル）</dd>
       <dt>キー</dt><dd>B / P / T、N でナチュラル、Backspace で戻す</dd>
       <dt>大路</dt><dd>同じ側が続くと下へ、変わると右の列へ。タイは緑の線</dd>
@@ -153,10 +199,13 @@
   </div>
 </div></div>
 
+<div class="sheet" id="drawSheet" hidden role="dialog" aria-label="3枚目の判定"><div class="bg" data-draw-close></div><div class="panel" id="drawPanel"></div></div>
+
 <div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261119e"></script>
-<script src="js/road-core.js?v=20261119e"></script>
+<script src="config.js?v=20261120a"></script>
+<script src="js/road-core.js?v=20261120a"></script>
+<script src="js/model.js?v=20261120a"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -271,7 +320,7 @@
   // ---------- 操作 ----------
   let tt;
   let toastAct = null;
-  function toast(t, act, ms) { $('toastT').textContent = t; toastAct = act || null; $('toastUndo').hidden = !act; const el = $('toast'); el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => { el.classList.remove('show'); toastAct = null; }, ms || (act ? 6000 : 1200)); }
+  function toast(t, act, ms) { $('toastT').textContent = t; toastAct = act || null; $('toastUndo').hidden = !act; const el = $('toast'); el.classList.toggle('top', !$('drawSheet').hidden); el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => { el.classList.remove('show'); toastAct = null; }, ms || (act ? 6000 : 1200)); }
   $('toastUndo').onclick = () => { const a = toastAct; $('toast').classList.remove('show'); toastAct = null; if (a) a(); };
   const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
   const label = h => NAME[h.r] + (h.nat ? '・ナチュラル' : '') + (h.bp ? '・Bペア' : '') + (h.pp ? '・Pペア' : '');
@@ -299,8 +348,115 @@
     const prev = state; state = { hands: [], sample: false, dirty: false }; pend = { bp: false, pp: false, nat: false }; changed();
     if (prev.hands.length && !prev.sample) toast('新しいシューを開始', () => { state = Object.assign({}, prev); changed(); toast('記録を戻しました'); }); else toast('新しいシューを開始');
   };
+  // ---------- 3枚目の判定(貸卓アプリと同じ。最初の2枚は合計、3枚目からは引いたカードの数字) ----------
+  const K = window.Kashitaku;
+  const draw = { pt: null, bt: null, p3: null, b3: null, order: [] };
+  const drawOpen = () => !$('drawSheet').hidden;
+  const WIN = { player: 'P', banker: 'B', tie: 'T' };
+  function openDraw() { $('drawSheet').hidden = false; renderDraw(); }
+  function closeDraw() { $('drawSheet').hidden = true; }
+  function resetDraw() { draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = []; }
+  function renderDraw() {
+    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+    const box = (v, key) => v != null ? `<b class="bd-v">${v}</b>` : `<b class="bd-v empty ${r.need === key ? 'next' : ''}">${r.need === key ? '?' : '—'}</b>`;
+    const hand = (side, name) => {
+      const two = side === 'p' ? draw.pt : draw.bt, third = side === 'p' ? draw.p3 : draw.b3;
+      const total = two == null ? '' : (two + (third || 0)) % 10;
+      const turn = r.need === (side === 'p' ? 'pt' : 'bt') || r.need === side + '3';
+      const win = r.done && r.winner === (side === 'p' ? 'player' : 'banker');
+      return `<div class="bd-hand ${side} ${turn ? 'turn' : ''} ${win ? 'win' : ''}">
+        <div class="bd-name">${name}</div>
+        <div class="bd-row"><span>2枚の合計</span>${box(two, side === 'p' ? 'pt' : 'bt')}</div>
+        <div class="bd-row"><span>3枚目</span>${box(third, side + '3')}</div>
+        <b class="bd-total">${total}</b></div>`;
+    };
+    const res = !r.done ? `<div class="bd-msg">${r.need === 'p3' || r.need === 'b3' ? '引く → ' : ''}<b>${r.step}</b> を入力</div>`
+      : r.winner === 'tie' ? `<div class="bd-msg done tie">タイ <small>${r.pt} 対 ${r.bt}</small></div>`
+      : r.winner === 'player' ? `<div class="bd-msg done player">プレイヤーの勝ち <small>${r.pt} 対 ${r.bt}</small></div>`
+      : `<div class="bd-msg done banker">バンカーの勝ち <small>${r.bt} 対 ${r.pt}</small>${r.banker6 ? '<em>バンカー6 → 配当は半分</em>' : ''}</div>`;
+    const third = r.need === 'p3' || r.need === 'b3';
+    const say = drawAnnounce(r);
+    const w = r.done ? WIN[r.winner] : '';
+    $('drawPanel').innerHTML = `<button class="close" data-draw-close aria-label="閉じる">✕</button>
+      <h2>3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
+      <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div>
+      ${res}
+      ${say ? `<div class="bd-say"><span>アナウンス</span>${say}</div>` : ''}
+      ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
+      <div class="bd-acts">
+        <button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button>
+        ${r.done ? `<button class="btn rec ${w}" data-draw-rec>罫線に記録して次へ<small>${NAME[w]}${r.natural ? '・ナチュラル' : ''}</small></button>` : `<button class="btn" data-draw-reset ${draw.order.length ? '' : 'disabled'}>やり直す</button>`}
+      </div>`;
+  }
+  // ディーラーが言う一言(引く/引かない・勝ち)。貸卓アプリと同じ文言
+  function drawAnnounce(r) {
+    const { pt, bt, p3, b3 } = draw;
+    if (pt == null || bt == null) return '';
+    const lines = [];
+    if (r.natural) {
+      lines.push(`ナチュラル${Math.max(pt, bt)}。どちらも引きません。`);
+    } else {
+      if (pt <= 5) {
+        lines.push('プレイヤー引きます。');
+        if (p3 == null) {
+          const cond = bt <= 2 ? 'バンカーは必ず引きます。' : bt === 3 ? 'プレイヤーが8以外ならバンカー引きます。' : bt === 4 ? 'プレイヤーが2〜7ならバンカー引きます。'
+            : bt === 5 ? 'プレイヤーが4〜7ならバンカー引きます。' : bt === 6 ? 'プレイヤーが6か7ならバンカー引きます。' : 'バンカーは引きません。';
+          lines.push(cond);
+        }
+        if (p3 != null) {
+          if (r.need === 'b3' || b3 != null) lines.push(`プレイヤーの3枚目が${p3}なので、バンカー引きます。`);
+          else if (r.done) lines.push(`プレイヤーの3枚目が${p3}なので、バンカー引きません。`);
+        }
+      } else {
+        lines.push('プレイヤー引きません。');
+        if (r.need === 'b3' || b3 != null) lines.push('バンカー引きます。');
+        else if (r.done) lines.push('バンカー引きません。');
+      }
+      if (r.done) lines.push('もう引きません。');
+    }
+    if (r.done) {
+      if (r.winner === 'tie') lines.push(`${r.pt}対${r.bt}、タイです。`);
+      else if (r.winner === 'player') lines.push(`${r.pt}対${r.bt}で、プレイヤーの勝ちです。`);
+      else lines.push(`${r.bt}対${r.pt}で、バンカーの勝ちです。${r.banker6 ? 'バンカー6、配当は半分です。' : ''}`);
+    }
+    const nowFrom = r.done ? Math.max(0, lines.findIndex(x => x.startsWith('もう引きません') || x.startsWith('ナチュラル')))
+      : r.need === 'p3' ? Math.max(0, lines.length - 2) : lines.length - 1;
+    return lines.map((x, i) => `<p class="${i >= nowFrom ? 'now' : 'past'}">${x}</p>`).join('');
+  }
+  function drawNum(n) {
+    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+    if (r.done || !r.need) return;
+    draw[r.need] = n; draw.order.push(r.need);
+    renderDraw();
+  }
+  function drawUndo() { const k = draw.order.pop(); if (k) draw[k] = null; renderDraw(); }
+  // 判定の結果を罫線に記録(ナチュラルも付ける。ペアは付けない)→ モニターにも送られる
+  function drawRecord() {
+    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+    if (!r.done) return;
+    pend = { bp: false, pp: false, nat: !!r.natural };
+    add(WIN[r.winner]);
+    resetDraw(); renderDraw();
+  }
+  $('drawBtn').onclick = openDraw;
+  $('drawSheet').addEventListener('click', e => {
+    const t = e.target;
+    const dn = t.closest('[data-draw-n]'); if (dn) return drawNum(Number(dn.dataset.drawN));
+    if (t.closest('[data-draw-undo]')) return drawUndo();
+    if (t.closest('[data-draw-reset]')) { resetDraw(); return renderDraw(); }
+    if (t.closest('[data-draw-rec]')) return drawRecord();
+    if (t.closest('[data-draw-close]')) return closeDraw();
+  });
+
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return; const k = e.key.toLowerCase();
+    if (drawOpen()) { // 判定中はキーボードの数字で入力
+      if (/^[0-9]$/.test(k)) drawNum(Number(k));
+      else if (k === 'backspace') { e.preventDefault(); drawUndo(); }
+      else if (k === 'enter') drawRecord();
+      else if (k === 'escape') closeDraw();
+      return;
+    }
     if (k === 'b') add('B'); else if (k === 'p') add('P'); else if (k === 't') add('T');
     else if (k === 'n') $('tNat').click();
     else if (k === 'backspace') { e.preventDefault(); undo(); }
