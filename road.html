@@ -210,6 +210,7 @@
   // 同期ボタン: この端末の記録をモニターへ今すぐ送ってそろえる。この端末が空ならモニター側の記録を取り込む(消さない)
   async function manualSync() {
     if (state.sample) return toast('見本の表示中です。B・P・T で入力を始めてください', null, 2500);
+    toast('モニターと同期中…', null, 15000); // 押したことがすぐ分かるように
     clearTimeout(sendTimer); clearTimeout(retry);
     for (let i = 0; sending && i < 50; i++) await new Promise(r => setTimeout(r, 200));
     sending = true; again = false; sync = 'sending'; renderSync();
