@@ -14,7 +14,7 @@
 <link rel="manifest" href="road.webmanifest">
 <link rel="icon" href="road-icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="road-icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261120b">
+<link rel="stylesheet" href="css/style.css?v=20261120c">
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -234,9 +234,9 @@
 
 <div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261120b"></script>
-<script src="js/road-core.js?v=20261120b"></script>
-<script src="js/model.js?v=20261120b"></script>
+<script src="config.js?v=20261120c"></script>
+<script src="js/road-core.js?v=20261120c"></script>
+<script src="js/model.js?v=20261120c"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -264,13 +264,15 @@
   // state.rev / state.base = 最後にサーバーとそろった時の番号と記録。送るときに付けて、
   // その間にほかの端末(貸卓アプリの3枚目判定など)が足した分があれば、消さずに合わせてから送り直す。
   let sendTimer = null, sending = false, again = false, retry = null;
+  let nextSay = null; // { text, n }: 判定から記録したときの読み上げ文。その n ゲーム目までを送るときだけ付ける
   function changed() { state.dirty = true; save(); render(); queue(); }
   function queue(ms) { if (!Road.hasServer || state.sample) return; clearTimeout(sendTimer); sendTimer = setTimeout(send, ms == null ? 150 : ms); }
   // 送る(ほかの端末で増えていたら合わせて送り直す)。送れたら true
   async function pushMerged() {
     for (let tries = 0; tries < 4; tries++) {
       const snap = Road.encode(state.hands);
-      const res = await Road.push(Road.decode(snap), state.base == null ? null : state.rev);
+      const say = nextSay && nextSay.n === state.hands.length ? nextSay.text : '';
+      const res = await Road.push(Road.decode(snap), state.base == null ? null : state.rev, say);
       if (res.conflict) {
         const before = state.hands.length;
         const merged = Road.merge3(state.base, res.hands, Road.encode(state.hands));
@@ -278,7 +280,7 @@
         if (state.hands.length > before) toast('ほかの端末の記録と合わせました', null, 2000);
         continue;
       }
-      state.rev = res.rev; state.base = snap;
+      state.rev = res.rev; state.base = snap; nextSay = null;
       if (Road.encode(state.hands) === snap) state.dirty = false;
       save();
       return true;
@@ -495,6 +497,7 @@
     const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
     if (!r.done) return;
     pend = { bp: false, pp: false, nat: !!r.natural };
+    nextSay = { text: Road.resultSay(r), n: (state.sample ? 0 : state.hands.length) + 1 };
     add(WIN[r.winner]);
     resetDraw(); renderDraw();
   }
