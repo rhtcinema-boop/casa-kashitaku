@@ -7,7 +7,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <application
-        android:label="casa モニター"
+        android:label="casa バカラ"
         android:icon="@drawable/icon"
         android:banner="@drawable/banner"
         android:allowBackup="false"
