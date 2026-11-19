@@ -128,8 +128,10 @@
   const decode = s => [...(s || '')].map(ch => { const n = ch.charCodeAt(0) - 97; return { r: R3[n >> 3], nat: !!(n & 4), bp: !!(n & 2), pp: !!(n & 1) }; }).filter(h => h.r);
   const URL_ = (g.KASHITAKU_CONFIG || {}).GAS_URL || '';
   async function timed(url, init, ms) {
-    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 8000);
-    try { return await fetch(url, Object.assign({ signal: ctl.signal }, init)); } finally { clearTimeout(t); }
+    // 古いブラウザ(AbortController なし)では時間切れなしで送る
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const t = ctl ? setTimeout(() => ctl.abort(), ms || 8000) : 0;
+    try { return await fetch(url, ctl ? Object.assign({ signal: ctl.signal }, init) : init); } finally { clearTimeout(t); }
   }
   async function pull() {
     if (!URL_) throw new Error('no server');
