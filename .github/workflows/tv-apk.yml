@@ -28,10 +28,13 @@ jobs:
           BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)
           JAR=$(ls -d "$SDK"/platforms/android-* | sort -V | tail -1)/android.jar
           echo "build-tools: $BT / platform: $JAR"
+          # 画面をアプリに内蔵(スロットと同じ)。新しい版はアプリが公開サイトから自分で取り込む
+          rm -rf tv-app/assets/www && mkdir -p tv-app/assets/www/js
+          cp monitor.html config.js ver.txt tv-app/assets/www/ && cp js/road-core.js tv-app/assets/www/js/
           cd tv-app
           mkdir -p out/obj out/dex
           "$BT/aapt2" compile --dir res -o out/res.zip
-          "$BT/aapt2" link -o out/base.apk -I "$JAR" --manifest AndroidManifest.xml \
+          "$BT/aapt2" link -o out/base.apk -I "$JAR" --manifest AndroidManifest.xml -A assets \
             --min-sdk-version 22 --target-sdk-version 30 \
             --version-code "$GITHUB_RUN_NUMBER" --version-name "1.$GITHUB_RUN_NUMBER" out/res.zip
           javac -source 8 -target 8 -nowarn -classpath "$JAR" -d out/obj $(find src -name '*.java')
