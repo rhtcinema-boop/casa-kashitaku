@@ -12,7 +12,7 @@
 <title>casa バカラ罫線</title>
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261119b">
+<link rel="stylesheet" href="css/style.css?v=20261119c">
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -66,7 +66,7 @@
   .kB { background: var(--banker); } .kP { background: var(--player); } .kT { background: var(--green); }
   .key:active, .sub button:active { transform: scale(.96); }
   .sub { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-  @media (max-width: 420px) { .sub button { font-size: 14px; letter-spacing: -.02em; } }
+  @media (max-width: 420px) { .sub button { font-size: 14px; letter-spacing: -.02em; } .sub .lg { display: none; } }
   .sub button { border: 0; border-radius: 12px; background: var(--fill); font-size: 16px; font-weight: 600; padding: 12px 0; color: var(--text); }
   .sub .tg.b { color: var(--banker); } .sub .tg.p { color: var(--player); } .sub .tg.n { color: var(--natural); } .sub .tg.n[aria-pressed="true"] { background: var(--natural); color: #1c1c1e; }
   .sub .tg[aria-pressed="true"] { color: #fff; } .sub .tg.b[aria-pressed="true"] { background: var(--banker); } .sub .tg.p[aria-pressed="true"] { background: var(--player); }
@@ -143,14 +143,14 @@
     <button class="tg b" id="tBP" aria-pressed="false"><span class="ck">✓ </span>B ペア</button>
     <button class="tg p" id="tPP" aria-pressed="false"><span class="ck">✓ </span>P ペア</button>
     <button class="tg n" id="tNat" aria-pressed="false"><span class="ck">✓ </span>ナチュラル</button>
-    <button class="undo" id="undo">↶ 直前を戻す</button>
+    <button class="undo" id="undo">↶ <span class="lg">直前を</span>戻す</button>
   </div>
 </div></div>
 
 <div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261119b"></script>
-<script src="js/road-core.js?v=20261119b"></script>
+<script src="config.js?v=20261119c"></script>
+<script src="js/road-core.js?v=20261119c"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
