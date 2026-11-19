@@ -19,7 +19,7 @@ var CONFIG_HEAD = ['date', 'key', 'value'];
 var MAX_INS = 12; // IN 内訳の列数(総収支タブに合わせる)
 
 function doGet(e) {
-  if (e && e.parameter && e.parameter.road) return json(getRoad());
+  if (e && e.parameter && e.parameter.road) return json(getRoad(e.parameter.room));
   var date = (e && e.parameter && e.parameter.date) || todayJST();
   return json(state(date));
 }
@@ -30,6 +30,7 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents || '{}');
     if (body.op === 'road') return json(setRoad(body));
+    if (body.op === 'roadAdd') return json(addRoad(body));
     var date = body.date || todayJST();
     switch (body.op) {
       case 'register': register(date, body.no, body.name); break;
@@ -271,15 +272,35 @@ function todayJST() { return Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyy
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
 
 // ---------- バカラ罫線(モニター表示用。シートには書かない) ----------
-// hands は1ゲーム1文字の文字列(road.html の encode と同じ)。rev は増え続ける番号。
-function getRoad() {
-  var v = PropertiesService.getScriptProperties().getProperty('road');
+// hands は1ゲーム1文字の文字列(road.html の encode と同じ)。rev は書き込むたびに増える番号。
+// room: テスト用の別の置き場(英数字)。空なら本番の 'road'。
+function roadKey(room) {
+  room = String(room || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
+  return room ? 'road_' + room : 'road';
+}
+function getRoad(room) {
+  var v = PropertiesService.getScriptProperties().getProperty(roadKey(room));
   return v ? JSON.parse(v) : { hands: '', rev: 0, ts: 0 };
 }
-function setRoad(body) {
-  var hands = String(body.hands || '').replace(/[^a-x]/g, '').slice(0, 200);
-  var cur = getRoad();
+function putRoad(room, hands) {
+  var cur = getRoad(room);
   var next = { hands: hands, rev: (cur.rev || 0) + 1, ts: Date.now() };
-  PropertiesService.getScriptProperties().setProperty('road', JSON.stringify(next));
+  PropertiesService.getScriptProperties().setProperty(roadKey(room), JSON.stringify(next));
   return next;
+}
+// 端末の記録で置き換える。base(その端末が最後に見た rev)が今と違えば書かずに conflict を返す(端末側で合わせて送り直す)
+function setRoad(body) {
+  var hands = String(body.hands || '').replace(/[^a-x]/g, '').slice(0, 300);
+  if (body.base != null) {
+    var cur = getRoad(body.room);
+    if (Number(body.base) !== (cur.rev || 0)) { cur.conflict = true; return cur; }
+  }
+  return putRoad(body.room, hands);
+}
+// 1ゲーム足す(貸卓アプリの3枚目判定から)。ほかの端末の記録は消さない
+function addRoad(body) {
+  var ch = String(body.hand || '').replace(/[^a-x]/g, '').slice(0, 1);
+  var cur = getRoad(body.room);
+  if (!ch) return cur;
+  return putRoad(body.room, (cur.hands + ch).slice(-300));
 }
