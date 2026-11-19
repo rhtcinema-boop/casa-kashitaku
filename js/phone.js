@@ -147,10 +147,12 @@
   function fitGrid(count) {
     gridCount = count;
     const grid = $('#grid'); if (!grid || grid.style.display === 'none' || !count) return;
-    const rows = Math.ceil(count / 5), gap = 8;
+    // 1列の人数は CSS に合わせる(縦向き5人、タブレット横向き7〜8人)
+    const cols = Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length);
+    const rows = Math.ceil(count / cols), gap = 8;
     const navH = ($('nav') || {}).offsetHeight || 70;
     const avail = window.innerHeight - grid.getBoundingClientRect().top - navH - 12;
-    const cellW = (grid.clientWidth - gap * 4) / 5;
+    const cellW = (grid.clientWidth - gap * (cols - 1)) / cols;
     // 高さは「画面の残り ÷ 行数」。ただし縦長になりすぎないよう幅の1.3倍まで
     const h = Math.max(96, Math.min(220, cellW * 1.3, Math.floor((avail - gap * (rows - 1)) / rows)));
     grid.style.gridAutoRows = h + 'px';
@@ -437,11 +439,14 @@
     const third = r.need === 'p3' || r.need === 'b3';
     $('#panel').innerHTML = `<button class="close" data-close>✕</button>
       <h2 class="g-dealer">3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
+      <div class="bd-body"><div class="bd-l">
       <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div><!-- ディーラーから見て 左: バンカー / 右: プレイヤー -->
       ${res}
       ${announce(r) ? `<div class="bd-say"><span>アナウンス</span>${announce(r)}</div>` : ''}
+      </div><div class="bd-r">
       ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
-      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>`;
+      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>
+      </div></div>`;
     fitPanel();
   }
   // ディーラーが言う一言(引く/引かない・勝ち)
