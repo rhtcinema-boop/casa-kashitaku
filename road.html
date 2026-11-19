@@ -14,7 +14,7 @@
 <link rel="manifest" href="road.webmanifest">
 <link rel="icon" href="road-icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="road-icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261120a">
+<link rel="stylesheet" href="css/style.css?v=20261120b">
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -234,9 +234,9 @@
 
 <div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261120a"></script>
-<script src="js/road-core.js?v=20261120a"></script>
-<script src="js/model.js?v=20261120a"></script>
+<script src="config.js?v=20261120b"></script>
+<script src="js/road-core.js?v=20261120b"></script>
+<script src="js/model.js?v=20261120b"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -260,63 +260,83 @@
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
-  // ---------- モニターへ送る ----------
+  // ---------- モニターへ送る・ほかの端末の分を取り込む ----------
+  // state.rev / state.base = 最後にサーバーとそろった時の番号と記録。送るときに付けて、
+  // その間にほかの端末(貸卓アプリの3枚目判定など)が足した分があれば、消さずに合わせてから送り直す。
   let sendTimer = null, sending = false, again = false, retry = null;
   function changed() { state.dirty = true; save(); render(); queue(); }
   function queue(ms) { if (!Road.hasServer || state.sample) return; clearTimeout(sendTimer); sendTimer = setTimeout(send, ms == null ? 150 : ms); }
+  // 送る(ほかの端末で増えていたら合わせて送り直す)。送れたら true
+  async function pushMerged() {
+    for (let tries = 0; tries < 4; tries++) {
+      const snap = Road.encode(state.hands);
+      const res = await Road.push(Road.decode(snap), state.base == null ? null : state.rev);
+      if (res.conflict) {
+        const before = state.hands.length;
+        const merged = Road.merge3(state.base, res.hands, Road.encode(state.hands));
+        state.hands = Road.decode(merged); state.rev = res.rev; state.base = res.hands; save(); render();
+        if (state.hands.length > before) toast('ほかの端末の記録と合わせました', null, 2000);
+        continue;
+      }
+      state.rev = res.rev; state.base = snap;
+      if (Road.encode(state.hands) === snap) state.dirty = false;
+      save();
+      return true;
+    }
+    throw new Error('conflict');
+  }
   async function send() {
     if (sending) { again = true; return; }
     sending = true; again = false; sync = 'sending'; renderSync();
-    const snap = state.hands.slice();
-    try {
-      await Road.push(snap);
-      if (!again) { state.dirty = false; save(); }
-      sync = 'ok'; clearTimeout(retry);
-    } catch (e) { sync = 'err'; clearTimeout(retry); retry = setTimeout(send, 4000); }
+    try { await pushMerged(); sync = 'ok'; clearTimeout(retry); }
+    catch (e) { sync = 'err'; clearTimeout(retry); retry = setTimeout(send, 4000); }
     sending = false; renderSync();
-    if (again) send();
+    if (again || state.dirty) queue(0);
   }
-  // 開いたとき・戻ったとき: 未送信がなければモニター側(サーバー)の記録を取り込む
-  async function pullServer() {
-    if (!Road.hasServer) return;
+  // 開いたとき・戻ったとき・数秒ごと: 未送信がなければサーバーの記録を取り込む
+  async function pullServer(fromPoll) {
+    if (!Road.hasServer || sending) return;
     if (state.dirty) return queue(0);
     try {
       const sv = await Road.pull();
-      if (state.dirty) return;
-      if (sv.ts && Road.encode(sv.hands) !== (state.sample ? '' : Road.encode(state.hands))) {
-        state = { hands: sv.hands, sample: false, dirty: false }; save(); render();
-      }
+      if (state.dirty || sending) return;
+      const svEnc = Road.encode(sv.hands), mine = state.sample ? '' : Road.encode(state.hands);
+      if (sv.ts && svEnc !== mine) {
+        const before = state.sample ? 0 : state.hands.length;
+        state = { hands: sv.hands, sample: false, dirty: false, rev: sv.rev, base: svEnc }; save(); render();
+        const last = sv.hands[sv.hands.length - 1];
+        if (fromPoll && last && sv.hands.length === before + 1) toast(`${sv.hands.length}ゲーム目 ${label(last)}（ほかの端末から）`, null, 2500);
+      } else if (!state.sample) { state.rev = sv.rev; state.base = svEnc; save(); }
       sync = 'ok';
-    } catch (e) { sync = 'err'; }
+    } catch (e) { if (!fromPoll) sync = 'err'; }
     renderSync();
   }
-  // 同期ボタン: この端末の記録をモニターへ今すぐ送ってそろえる。この端末が空ならモニター側の記録を取り込む(消さない)
+  setInterval(() => { if (!document.hidden) pullServer(true); }, 3000);
+  // 同期ボタン: この端末の記録をモニターへ今すぐ送ってそろえる(ほかの端末で増えた分は残す)。この端末が空ならモニター側の記録を取り込む
   async function manualSync() {
     if (state.sample) return toast('見本の表示中です。B・P・T で入力を始めてください', null, 2500);
     toast('モニターと同期中…', null, 15000); // 押したことがすぐ分かるように
     clearTimeout(sendTimer); clearTimeout(retry);
     for (let i = 0; sending && i < 50; i++) await new Promise(r => setTimeout(r, 200));
     sending = true; again = false; sync = 'sending'; renderSync();
-    const snap = Road.encode(state.hands);
     try {
       if (!state.hands.length) {
         const sv = await Road.pull();
         if (sv.hands.length) {
-          state = { hands: sv.hands, sample: false, dirty: false }; save();
+          state = { hands: sv.hands, sample: false, dirty: false, rev: sv.rev, base: Road.encode(sv.hands) }; save();
           sending = false; sync = 'ok'; render();
           return toast(`モニターの記録（${sv.hands.length}ゲーム）を取り込みました`, null, 2500);
         }
       }
-      await Road.push(Road.decode(snap));
-      if (Road.encode(state.hands) === snap) { state.dirty = false; save(); }
+      await pushMerged();
       sync = 'ok';
-      toast(`モニターと同期しました（${Road.decode(snap).length}ゲーム）`, null, 2000);
+      toast(`モニターと同期しました（${state.hands.length}ゲーム）`, null, 2000);
     } catch (e) {
       sync = 'err'; retry = setTimeout(send, 4000);
       toast('同期できませんでした。電波を確認してもう一度押してください', null, 3500);
     }
     sending = false; render();
-    if (again || Road.encode(state.hands) !== snap) queue(0);
+    if (again || state.dirty) queue(0);
   }
   $('status').addEventListener('click', e => { if (e.target.closest('#syncBtn')) manualSync(); });
   function renderSync() {
@@ -362,7 +382,7 @@
   const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
   const label = h => NAME[h.r] + (h.nat ? '・ナチュラル' : '') + (h.bp ? '・Bペア' : '') + (h.pp ? '・Pペア' : '');
   function add(r) {
-    if (state.sample) state = { hands: [], sample: false, dirty: false };
+    if (state.sample) state = { hands: [], sample: false, dirty: false, rev: state.rev, base: state.base };
     const h = { r, bp: pend.bp, pp: pend.pp, nat: pend.nat };
     state.hands.push(h); pend = { bp: false, pp: false, nat: false }; changed();
     toast(`${state.hands.length}ゲーム目 ${label(h)}`);
@@ -382,8 +402,8 @@
     const b = $('clear');
     if (!armed) { b.textContent = 'もう一度押すと記録を消去'; b.classList.add('warn'); armed = setTimeout(() => { armed = null; b.textContent = '新しいシュー'; b.classList.remove('warn'); }, 5000); return; }
     clearTimeout(armed); armed = null; b.textContent = '新しいシュー'; b.classList.remove('warn');
-    const prev = state; state = { hands: [], sample: false, dirty: false }; pend = { bp: false, pp: false, nat: false }; changed();
-    if (prev.hands.length && !prev.sample) toast('新しいシューを開始', () => { state = Object.assign({}, prev); changed(); toast('記録を戻しました'); }); else toast('新しいシューを開始');
+    const prev = state; state = { hands: [], sample: false, dirty: false, rev: state.rev, base: state.base }; pend = { bp: false, pp: false, nat: false }; changed();
+    if (prev.hands.length && !prev.sample) toast('新しいシューを開始', () => { state = Object.assign({}, prev, { rev: state.rev, base: state.base }); changed(); toast('記録を戻しました'); }); else toast('新しいシューを開始');
   };
   // ---------- 3枚目の判定(貸卓アプリと同じ。最初の2枚は合計、3枚目からは引いたカードの数字) ----------
   const K = window.Kashitaku;
