@@ -27,10 +27,10 @@
   .stats { display: flex; gap: var(--gap); margin-left: auto; }
   .st { display: flex; align-items: baseline; gap: .35em; background: var(--panel); border-radius: 12px; padding: .3em .8em; font-size: clamp(16px, 1.7vw, 28px); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .st i { width: .6em; height: .6em; border-radius: 50%; display: inline-block; align-self: center; }
-  .st small { font-size: .6em; color: var(--text2); font-weight: 700; }
+  .st small { font-size: .7em; color: var(--text2); font-weight: 700; }
   .conn { font-size: clamp(12px, 1vw, 16px); font-weight: 700; color: var(--text2); white-space: nowrap; display: flex; align-items: center; gap: .4em; }
   .conn i { width: .7em; height: .7em; border-radius: 50%; background: var(--green); }
-  .conn.bad { color: var(--banker); } .conn.bad i { background: var(--banker); animation: blink 1s infinite; }
+  .conn.bad { color: var(--banker); font-size: clamp(14px, 1.2vw, 20px); } .conn.bad i { background: var(--banker); animation: blink 1s infinite; }
   .fs { border: 0; background: var(--panel); color: var(--text2); border-radius: 10px; padding: .45em .8em; font: inherit; font-size: clamp(12px, 1vw, 15px); font-weight: 700; cursor: pointer; }
   .fs:focus-visible { outline: 3px solid var(--player); }
 
@@ -39,39 +39,43 @@
   .fill { flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: flex-start; justify-content: flex-start; }
   canvas { display: block; }
 
-  .last { grid-area: last; justify-content: center; align-items: center; text-align: center; position: relative; overflow: hidden; }
+  .last { grid-area: last; justify-content: center; align-items: center; text-align: center; position: relative; overflow: hidden; container-type: size; padding-top: clamp(24px, 2.6vw, 36px); }
   .last h2 { position: absolute; top: clamp(8px, 1vw, 14px); left: clamp(10px, 1.2vw, 16px); }
-  .ball { width: min(11vw, 22vh); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: min(6.4vw, 13vh); font-weight: 900; color: #fff; background: var(--panel2); position: relative; }
+  .ball { width: min(62cqw, 58cqh); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: min(36cqw, 34cqh); font-weight: 900; color: #fff; background: var(--panel2); position: relative; }
   .ball.B { background: var(--banker); } .ball.P { background: var(--player); } .ball.T { background: var(--green); }
   .ball .pr { position: absolute; width: 22%; height: 22%; border-radius: 50%; border: 3px solid var(--panel); }
   .ball .pr.b { background: var(--banker); top: 4%; left: 4%; } .ball .nat { position: absolute; top: -2%; right: -2%; font-size: .32em; color: var(--natural); text-shadow: 0 0 6px rgba(0,0,0,.5); } .ball .pr.p { background: var(--player); bottom: 4%; right: 4%; }
-  .lastname { margin-top: .4em; font-size: clamp(20px, 2.6vw, 44px); font-weight: 800; }
-  .lastsub { font-size: clamp(13px, 1.2vw, 20px); color: var(--text2); font-weight: 700; margin-top: .2em; font-variant-numeric: tabular-nums; }
+  .lastname { margin-top: .3em; font-size: clamp(18px, min(11cqw, 13cqh), 48px); font-weight: 800; line-height: 1.1; }
+  .lastsub { font-size: clamp(16px, min(7cqw, 7.5cqh), 26px); color: var(--text2); font-weight: 700; margin-top: .2em; font-variant-numeric: tabular-nums; }
   .last.pop .ball { animation: pop .7s cubic-bezier(.2, 1.4, .4, 1); }
   .last.pop::after { content: ""; position: absolute; inset: 0; border-radius: 16px; box-shadow: inset 0 0 0 4px var(--flash, transparent); animation: fade 2.5s forwards; }
   @keyframes pop { from { transform: scale(.6); opacity: .3; } }
   @keyframes fade { from { opacity: 1; } to { opacity: 0; } }
   @keyframes blink { 50% { opacity: .2; } }
 
-  .big { grid-area: big; }
+  .big { grid-area: big; } .fill { position: relative; }
+  .hl { position: absolute; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 4px var(--hl), 0 0 26px 8px var(--hl); opacity: 0; }
+  .hl.on { animation: hl 2.6s ease-out; }
+  @keyframes hl { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
   .side { grid-area: side; }
   .lower { grid-area: lower; display: grid; grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr)); gap: var(--gap); min-height: 0; }
   .lower .card { min-height: 0; }
   .ask { display: grid; gap: var(--gap); align-content: center; flex: 1; }
-  .askrow { display: flex; align-items: center; justify-content: space-between; gap: .6em; background: var(--panel2); border-radius: 12px; padding: .5em .8em; font-size: clamp(14px, 1.4vw, 24px); font-weight: 800; }
+  .askrow { display: flex; align-items: center; justify-content: space-between; gap: .6em; background: var(--panel2); border-radius: 12px; padding: .35em .8em; font-size: clamp(14px, 1.4vw, 24px); font-weight: 800; }
   .askrow.b { color: var(--banker); } .askrow.p { color: var(--player); }
-  .askrow small { display: block; text-align: right; font-size: .55em; color: var(--text2); margin-top: .2em; font-weight: 700; }
+  .note { margin: 0; font-size: clamp(14px, 1.15vw, 22px); color: var(--text2); font-weight: 600; line-height: 1.4; }
+  .askrow small { display: block; text-align: right; font-size: max(14px, .7em); color: var(--text2); margin-top: .2em; font-weight: 700; }
   .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--text2); font-size: clamp(14px, 1.4vw, 22px); font-weight: 700; padding: 1em; }
 
   /* 縦置きのモニター */
   @media (orientation: portrait) {
+    header { flex-wrap: wrap; } .stats { margin-left: 0; order: 3; width: 100%; } .stats .st { flex: 1; justify-content: center; }
     .screen { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, .8fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, .7fr);
       grid-template-areas: "head head" "last side" "big big" "lower lower" "lower lower"; }
     .lower { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
-    .ball { width: min(22vw, 16vh); font-size: min(12vw, 9vh); }
     .stats .st:nth-child(4) { display: none; }
   }
-  @media (prefers-reduced-motion: reduce) { .last.pop .ball, .last.pop::after, .conn.bad i { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .last.pop .ball, .last.pop::after, .conn.bad i, .hl.on { animation: none; } }
 </style>
 </head>
 <body>
@@ -96,13 +100,14 @@
     <div class="empty" id="empty" hidden>入力を待っています</div>
   </section>
 
-  <section class="card big"><h2>大路</h2><div class="fill" id="fBig"><canvas id="big" role="img" aria-label="大路"></canvas></div></section>
+  <section class="card big"><h2>大路</h2><div class="fill" id="fBig"><canvas id="big" role="img" aria-label="大路"></canvas><i class="hl" id="hl"></i></div></section>
 
   <section class="card side">
-    <h2>次の予測</h2>
+    <h2>次の結果で付く色</h2>
     <div class="ask">
       <div class="askrow b"><span>次が B</span><span><canvas id="askB" role="img"></canvas><small id="askBt"></small></span></div>
       <div class="askrow p"><span>次が P</span><span><canvas id="askP" role="img"></canvas><small id="askPt"></small></span></div>
+      <p class="note">大眼仔・小路・小強路に付く色です。勝敗の予測ではありません</p>
     </div>
   </section>
 
@@ -114,13 +119,13 @@
   </div>
 </div>
 
-<script src="config.js?v=20261119b"></script>
-<script src="js/road-core.js?v=20261119b"></script>
+<script src="config.js?v=20261119c"></script>
+<script src="js/road-core.js?v=20261119c"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
   const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
-  const POLL = 2000;
+  const POLL = 1000;
   let hands = [], rev = -1, lastOk = 0, first = true;
 
   // 枠の高さに6段がちょうど収まるマスの大きさ
@@ -150,13 +155,19 @@
     }
 
     const sb = cellFor($('fBig'), 18, 90, 20);
-    Road.drawBig($('big'), a, sb, $('fBig')); fitRight($('big'), $('fBig'), sb);
-    const sd = cellFor($('fBead'), 16, 70, 8);
+    const lc = Road.drawBig($('big'), a, sb, $('fBig')); fitRight($('big'), $('fBig'), sb);
+    if (isNew && lc) { // 大路の最新マスを光らせる
+      const hl = $('hl'), off = parseFloat($('big').style.marginLeft) || 0, pad = sb * .1;
+      Object.assign(hl.style, { left: lc.x + off + pad + 'px', top: lc.y + pad + 'px', width: sb - pad * 2 + 'px', height: sb - pad * 2 + 'px' });
+      hl.style.setProperty('--hl', `var(--${h.r === 'B' ? 'banker' : h.r === 'P' ? 'player' : 'green'})`);
+      hl.classList.remove('on'); void hl.offsetWidth; hl.classList.add('on');
+    }
+    const sd = cellFor($('fBead'), 16, 70, 7);
     Road.drawBead($('bead'), hands, sd, $('fBead'), 0); fitRight($('bead'), $('fBead'), sd);
     for (const [cv, box, seq, kind] of [['eye', 'fE', a.der[1], 'ring'], ['small', 'fS', a.der[2], 'dot'], ['roach', 'fC', a.der[3], 'slash']]) {
-      const s = cellFor($(box), 8, 34, 12); Road.drawDerived($(cv), seq, kind, s, $(box)); fitRight($(cv), $(box), s);
+      const s = cellFor($(box), 10, 56, 6); Road.drawDerived($(cv), seq, kind, s, $(box)); fitRight($(cv), $(box), s);
     }
-    const sa = Math.max(20, Math.min(48, Math.round(window.innerHeight / 22)));
+    const side = document.querySelector('.side'), sa = Math.max(16, Math.min(48, Math.floor((side.clientHeight - 70) / 4), Math.floor((side.clientWidth - 40) / 7)));
     $('askBt').textContent = Road.drawAsk($('askB'), Road.predict(a, 'B'), sa);
     $('askPt').textContent = Road.drawAsk($('askP'), Road.predict(a, 'P'), sa);
   }
@@ -164,7 +175,8 @@
   function setConn() {
     const ok = Date.now() - lastOk < 10000;
     $('conn').classList.toggle('bad', !ok && !first);
-    $('connT').textContent = first ? '接続中…' : ok ? 'リアルタイム表示中' : '接続が切れています・再接続中';
+    const ago = Math.round((Date.now() - lastOk) / 1000), agoT = !lastOk ? '' : ago < 60 ? `・最終更新${ago}秒前` : `・最終更新${Math.floor(ago / 60)}分前`;
+    $('connT').textContent = first ? '接続中…' : ok ? 'リアルタイム表示中' : '接続が切れています' + agoT;
   }
   async function poll() {
     try {
