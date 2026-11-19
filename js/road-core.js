@@ -139,7 +139,7 @@
     if (!URL_) throw new Error('no server');
     const r = await timed(`${URL_}?road=1&room=${ROOM}&_=${Date.now()}`, { cache: 'no-store' });
     const j = await r.json(); if (j.error) throw new Error(j.error);
-    return { hands: decode(j.hands), rev: j.rev || 0, ts: j.ts || 0 };
+    return { hands: decode(j.hands), rev: j.rev || 0, ts: j.ts || 0, say: j.say || '', sayRev: j.sayRev || 0 };
   }
   async function post(body) {
     if (!URL_) throw new Error('no server');
@@ -149,13 +149,24 @@
     return j;
   }
   // 記録を置き換える。base(最後に見た rev)を付けると、その後ほかの端末で増えていたら書かずに conflict:true が返る
-  function push(hands, base) {
+  // say: モニターが読み上げる一言(3枚目判定の結果)
+  function push(hands, base, say) {
     const body = { op: 'road', hands: encode(hands) };
     if (base != null) body.base = base;
+    if (say) body.say = say;
     return post(body);
   }
   // 1ゲーム足す(ほかの端末の記録は消さない)
-  function add(hand) { return post({ op: 'roadAdd', hand: encode([hand]) }); }
+  function add(hand, say) { return post({ op: 'roadAdd', hand: encode([hand]), say: say || '' }); }
+  // 判定の結果の読み上げ文(3枚目判定の r から)。貸卓アプリ・罫線アプリ共通の言い方
+  function resultSay(r) {
+    const nat = r.natural ? `ナチュラル${Math.max(r.pt, r.bt)}。` : '';
+    const w = r.winner === 'tie' ? `${r.pt}対${r.bt}、タイです。` : r.winner === 'player' ? `${r.pt}対${r.bt}で、プレイヤーの勝ちです。`
+      : `${r.bt}対${r.pt}で、バンカーの勝ちです。${r.banker6 ? 'バンカー6、配当は半分です。' : ''}`;
+    return nat + w;
+  }
+  // ボタンで入れた結果(点数なし)の読み上げ文
+  function handSay(h) { return (h.nat ? 'ナチュラル。' : '') + { B: 'バンカーの勝ちです。', P: 'プレイヤーの勝ちです。', T: 'タイです。' }[h.r]; }
   // 3者の突き合わせ(文字列): 前に見た記録(base)から、サーバーとこの端末の両方が足しただけなら両方の分を残す。
   // それ以外(片方で戻した・新しいシュー)はこの端末を優先
   function merge3(base, server, local) {
@@ -164,5 +175,5 @@
     return local;
   }
 
-  g.Road = { analyze, predict, counts, drawBead, drawBig, drawDerived, drawAsk, scrollEnd, encode, decode, pull, push, add, merge3, room: ROOM, hasServer: !!URL_ };
+  g.Road = { analyze, predict, counts, drawBead, drawBig, drawDerived, drawAsk, scrollEnd, encode, decode, pull, push, add, merge3, resultSay, handSay, room: ROOM, hasServer: !!URL_ };
 })(window);
