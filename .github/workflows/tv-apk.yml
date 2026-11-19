@@ -1,0 +1,53 @@
+# Fire TV 用「casa モニター」アプリ(APK)を組み立てて、リポジトリ直下の tv.apk に置く。
+# Downloader で https://rhtcinema-boop.github.io/casa-kashitaku/tv.apk を開けば入れられる。
+name: tv-apk
+on:
+  push:
+    branches: [main]
+    paths: ['tv-app/**', '.github/workflows/tv-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - name: Build APK
+        env:
+          TV_KS: ${{ secrets.TV_KS }}
+          TV_KS_PASS: ${{ secrets.TV_KS_PASS }}
+        run: |
+          set -eu
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)
+          JAR=$(ls -d "$SDK"/platforms/android-* | sort -V | tail -1)/android.jar
+          echo "build-tools: $BT / platform: $JAR"
+          cd tv-app
+          mkdir -p out/obj out/dex
+          "$BT/aapt2" compile --dir res -o out/res.zip
+          "$BT/aapt2" link -o out/base.apk -I "$JAR" --manifest AndroidManifest.xml \
+            --min-sdk-version 22 --target-sdk-version 30 \
+            --version-code "$GITHUB_RUN_NUMBER" --version-name "1.$GITHUB_RUN_NUMBER" out/res.zip
+          javac -source 8 -target 8 -nowarn -classpath "$JAR" -d out/obj $(find src -name '*.java')
+          "$BT/d8" --min-api 22 --lib "$JAR" --output out/dex $(find out/obj -name '*.class')
+          cp out/base.apk out/unsigned.apk
+          (cd out/dex && zip -q -u ../unsigned.apk classes.dex)
+          "$BT/zipalign" -f 4 out/unsigned.apk out/aligned.apk
+          echo "$TV_KS" | base64 -d > out/ks.p12
+          "$BT/apksigner" sign --ks out/ks.p12 --ks-type PKCS12 --ks-pass env:TV_KS_PASS --out ../tv.apk out/aligned.apk
+          "$BT/apksigner" verify ../tv.apk
+          rm -f out/ks.p12
+      - name: Commit tv.apk
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add tv.apk
+          git commit -m "tv.apk を更新 (build ${GITHUB_RUN_NUMBER})" || exit 0
+          git push
+      - name: Rebuild Pages
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" || true
