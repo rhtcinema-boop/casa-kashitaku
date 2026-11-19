@@ -50,6 +50,7 @@
   .askbox { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--fill); font-size: 16px; font-weight: 700; }
   .askr { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; } .askr small { font-size: 11px; color: var(--text2); font-weight: 600; letter-spacing: .02em; }
   .askbox.b { color: var(--banker); } .askbox.p { color: var(--player); }
+  .row3 .askcard { grid-column: 1 / -1; }
   @media (max-width: 760px) {
     .row2, .row3 { grid-template-columns: minmax(0, 1fr); }
     .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -126,6 +127,37 @@
   .bd-acts .rec small { font-size: 13px; font-weight: 600; opacity: .9; }
   .bd-acts .rec.B { background: var(--banker); } .bd-acts .rec.P { background: var(--player); } .bd-acts .rec.T { background: var(--green); }
   @media (max-width: 420px) { header h1 { font-size: 20px; } header .icon { padding: 0 10px; font-size: 14px; } }
+  /* タブレット横向き: 左に罫線、右に入力ボタン。1画面に収める(縦向きは今まで通り) */
+  @media (orientation: landscape) and (min-width: 900px) {
+    :root { --padw: clamp(300px, 28vw, 380px); }
+    html, body { height: 100%; overflow: hidden; }
+    .wrap { max-width: none; height: 100%; margin: 0 var(--padw) 0 0; gap: 10px;
+      padding: calc(var(--sat) + 10px) 14px calc(var(--sab) + 10px) max(16px, env(safe-area-inset-left)); }
+    .stat { padding: 6px 12px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .stat b { font-size: 26px; margin: 0; } .stat .pct { display: inline; min-height: 0; }
+    .row2 { flex: 1.3 1 0; min-height: 0; grid-template-columns: minmax(0, .85fr) minmax(0, 1.6fr); }
+    .row3 { flex: 1 1 0; min-height: 0; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, .95fr); }
+    .row3 .askcard { grid-column: auto; }
+    .row2 .road, .row3 .road { display: flex; flex-direction: column; min-height: 0; }
+    .row2 .scroll, .row3 .scroll { flex: 1 1 0; min-height: 0; }
+    .askcard .ask { grid-template-columns: 1fr; align-content: center; flex: 1; }
+    .askbox > span:first-child { white-space: nowrap; }
+    .stat b, .stat .pct { white-space: nowrap; }
+    .help { position: fixed; top: calc(var(--sat) + 64px); left: 16px; width: min(600px, 55vw); z-index: 25; box-shadow: 0 12px 40px rgba(0, 0, 0, .35); }
+    .pad { top: 0; bottom: 0; left: auto; right: 0; width: var(--padw); border-top: 0; border-left: .5px solid var(--sep);
+      padding: calc(var(--sat) + 12px) max(14px, env(safe-area-inset-right)) calc(var(--sab) + 12px) 14px; }
+    .padin { height: 100%; max-width: none; grid-template-columns: 1fr; grid-template-rows: auto repeat(3, minmax(0, 1fr)) auto; gap: 10px; }
+    .key { min-height: 0; } .key b { font-size: 48px; } .key small { font-size: 15px; }
+    .sub { grid-template-columns: 1fr 1fr; }
+    .sub button { padding: 14px 0; }
+    .status { align-content: flex-start; }
+    .toast { left: 16px; right: calc(var(--padw) + 16px); bottom: calc(var(--sab) + 16px); }
+    .sheet .panel { max-width: 1040px; }
+    .bd-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .bd-hands { margin-top: 12px; }
+    .bd-keys { margin-top: 12px; } .bd-keys button { padding: 12px 0; }
+  }
+  @media (orientation: landscape) and (min-width: 900px) and (max-width: 1100px) { .stat .l { display: none; } .stat .s { display: inline; } }
   button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .toast { top: auto; bottom: calc(var(--sab) + 215px); }
   .toast.top { top: calc(var(--sat) + 12px); bottom: auto; z-index: 40; }
@@ -175,15 +207,14 @@
     <section class="card road"><h2>大眼仔 <em>○</em></h2><div class="scroll" id="sE"><canvas id="eye" role="img" aria-label="大眼仔"></canvas></div></section>
     <section class="card road"><h2>小路 <em>●</em></h2><div class="scroll" id="sS"><canvas id="small" role="img" aria-label="小路"></canvas></div></section>
     <section class="card road"><h2>小強路 <em>／</em></h2><div class="scroll" id="sC"><canvas id="roach" role="img" aria-label="小強路"></canvas></div></section>
+    <section class="card road askcard">
+      <h2>次の予測</h2>
+      <div class="ask">
+        <div class="askbox b"><span>次が B</span><span class="askr"><canvas id="askB" role="img"></canvas><small id="askBt"></small></span></div>
+        <div class="askbox p"><span>次が P</span><span class="askr"><canvas id="askP" role="img"></canvas><small id="askPt"></small></span></div>
+      </div>
+    </section>
   </div>
-
-  <section class="card road">
-    <h2>次の予測</h2>
-    <div class="ask">
-      <div class="askbox b"><span>次が B</span><span class="askr"><canvas id="askB" role="img"></canvas><small id="askBt"></small></span></div>
-      <div class="askbox p"><span>次が P</span><span class="askr"><canvas id="askP" role="img"></canvas><small id="askPt"></small></span></div>
-    </div>
-  </section>
 </div>
 
 <div class="pad"><div class="padin">
@@ -210,6 +241,9 @@
 (function () {
   const $ = id => document.getElementById(id);
   const KEY = 'casa-baccarat-road-v1';
+  // タブレット横向きかどうか(CSS の @media と同じ条件)と、枠に6段が収まるマスの大きさ
+  const LANDQ = matchMedia('(orientation: landscape) and (min-width: 900px)');
+  const fitCell = (box, min, max, minCols) => Math.max(min, Math.min(max, Math.floor((box.clientHeight - 2) / 6), Math.floor((box.clientWidth - 2) / minCols)));
   const SAMPLE = 'BBPPPBTBBBBPBPPTBBPPPPPPPBPBBTPBBBPPBP';
   let state = { hands: [], sample: false, dirty: false };
   let pend = { bp: false, pp: false, nat: false };
@@ -298,15 +332,18 @@
     $('cB').textContent = cnt.B; $('cP').textContent = cnt.P; $('cT').textContent = cnt.T; $('cN').textContent = hands.length;
     $('pB').textContent = bp ? Math.round(cnt.B / bp * 100) + '%' : ''; $('pP').textContent = bp ? Math.round(cnt.P / bp * 100) + '%' : '';
     $('sample').hidden = !state.sample;
-    const narrow = window.innerWidth < 760;
-    Road.drawBead($('bead'), hands, 30, narrow ? $('sBead') : null, narrow ? 0 : 7);
-    Road.drawBig($('big'), a, 30, $('sBig'));
-    Road.drawDerived($('eye'), a.der[1], 'ring', 16, $('sE'));
-    Road.drawDerived($('small'), a.der[2], 'dot', 16, $('sS'));
-    Road.drawDerived($('roach'), a.der[3], 'slash', 16, $('sC'));
+    // 縦向き: 決まった大きさで横にスクロール。横向き(タブレット): 枠の高さに6段がちょうど収まる大きさ
+    const land = LANDQ.matches, narrow = window.innerWidth < 760;
+    let sBd = 30, sBg = 30, sDv = 16;
+    if (land) { sBd = fitCell($('sBead'), 14, 56, 6); sBg = fitCell($('sBig'), 14, 56, 12); sDv = fitCell($('sE'), 8, 32, 8); }
+    Road.drawBead($('bead'), hands, sBd, (narrow || land) ? $('sBead') : null, (narrow || land) ? 0 : 7);
+    Road.drawBig($('big'), a, sBg, $('sBig'));
+    Road.drawDerived($('eye'), a.der[1], 'ring', sDv, $('sE'));
+    Road.drawDerived($('small'), a.der[2], 'dot', sDv, $('sS'));
+    Road.drawDerived($('roach'), a.der[3], 'slash', sDv, $('sC'));
     $('askBt').textContent = Road.drawAsk($('askB'), Road.predict(a, 'B'), 24);
     $('askPt').textContent = Road.drawAsk($('askP'), Road.predict(a, 'P'), 24);
-    for (const [id, cell] of [['sBead', 30], ['sBig', 30], ['sE', 16], ['sS', 16], ['sC', 16]]) Road.scrollEnd($(id), cell);
+    for (const [id, cell] of [['sBead', sBd], ['sBig', sBg], ['sE', sDv], ['sS', sDv], ['sC', sDv]]) Road.scrollEnd($(id), cell);
     $('tBP').setAttribute('aria-pressed', pend.bp); $('tPP').setAttribute('aria-pressed', pend.pp); $('tNat').setAttribute('aria-pressed', pend.nat);
     $('undo').disabled = !hands.length || state.sample;
     const last = hands[hands.length - 1], pn = [pend.nat && 'ナチュラル', pend.bp && 'Bペア', pend.pp && 'Pペア'].filter(Boolean).join('・');
@@ -379,14 +416,17 @@
     const w = r.done ? WIN[r.winner] : '';
     $('drawPanel').innerHTML = `<button class="close" data-draw-close aria-label="閉じる">✕</button>
       <h2>3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
+      <div class="bd-body"><div class="bd-l">
       <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div>
       ${res}
       ${say ? `<div class="bd-say"><span>アナウンス</span>${say}</div>` : ''}
+      </div><div class="bd-r">
       ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
       <div class="bd-acts">
         <button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button>
         ${r.done ? `<button class="btn rec ${w}" data-draw-rec>罫線に記録して次へ<small>${NAME[w]}${r.natural ? '・ナチュラル' : ''}</small></button>` : `<button class="btn" data-draw-reset ${draw.order.length ? '' : 'disabled'}>やり直す</button>`}
-      </div>`;
+      </div>
+      </div></div>`;
   }
   // ディーラーが言う一言(引く/引かない・勝ち)。貸卓アプリと同じ文言
   function drawAnnounce(r) {
@@ -462,6 +502,7 @@
     else if (k === 'backspace') { e.preventDefault(); undo(); }
   });
   window.addEventListener('resize', render);
+  try { LANDQ.addEventListener('change', render); } catch (e) { try { LANDQ.addListener(render); } catch (e2) {} }
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render); } catch (e) {}
   window.addEventListener('storage', e => { if (e.key === KEY) { load(); render(); } });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pullServer(); });
