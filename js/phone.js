@@ -445,7 +445,7 @@
       ${announce(r) ? `<div class="bd-say"><span>アナウンス</span>${announce(r)}</div>` : ''}
       </div><div class="bd-r">
       ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
-      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn gold" data-draw-reset>次のゲーム</button></div>
+      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn ${r.done ? '' : 'gold'}" data-draw-reset>${r.done ? '記録せず次へ' : '次のゲーム'}</button>${r.done ? `<button class="btn gold full" data-draw-rec ${drawSending ? 'disabled' : ''}>${drawSending ? '送信中…' : 'モニターに記録して次へ'}<br><small>${{ player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner]}${r.natural ? '・ナチュラル' : ''}</small></button>` : ''}</div>
       </div></div>`;
     fitPanel();
   }
@@ -486,6 +486,26 @@
       : r.need === 'p3' ? Math.max(0, lines.length - 2) : lines.length - 1; // プレイヤーが引く場面は「引きます」と条件をまとめて
     return lines.map((x, i) => `<p class="${i >= nowFrom ? 'now' : 'past'}">${x}</p>`).join('');
   }
+  // 判定の結果をバカラ罫線(テレビのモニター)に1ゲーム足す。罫線アプリ(iPad)の記録は消さない
+  let drawSending = false;
+  async function drawToMonitor() {
+    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+    if (!r.done || drawSending || !CFG.GAS_URL) return;
+    const ch = String.fromCharCode(97 + { banker: 0, player: 1, tie: 2 }[r.winner] * 8 + (r.natural ? 4 : 0)); // road-core.js の encode と同じ
+    const room = (new URLSearchParams(location.search).get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16); // テスト用の置き場
+    const name = { player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner] + (r.natural ? '・ナチュラル' : '');
+    drawSending = true; renderDraw();
+    try {
+      const res = await fetch(CFG.GAS_URL, { method: 'POST', body: JSON.stringify({ op: 'roadAdd', hand: ch, room }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+      const j = await res.json(); if (j.error) throw new Error(j.error);
+      toast('モニターに記録しました', `${(j.hands || '').length}ゲーム目 ${name}`);
+      draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = [];
+    } catch (e) {
+      toast('モニターに送れませんでした', '電波を確認して、もう一度押してください', true);
+    }
+    drawSending = false;
+    if (openNo === -1) renderDraw();
+  }
   function drawNum(n) {
     const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
     if (r.done || !r.need) return;
@@ -518,6 +538,7 @@
     const dn = t.closest('[data-draw-n]'); if (dn) return drawNum(Number(dn.dataset.drawN));
     if (t.closest('[data-draw-undo]')) { const k = draw.order.pop(); if (k) draw[k] = null; return renderDraw(); }
     if (t.closest('[data-draw-reset]')) { draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = []; return renderDraw(); }
+    if (t.closest('[data-draw-rec]')) return drawToMonitor();
     const db = t.closest('[data-dealer]');
     if (db) {
       pad = { type: db.dataset.type === 'in' ? 'dealerIn' : 'dealerOut', table: 'bac', value: '', allowNeg: true, neg: false };
