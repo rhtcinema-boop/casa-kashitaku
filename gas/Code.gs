@@ -282,9 +282,12 @@ function getRoad(room) {
   var v = PropertiesService.getScriptProperties().getProperty(roadKey(room));
   return v ? JSON.parse(v) : { hands: '', rev: 0, ts: 0 };
 }
-function putRoad(room, hands) {
+// say: モニターが読み上げる一言(3枚目判定の結果など)。その rev のときだけ読む
+function putRoad(room, hands, say) {
   var cur = getRoad(room);
   var next = { hands: hands, rev: (cur.rev || 0) + 1, ts: Date.now() };
+  say = String(say || '').slice(0, 120);
+  if (say) { next.say = say; next.sayRev = next.rev; }
   PropertiesService.getScriptProperties().setProperty(roadKey(room), JSON.stringify(next));
   return next;
 }
@@ -295,12 +298,12 @@ function setRoad(body) {
     var cur = getRoad(body.room);
     if (Number(body.base) !== (cur.rev || 0)) { cur.conflict = true; return cur; }
   }
-  return putRoad(body.room, hands);
+  return putRoad(body.room, hands, body.say);
 }
 // 1ゲーム足す(貸卓アプリの3枚目判定から)。ほかの端末の記録は消さない
 function addRoad(body) {
   var ch = String(body.hand || '').replace(/[^a-x]/g, '').slice(0, 1);
   var cur = getRoad(body.room);
   if (!ch) return cur;
-  return putRoad(body.room, (cur.hands + ch).slice(-300));
+  return putRoad(body.room, (cur.hands + ch).slice(-300), body.say);
 }
