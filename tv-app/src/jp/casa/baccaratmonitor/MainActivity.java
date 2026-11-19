@@ -5,10 +5,12 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.speech.tts.TextToSpeech;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -30,6 +32,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -48,6 +51,7 @@ import javax.net.ssl.X509TrustManager;
  * - 結果のデータは Google(Apps Script)から 1 秒ごとに取る(画面側の処理)。
  * - 画面を消さない。描画が落ちても作り直す。
  * - リモコン: 決定=設定(画面サイズ)、戻る=設定を閉じる、メニュー=読み直し。アプリの終了はホームボタン。
+ * - 判定の読み上げ: テレビ本体の読み上げ機能(TextToSpeech、日本語)を画面から window.casaTTS.speak(文) で使う。
  */
 public class MainActivity extends Activity {
     private static final String HOST = "appassets.androidplatform.net";
@@ -60,6 +64,16 @@ public class MainActivity extends Activity {
     private WebView web;
     private volatile File liveDir;
     private volatile boolean updBusy = false;
+    private TextToSpeech tts;
+    private volatile boolean ttsReady = false;
+
+    /** 画面(monitor.html)から呼ぶ読み上げ。WebView の中では speechSynthesis が使えないため */
+    public class Speaker {
+        @JavascriptInterface public boolean ready() { return ttsReady; }
+        @JavascriptInterface public void speak(String text) {
+            if (ttsReady && text != null) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "casa");
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +109,14 @@ public class MainActivity extends Activity {
                 return !HOST.equals(request.getUrl().getHost()); // 外のページへは移動しない
             }
         });
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            public void onInit(int status) {
+                if (status != TextToSpeech.SUCCESS) return;
+                int r = tts.setLanguage(Locale.JAPAN);
+                ttsReady = r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED;
+            }
+        });
+        web.addJavascriptInterface(new Speaker(), "casaTTS");
         web.setFocusable(true);
         web.setFocusableInTouchMode(true);
         setContentView(web);
@@ -359,6 +381,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
+        if (tts != null) tts.shutdown();
         web.destroy();
         super.onDestroy();
     }
