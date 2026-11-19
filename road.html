@@ -6,13 +6,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="バカラ罫線">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="format-detection" content="telephone=no">
 <title>casa バカラ罫線</title>
-<link rel="icon" href="icon-180.png" type="image/png">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261119c">
+<link rel="manifest" href="road.webmanifest">
+<link rel="icon" href="road-icon-180.png" type="image/png">
+<link rel="apple-touch-icon" href="road-icon-180.png">
+<link rel="stylesheet" href="css/style.css?v=20261119d">
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -149,8 +151,8 @@
 
 <div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261119c"></script>
-<script src="js/road-core.js?v=20261119c"></script>
+<script src="config.js?v=20261119d"></script>
+<script src="js/road-core.js?v=20261119d"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -273,6 +275,16 @@
   window.addEventListener('storage', e => { if (e.key === KEY) { load(); render(); } });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pullServer(); });
   window.addEventListener('online', () => queue(0));
+  // 開きっぱなしでも新しい版に自動で切り替える(ver.txt が変わったら読み直す。記録は端末に残るので消えない)
+  let ver = null;
+  function checkVer() {
+    fetch('ver.txt?_=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
+      v = (v || '').trim(); if (!v) return;
+      if (ver === null) ver = v; else if (v !== ver) { save(); location.reload(); }
+    }).catch(() => {});
+  }
+  checkVer(); setInterval(checkVer, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVer(); });
   load(); render(); pullServer();
 })();
 </script>
