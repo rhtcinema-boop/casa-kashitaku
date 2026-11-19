@@ -1,0 +1,15 @@
+{
+  "id": "casa-baccarat-road",
+  "name": "casa バカラ罫線",
+  "short_name": "バカラ罫線",
+  "start_url": "road.html",
+  "scope": "road.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    { "src": "road-icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "road-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
