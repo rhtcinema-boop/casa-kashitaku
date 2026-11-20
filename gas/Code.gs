@@ -274,36 +274,55 @@ function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj))
 // ---------- バカラ罫線(モニター表示用。シートには書かない) ----------
 // hands は1ゲーム1文字の文字列(road.html の encode と同じ)。rev は書き込むたびに増える番号。
 // room: テスト用の別の置き場(英数字)。空なら本番の 'road'。
+// 保存は Script Properties(消えない)。モニター等の頻繁な読み取りは CacheService から返す
+// (Properties の1日の読み書き回数の上限に当たらないように)。書き込みはロックの中で Properties を正として行う。
+var ROAD_MAX = 1000;     // 残すゲーム数(新しい方から)
+var ROAD_CACHE_SEC = 21600;
 function roadKey(room) {
   room = String(room || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
   return room ? 'road_' + room : 'road';
 }
-function getRoad(room) {
+function roadEmpty() { return { hands: '', rev: 0, ts: 0 }; }
+// 書き込み用: Properties から読む(正しい最新)
+function readRoad(room) {
   var v = PropertiesService.getScriptProperties().getProperty(roadKey(room));
-  return v ? JSON.parse(v) : { hands: '', rev: 0, ts: 0 };
+  return v ? JSON.parse(v) : roadEmpty();
 }
+// 読み取り用(doGet): キャッシュ優先。無ければ Properties から読んでキャッシュする
+function getRoad(room) {
+  var key = roadKey(room), cache = CacheService.getScriptCache();
+  var v = cache.get(key);
+  if (v) return publicRoad(JSON.parse(v));
+  var r = readRoad(room);
+  cache.put(key, JSON.stringify(r), ROAD_CACHE_SEC);
+  return publicRoad(r);
+}
+function publicRoad(r) { return { hands: r.hands, rev: r.rev, ts: r.ts, say: r.say, sayRev: r.sayRev }; }
 // say: モニターが読み上げる一言(3枚目判定の結果など)。その rev のときだけ読む
-function putRoad(room, hands, say) {
-  var cur = getRoad(room);
-  var next = { hands: hands, rev: (cur.rev || 0) + 1, ts: Date.now() };
+// ids: 最近の追加の番号(同じ追加を2回送っても1回だけ記録する)
+function putRoad(room, cur, hands, say, id) {
+  var next = { hands: hands.slice(-ROAD_MAX), rev: (cur.rev || 0) + 1, ts: Date.now(), ids: (cur.ids || []).slice(-30) };
+  if (id) next.ids.push(id);
   say = String(say || '').slice(0, 120);
   if (say) { next.say = say; next.sayRev = next.rev; }
-  PropertiesService.getScriptProperties().setProperty(roadKey(room), JSON.stringify(next));
-  return next;
+  var json = JSON.stringify(next);
+  PropertiesService.getScriptProperties().setProperty(roadKey(room), json);
+  CacheService.getScriptCache().put(roadKey(room), json, ROAD_CACHE_SEC);
+  return publicRoad(next);
 }
 // 端末の記録で置き換える。base(その端末が最後に見た rev)が今と違えば書かずに conflict を返す(端末側で合わせて送り直す)
 function setRoad(body) {
-  var hands = String(body.hands || '').replace(/[^a-x]/g, '').slice(0, 300);
-  if (body.base != null) {
-    var cur = getRoad(body.room);
-    if (Number(body.base) !== (cur.rev || 0)) { cur.conflict = true; return cur; }
-  }
-  return putRoad(body.room, hands, body.say);
+  var hands = String(body.hands || '').replace(/[^a-x]/g, '');
+  var cur = readRoad(body.room);
+  if (body.base != null && Number(body.base) !== (cur.rev || 0)) { var c = publicRoad(cur); c.conflict = true; return c; }
+  return putRoad(body.room, cur, hands, body.say, '');
 }
-// 1ゲーム足す(貸卓アプリの3枚目判定から)。ほかの端末の記録は消さない
+// 1ゲーム足す(貸卓アプリの3枚目判定から)。ほかの端末の記録は消さない。id が同じ追加は1回だけ
 function addRoad(body) {
   var ch = String(body.hand || '').replace(/[^a-x]/g, '').slice(0, 1);
-  var cur = getRoad(body.room);
-  if (!ch) return cur;
-  return putRoad(body.room, (cur.hands + ch).slice(-300), body.say);
+  var id = String(body.id || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 24);
+  var cur = readRoad(body.room);
+  if (!ch) return publicRoad(cur);
+  if (id && (cur.ids || []).indexOf(id) >= 0) { var d = publicRoad(cur); d.dup = true; return d; }
+  return putRoad(body.room, cur, cur.hands + ch, body.say, id);
 }
