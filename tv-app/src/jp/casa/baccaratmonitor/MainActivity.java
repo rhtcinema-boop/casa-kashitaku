@@ -63,7 +63,10 @@ public class MainActivity extends Activity {
     private final Handler handler = new Handler();
     private WebView web;
     private volatile File liveDir;
-    private volatile boolean updBusy = false;
+    // 更新はアプリ全体で1本だけ(画面を作り直しても古い処理と重ならないように)
+    private static final Object FILE_LOCK = new Object();
+    private static volatile boolean updBusy = false;
+    private volatile boolean destroyed = false;
     private TextToSpeech tts;
     private volatile boolean ttsReady = false;
 
@@ -128,6 +131,7 @@ public class MainActivity extends Activity {
     }
 
     private void load() {
+        if (destroyed) return;
         web.loadUrl(BASE + "monitor.html?app=1");
     }
 
@@ -202,22 +206,36 @@ public class MainActivity extends Activity {
         f.delete();
     }
 
-    /** 起動時: 取り込んだ版が内蔵版より新しいときだけ使う(新しい APK を入れたら内蔵版に戻る) */
+    /** 起動時: 取り込んだ版が内蔵版より新しく、中身がそろっているときだけ使う(新しい APK を入れたら内蔵版に戻る) */
     private void pickLive() {
-        File live = new File(getFilesDir(), "www-live");
-        if (live.isDirectory() && verNum(liveVersion(live)) > verNum(bundledVersion())) liveDir = live;
-        else { wipe(live); liveDir = null; }
+        synchronized (FILE_LOCK) {
+            File live = new File(getFilesDir(), "www-live");
+            if (live.isDirectory() && verNum(liveVersion(live)) > verNum(bundledVersion()) && complete(live)) liveDir = live;
+            else { wipe(live); liveDir = null; }
+        }
+    }
+
+    /** 取り込んだファイルが全部あって空でない(電源断などで壊れていない) */
+    private static boolean complete(File dir) {
+        for (String f : FILES) {
+            File x = new File(dir, f);
+            if (!x.isFile() || x.length() == 0) return false;
+        }
+        try { return new String(readAll(new FileInputStream(new File(dir, "monitor.html"))), "UTF-8").contains("</html>"); }
+        catch (Exception e) { return false; }
     }
 
     private void startUpdate() {
-        synchronized (this) {
+        synchronized (FILE_LOCK) {
             if (updBusy) return;
             updBusy = true;
         }
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    if (doUpdate()) handler.post(new Runnable() { public void run() { load(); } });
+                    boolean changed;
+                    synchronized (FILE_LOCK) { changed = doUpdate(); }
+                    if (changed) handler.post(new Runnable() { public void run() { load(); } });
                 } catch (Throwable e) {
                     // 通信できないときは今の版のまま。次の回にまた試す
                 } finally {
@@ -244,9 +262,11 @@ public class MainActivity extends Activity {
             File dir = out.getParentFile();
             if (dir != null) dir.mkdirs();
             FileOutputStream os = new FileOutputStream(out);
-            try { os.write(body); } finally { os.close(); }
+            try { os.write(body); os.getFD().sync(); } finally { os.close(); } // 電源が切れても中途半端なファイルを残さない
         }
-        if (verNum(liveVersion(stage)) <= verNum(now)) { wipe(stage); return false; } // 配信がまだ切り替わり中
+        // 取っている途中で公開が切り替わったら(新旧が混ざるおそれ)、今回は見送る
+        String after = new String(http(SITE + "ver.txt?" + bust + "b"), "UTF-8").trim();
+        if (!after.equals(remote) || !liveVersion(stage).equals(remote) || !complete(stage)) { wipe(stage); return false; }
         File live = new File(getFilesDir(), "www-live");
         liveDir = null;
         wipe(live);
@@ -354,7 +374,8 @@ public class MainActivity extends Activity {
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: case KeyEvent.KEYCODE_MEDIA_PLAY: name = "Enter"; break;
         }
         if (name != null) {
-            if (down) js("window.casaKey && window.casaKey('" + name + "')");
+            // 決定の長押し(押しっぱなしの連続入力)で設定が開いたり閉じたりしないように、決定は1回目だけ送る
+            if (down && (event.getRepeatCount() == 0 || !"Enter".equals(name))) js("window.casaKey && window.casaKey('" + name + "')");
             return true;
         }
         return super.dispatchKeyEvent(event);
@@ -366,6 +387,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        web.resumeTimers();
         web.onResume();
         hideBars();
         // 戻ってきたら描き直す(Fire TV ではキャンバスの中身が消えることがある)
@@ -374,12 +396,16 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        // ホーム画面などに切り替えたら、取得と読み上げを止める
         web.onPause();
+        web.pauseTimers();
+        if (tts != null) tts.stop();
         super.onPause();
     }
 
     @Override
     protected void onDestroy() {
+        destroyed = true;
         handler.removeCallbacksAndMessages(null);
         if (tts != null) tts.shutdown();
         web.destroy();
