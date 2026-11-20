@@ -149,7 +149,7 @@
     const grid = $('#grid'); if (!grid || grid.style.display === 'none' || !count) return;
     // 1列の人数は CSS に合わせる(縦向き5人、タブレット横向き7〜8人)
     const cols = Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length);
-    const rows = Math.ceil(count / cols), gap = 8;
+    const rows = Math.ceil(count / cols), gap = parseFloat(getComputedStyle(grid).rowGap) || 8;
     const navH = ($('nav') || {}).offsetHeight || 70;
     const avail = window.innerHeight - grid.getBoundingClientRect().top - navH - 12;
     const cellW = (grid.clientWidth - gap * (cols - 1)) / cols;
@@ -444,8 +444,8 @@
       ${res}
       ${announce(r) ? `<div class="bd-say"><span>アナウンス</span>${announce(r)}</div>` : ''}
       </div><div class="bd-r">
-      ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
-      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button><button class="btn ${r.done ? '' : 'gold'}" data-draw-reset>${r.done ? '記録せず次へ' : '次のゲーム'}</button>${r.done ? `<button class="btn gold full" data-draw-rec ${drawSending ? 'disabled' : ''}>${drawSending ? '送信中…' : 'モニターに記録して次へ'}<br><small>${{ player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner]}${r.natural ? '・ナチュラル' : ''}</small></button>` : ''}</div>
+      ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
+      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>1つ戻す</button><button class="btn ${r.done ? '' : 'gold'}" data-draw-reset ${drawSending ? 'disabled' : ''}>${r.done ? '記録せず次へ' : '次のゲーム'}</button>${r.done ? `<button class="btn gold full" data-draw-rec ${drawSending ? 'disabled' : ''}>${drawSending ? '送信中…' : 'モニターに記録して次へ'}<br><small>${{ player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner]}${r.natural ? '・ナチュラル' : ''}</small></button>` : ''}</div>
       </div></div>`;
     fitPanel();
   }
@@ -494,16 +494,25 @@
     const ch = String.fromCharCode(97 + { banker: 0, player: 1, tie: 2 }[r.winner] * 8 + (r.natural ? 4 : 0)); // road-core.js の encode と同じ
     const room = (new URLSearchParams(location.search).get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16); // テスト用の置き場
     const name = { player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner] + (r.natural ? '・ナチュラル' : '');
+    // このゲームの番号(送り直しても同じ番号 → サーバーで2回目は記録しない)
+    if (!draw.recId) draw.recId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     drawSending = true; renderDraw();
+    let netErr = true;
     try {
       // モニターが読み上げる一言(罫線アプリと同じ言い方)
       const say = (r.natural ? `ナチュラル${Math.max(r.pt, r.bt)}。` : '') + (r.winner === 'tie' ? `${r.pt}対${r.bt}、タイです。` : r.winner === 'player' ? `${r.pt}対${r.bt}で、プレイヤーの勝ちです。` : `${r.bt}対${r.pt}で、バンカーの勝ちです。${r.banker6 ? 'バンカー6、配当は半分です。' : ''}`);
-      const res = await fetch(CFG.GAS_URL, { method: 'POST', body: JSON.stringify({ op: 'roadAdd', hand: ch, room, say }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+      // 15秒で打ち切る(電波が悪いときにずっと「送信中…」にならないように)
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const tm = ctl ? setTimeout(() => ctl.abort(), 15000) : 0;
+      let res;
+      try { res = await fetch(CFG.GAS_URL, Object.assign({ method: 'POST', body: JSON.stringify({ op: 'roadAdd', hand: ch, room, say, id: draw.recId }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }, ctl ? { signal: ctl.signal } : {})); }
+      finally { clearTimeout(tm); }
+      netErr = false;
       const j = await res.json(); if (j.error) throw new Error(j.error);
-      toast('モニターに記録しました', `${(j.hands || '').length}ゲーム目 ${name}`);
-      draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = [];
+      toast(j.dup ? 'モニターに記録済みでした' : 'モニターに記録しました', `${(j.hands || '').length}ゲーム目 ${name}`);
+      draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = []; draw.recId = null;
     } catch (e) {
-      toast('モニターに送れませんでした', '電波を確認して、もう一度押してください', true);
+      toast('モニターに送れませんでした', netErr ? '電波を確認して、もう一度押してください' : 'サーバーのエラーです。もう一度押してください', true);
     }
     drawSending = false;
     if (openNo === -1) renderDraw();
@@ -537,9 +546,10 @@
   $('#sheet').addEventListener('click', async e => {
     const t = e.target;
     if (t.closest('[data-close]')) return closeSheet();
+    if (drawSending && t.closest('[data-draw-n], [data-draw-undo], [data-draw-reset], [data-draw-rec]')) return; // モニターへ送信中は押せない
     const dn = t.closest('[data-draw-n]'); if (dn) return drawNum(Number(dn.dataset.drawN));
-    if (t.closest('[data-draw-undo]')) { const k = draw.order.pop(); if (k) draw[k] = null; return renderDraw(); }
-    if (t.closest('[data-draw-reset]')) { draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = []; return renderDraw(); }
+    if (t.closest('[data-draw-undo]')) { const k = draw.order.pop(); if (k) draw[k] = null; draw.recId = null; return renderDraw(); }
+    if (t.closest('[data-draw-reset]')) { draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = []; draw.recId = null; return renderDraw(); }
     if (t.closest('[data-draw-rec]')) return drawToMonitor();
     const db = t.closest('[data-dealer]');
     if (db) {
