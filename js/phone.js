@@ -77,16 +77,18 @@
 
   // ---------- 文字が見切れないように縮める ----------
   function fitScreen() {
-    fitText($('#hDate'), { min: 14 });
+    fitText($('#hDate'), { min: 12 });
+    // マスの名前・金額は1行に(長い名前は小さく)。そのあとマス全体が収まるように
+    if (window.fitLines) fitLines(document.querySelectorAll('#grid .cell .nm, #grid .cell .st, #grid .cell .n.dl'), { ratio: .62, min: 9 });
     fitAll('.cell', { min: 8 });
-    fitAll('.tourbar b, .stat b', { min: 12 });
+    fitAll('.tourbar b, .stat b, .stat span', { min: 10 });
   }
-  function fitPanel() { fitAll('#panel .stat b, #panel .ranks .rank b, #panel .pad .disp b', { min: 12 }); }
+  function fitPanel() { fitAll('#panel .stat b, #panel .stat span, #panel .ranks .rank b, #panel .bd-row span', { min: 10 }); fitAll('#panel .pad .disp b', { min: 14, widthOnly: true }); }
   window.addEventListener('resize', () => { fitScreen(); fitPanel(); });
 
   // ---------- 描画 ----------
   function render() {
-    { const [y, m, d] = date.split('-').map(Number), wd = '日月火水木金土'[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; $('#hDate').textContent = `${m}月${d}日(${wd})` + (date === K.todayJST() ? '' : ' 別の日'); }
+    { const [y, m, d] = date.split('-').map(Number), wd = '日月火水木金土'[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; $('#hDate').innerHTML = `${m}月${d}日(${wd})` + (date === K.todayJST() ? '' : '<small class="other">別の日</small>'); }
     $('#hSheet').href = CFG.SHEET_URL || '#';
     document.querySelectorAll('#games button').forEach(b => b.classList.toggle('on', b.dataset.game === game));
     renderGrid();
@@ -157,7 +159,8 @@
     const avail = window.innerHeight - grid.getBoundingClientRect().top - navH - 12;
     const cellW = (grid.clientWidth - gap * (cols - 1)) / cols;
     // 高さは「画面の残り ÷ 行数」。ただし縦長になりすぎないよう幅の1.3倍まで
-    const h = Math.max(96, Math.min(220, cellW * 1.3, Math.floor((avail - gap * (rows - 1)) / rows)));
+    const minH = window.innerHeight < 600 ? 64 : 96; // スマホ横向きなど高さが低い画面は低めのマスまで
+    const h = Math.max(minH, Math.min(220, cellW * 1.3, Math.floor((avail - gap * (rows - 1)) / rows)));
     grid.style.gridAutoRows = h + 'px';
   }
   window.addEventListener('resize', () => fitGrid(gridCount));
@@ -467,12 +470,12 @@
     const w = Math.round(box.getBoundingClientRect().width);
     // 横並び(タブレット横向き)は結果の場面まで含める(テンキーは右なので高さを取っても困らない)。縦並びは入力中の場面だけ(結果が出たらテンキーは押せない)
     const wide = getComputedStyle(box.parentNode).display === 'grid';
-    // 縦並びでも、結果の場面まで含めて画面に収まる(または差が小さい)なら結果の場面まで含める(ボタンが少しも動かないように)
+    // 縦並びでも、結果の場面まで含めて画面に収まるなら結果の場面まで含める(ボタンが少しも動かないように)。収まらない画面ではテンキーを上に寄せる
     if (w !== drawRes.w || wide !== drawRes.wide || innerHeight !== drawRes.vh) {
       const all = K.bacStates(), input = all.filter(s => !K.bacNext2(s.pt, s.bt, s.p3, s.b3).done);
       const hAll = TapGuard.tallest(box, all.map(s => drawLeft(s).html)), hIn = wide ? hAll : TapGuard.tallest(box, input.map(s => drawLeft(s).html));
       const panel = box.closest('.panel'), others = panel ? panel.scrollHeight - box.offsetHeight : 0;
-      Object.assign(drawRes, { w, wide, vh: innerHeight, h: wide || hAll - hIn <= 80 || others + hAll <= innerHeight * 0.94 ? hAll : hIn });
+      Object.assign(drawRes, { w, wide, vh: innerHeight, h: wide || others + hAll <= innerHeight * 0.94 ? hAll : hIn });
     }
     box.style.minHeight = drawRes.h ? drawRes.h + 'px' : '';
   }

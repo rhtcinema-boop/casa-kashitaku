@@ -14,8 +14,8 @@
 <link rel="manifest" href="road.webmanifest">
 <link rel="icon" href="road-icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="road-icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261120203511">
-<script src="js/tapguard.js?v=20261120203511"></script>
+<link rel="stylesheet" href="css/style.css?v=20261120205403">
+<script src="js/tapguard.js?v=20261120205403"></script>
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -133,7 +133,8 @@
   .bd-acts .rec.B { background: var(--banker); } .bd-acts .rec.P { background: var(--player); } .bd-acts .rec.T { background: var(--green); }
   @media (max-width: 420px) { header h1 { font-size: 20px; } header .icon { padding: 0 10px; font-size: 14px; } }
   /* タブレット横向き: 左に罫線、右に入力ボタン。1画面に収める(縦向きは今まで通り) */
-  @media (orientation: landscape) and (min-width: 900px) and (min-height: 600px) {
+  /* 横向き(タブレット・スマホとも): 左に罫線、右に入力ボタン */
+  @media (orientation: landscape) and (min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 599px) and (min-width: 560px) {
     :root { --padw: clamp(300px, 28vw, 380px); }
     html, body { height: 100%; overflow: hidden; }
     .wrap { max-width: none; height: 100%; margin: 0 var(--padw) 0 0; gap: 10px;
@@ -163,6 +164,40 @@
     .bd-keys { margin-top: 12px; } .bd-keys button { padding: 12px 0; }
   }
   @media (orientation: landscape) and (min-width: 900px) and (min-height: 600px) and (max-width: 1100px) { .stat .l { display: none; } .stat .s { display: inline; } }
+  /* スマホ横向き(高さが低い): 全体を小さめにして1画面に収める */
+  @media (orientation: landscape) and (max-height: 599px) and (min-width: 560px) {
+    :root { --padw: clamp(230px, 30vw, 300px); }
+    .wrap { gap: 6px; padding-top: calc(var(--sat) + 6px); padding-bottom: calc(var(--sab) + 6px); }
+    header h1 { font-size: 18px; } .back { font-size: 15px; padding: 2px; }
+    .icon { height: 32px; min-width: 32px; padding: 0 10px; font-size: 13px; }
+    .stats { gap: 6px; } .stat { padding: 3px 10px; gap: 6px; } .stat b { font-size: 18px; } .stat span { font-size: 11px; } .stat .pct { font-size: 11px; }
+    .stat .l { display: none; } .stat .s { display: inline; }
+    .road { padding: 6px 8px; } .road h2 { font-size: 11px; margin-bottom: 4px; }
+    .row2, .row3 { gap: 6px; }
+    .askbox { padding: 4px 8px; font-size: 13px; } .askr small { display: none; } .askcard .ask { gap: 6px; }
+    .row3 { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(min-content, 1.2fr); } /* 予測の欄は中身が入る幅を確保 */
+    .help { top: calc(var(--sat) + 44px); max-height: calc(100% - 56px); overflow: auto; font-size: 13px; }
+    .pad { padding: calc(var(--sat) + 6px) max(10px, env(safe-area-inset-right)) calc(var(--sab) + 6px) 10px; }
+    .padin { gap: 6px; }
+    .key { border-radius: 12px; padding: 4px 0; } .key b { font-size: 30px; } .key small { font-size: 11px; margin-top: 2px; }
+    .sub { gap: 6px; } .sub button { padding: 7px 0; font-size: 13px; }
+    .status { font-size: 12px; } .syncbtn { min-height: 26px; padding: 3px 10px; font-size: 12px; }
+    .toast { bottom: calc(var(--sab) + 8px); }
+    .sheet .panel { max-height: 100%; border-radius: 16px 16px 0 0; padding: 12px max(16px, env(safe-area-inset-right)) calc(var(--sab) + 10px) max(16px, env(safe-area-inset-left)); }
+    .panel h2 { font-size: 20px; } .panel h2 small { font-size: 12px; } .panel .close { top: 8px; width: 32px; height: 32px; }
+    .bd-body { gap: 12px; }
+    .bd-hands { margin: 8px 0 6px; gap: 8px; } .bd-hand { padding: 6px 8px; } .bd-name { font-size: 15px; }
+    .bd-row { margin-top: 4px; } .bd-v { font-size: 18px; padding: 2px 6px; min-width: 36px; } .bd-total { font-size: 26px; }
+    .bd-msg { font-size: 15px; padding: 6px; margin-bottom: 6px; } .bd-msg.done { font-size: 19px; } .bd-msg.done small { font-size: 13px; } .bd-msg.done em { font-size: 14px; }
+    .bd-say { padding: 8px 12px; margin-bottom: 6px; } .bd-say span { font-size: 12px; margin-bottom: 2px; } .bd-say p { font-size: 16px; } .bd-say p.past { font-size: 13px; }
+    .bd-keys { gap: 6px; margin: 8px 0 6px; } .bd-keys button { padding: 8px 0; font-size: 24px; }
+    .bd-acts .btn { min-height: 56px; padding: 8px; font-size: 16px; }
+  }
+  /* どの幅でも: 短い言葉は途中で改行しない */
+  .icon, .key small, .stat b, .bd-name, .bd-row span { white-space: nowrap; }
+  @media (max-width: 420px) { .sub button { font-size: 14px; letter-spacing: -.02em; } } /* 上の .sub button の指定より後に置く(狭い画面で文字が切れない) */
+  @media (max-width: 360px) { .sub button { font-size: 13px; } }
+  .bd-msg { word-break: keep-all; }
   button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .toast { top: auto; bottom: calc(var(--sab) + 215px); }
   .toast.top { top: calc(var(--sat) + 12px); bottom: auto; z-index: 40; }
@@ -239,15 +274,15 @@
 
 <div class="toast" id="toast" data-float><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261120203511"></script>
-<script src="js/road-core.js?v=20261120203511"></script>
-<script src="js/model.js?v=20261120203511"></script>
+<script src="config.js?v=20261120205403"></script>
+<script src="js/road-core.js?v=20261120205403"></script>
+<script src="js/model.js?v=20261120205403"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
   const KEY = 'casa-baccarat-road-v1' + (Road.room ? '-' + Road.room : ''); // テスト用の置き場(?room=)は保存場所も分ける
   // タブレット横向きかどうか(CSS の @media と同じ条件)と、枠に6段が収まるマスの大きさ
-  const LANDQ = matchMedia('(orientation: landscape) and (min-width: 900px) and (min-height: 600px)');
+  const LANDQ = matchMedia('(orientation: landscape) and (min-width: 900px) and (min-height: 600px), (orientation: landscape) and (max-height: 599px) and (min-width: 560px)');
   const fitCell = (box, min, max, minCols) => Math.max(min, Math.min(max, Math.floor((box.clientHeight - 2) / 6), Math.floor((box.clientWidth - 2) / minCols)));
   const SAMPLE = 'BBPPPBTBBBBPBPPTBBPPPPPPPBPBBTPBBBPPBP';
   let state = { hands: [], sample: false, dirty: false };
@@ -531,12 +566,12 @@
     const w = Math.round(box.getBoundingClientRect().width);
     // 横並び(タブレット横向き)は結果の場面まで含める(テンキーは右なので高さを取っても困らない)。縦並びは入力中の場面だけ(結果が出たらテンキーは押せない)
     const wide = getComputedStyle(box.parentNode).display === 'grid';
-    // 縦並びでも、結果の場面まで含めて画面に収まる(または差が小さい)なら結果の場面まで含める(ボタンが少しも動かないように)
+    // 縦並びでも、結果の場面まで含めて画面に収まるなら結果の場面まで含める(ボタンが少しも動かないように)。収まらない画面ではテンキーを上に寄せる
     if (w !== drawRes.w || wide !== drawRes.wide || innerHeight !== drawRes.vh) {
       const all = K.bacStates(), input = all.filter(s => !K.bacNext2(s.pt, s.bt, s.p3, s.b3).done);
       const hAll = TapGuard.tallest(box, all.map(s => drawLeft(s).html)), hIn = wide ? hAll : TapGuard.tallest(box, input.map(s => drawLeft(s).html));
       const panel = box.closest('.panel'), others = panel ? panel.scrollHeight - box.offsetHeight : 0;
-      Object.assign(drawRes, { w, wide, vh: innerHeight, h: wide || hAll - hIn <= 80 || others + hAll <= innerHeight * 0.94 ? hAll : hIn });
+      Object.assign(drawRes, { w, wide, vh: innerHeight, h: wide || others + hAll <= innerHeight * 0.94 ? hAll : hIn });
     }
     box.style.minHeight = drawRes.h ? drawRes.h + 'px' : '';
   }

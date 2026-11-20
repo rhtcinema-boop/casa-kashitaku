@@ -14,10 +14,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261120203511">
+<link rel="stylesheet" href="css/style.css?v=20261120205403">
 <script>
   // 最新版チェック: 開いたとき・アプリに戻ったときに ver.txt を見て、新しければ自動で読み込み直す
-  window.KT_VER = '20261120203511';
+  window.KT_VER = '20261120205403';
   (function () {
     function check() {
       fetch('ver.txt?_=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -33,8 +33,8 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
   })();
 </script>
-<script src="js/tapguard.js?v=20261120203511"></script>
-<script src="js/lock.js?v=20261120203511"></script>
+<script src="js/tapguard.js?v=20261120205403"></script>
+<script src="js/lock.js?v=20261120205403"></script>
 <style>
   body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; overflow-wrap: anywhere; }
   .wrap { margin: 0 auto; padding: calc(var(--sat) + 12px) 16px calc(var(--sab) + 120px); }
@@ -213,7 +213,7 @@
   .log .row button.arm { background: var(--red); color: #fff; }
   .log.mini { margin-top: 4px; max-height: 40vh; overflow: auto; }
   .log.mini .row { padding: 10px 16px; }
-  .empty { padding: 28px; text-align: center; color: var(--text2); font-size: 16px; }
+  .empty:not(.bd-v) { padding: 28px; text-align: center; color: var(--text2); font-size: 16px; } /* 3枚目の空欄(.bd-v.empty)には付けない(枠が大きくなっていた) */
   .set .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 13px 16px; border-top: .5px solid var(--sep); }
   .set .row:first-child { border-top: 0; }
   .set .row span { font-size: 17px; } .set .row span i { display: block; font-style: normal; font-size: 14px; color: var(--text2); }
@@ -268,11 +268,49 @@
   }
   .toast { max-width: 600px; margin: 0 auto; }
 
-  /* 狭い幅(iPad の Slide Over・1/3 表示) */
+  /* ===== どの端末でも崩れないように ===== */
+  /* 短い言葉・数字は途中で改行しない(入りきらないときは文字を小さくする: fit.js) */
+  h1, .sheetbtn, .syncbtn b, .syncbtn small, .games button, nav button, .stat b, .ranks .rank b, .ranks .rank span, .tourbar span, .bd-row span, .bd-name { white-space: nowrap; }
+  .stat span { word-break: keep-all; overflow-wrap: normal; } /* 見出しは空白の所でだけ改行 */
+  .bd-msg { word-break: keep-all; } /* 「を入力」などが途中で切れない(入りきらない言葉だけ折り返す) */
+  .summary-tab .list .row b.sum-tot { white-space: nowrap; display: inline-block; }
+  .date .other { font-size: .55em; color: var(--red); margin-left: 6px; vertical-align: middle; }
+  .bd-row span { min-width: 0; overflow: hidden; font-size: clamp(11px, 3.4vw, 14px); }
+  /* スマホ縦: ヘッダーのボタンを小さくして、日付の場所を空ける */
+  @media (max-width: 600px) {
+    .hright { gap: 6px; }
+    .sheetbtn { padding: 10px 13px; font-size: 16px; }
+    .syncbtn { min-width: 84px; padding: 6px 10px; } .syncbtn b { font-size: 17px; }
+  }
+  /* スマホ縦: 3枚目の判定をテンキーまで1画面に収める */
+  @media (max-width: 600px) and (orientation: portrait) {
+    .panel h2 { font-size: 22px; } .panel h2 small { font-size: 12px; }
+    .bd-hands { margin: 10px 0 8px; gap: 8px; } .bd-hand { padding: 6px 8px; } .bd-name { font-size: 15px; }
+    .bd-row { margin-top: 4px; } .bd-v { font-size: 18px; padding: 2px 8px; } .bd-total { font-size: 28px; }
+    .bd-msg { font-size: 16px; padding: 8px; margin-bottom: 6px; } .bd-msg.done { font-size: 20px; } .bd-msg.done small { font-size: 14px; } .bd-msg.done em { font-size: 14px; }
+    .bd-say { padding: 8px 12px; margin-bottom: 8px; } .bd-say span { font-size: 12px; margin-bottom: 2px; } .bd-say p { font-size: 17px; line-height: 1.3; } .bd-say p.past { font-size: 13px; }
+    .bd-keys { gap: 6px; margin-bottom: 8px; } .bd-keys button { padding: 7px 0 13px; font-size: 26px; }
+    .bd-r .acts { gap: 8px; margin-bottom: 0; } .bd-r .acts .btn { padding: 10px 8px; font-size: 17px; }
+    .sheet .panel { padding-top: 16px; } .panel .close { top: 12px; }
+  }
+  @media (max-width: 600px) and (orientation: portrait) and (max-height: 740px) { /* 縦が短いスマホ(SE など) */
+    .panel h2 small { display: none; }
+    .bd-hands { margin-top: 6px; } .bd-total { font-size: 24px; }
+    .bd-say p { font-size: 15px; } .bd-say p.past { font-size: 12px; }
+    .bd-keys button { padding: 5px 0 12px; font-size: 24px; }
+  }
   @media (max-width: 380px) {
-    .wrap { padding-left: 10px; padding-right: 10px; }
+    .bd-hand { padding: 8px; } .bd-v { min-width: 34px; padding: 4px 6px; }
+    #prizeCalc .row { grid-template-columns: 1fr; } #prizeCalc .row > :last-child:not(:first-child) { justify-self: end; }
+  }
+
+  /* 狭い幅(iPad の Slide Over・1/3 表示) */
+  @media (max-width: 340px) {
     header { grid-template-columns: 1fr; }
     .hright { justify-content: space-between; }
+  }
+  @media (max-width: 380px) {
+    .wrap { padding-left: 10px; padding-right: 10px; }
     .games button { font-size: 13px; padding: 10px 2px; }
     .grid { gap: 6px; }
     .cell { border-radius: 14px; }
@@ -295,6 +333,46 @@
     .bd-keys button { padding: 12px 0; }
   }
   @media (orientation: landscape) and (min-width: 1100px) and (min-height: 600px) { .grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+
+  /* スマホ横向き(高さが低い横画面): 上と下を詰めて、1列の人数を増やす。下から出る画面は高さいっぱい・左右2列 */
+  @media (orientation: landscape) and (max-height: 599px) {
+    .wrap { padding: calc(var(--sat) + 6px) max(12px, env(safe-area-inset-right)) calc(var(--sab) + 62px) max(12px, env(safe-area-inset-left)); }
+    header { margin-bottom: 6px; }
+    h1 { display: none; }
+    .date { font-size: 20px; }
+    .sheetbtn { padding: 8px 14px; font-size: 15px; }
+    .syncbtn { flex-direction: row; gap: 8px; padding: 8px 12px; min-width: 0; } .syncbtn b { font-size: 15px; } .syncbtn small { margin-top: 0; }
+    .games { margin-bottom: 8px; } .games button { padding: 8px 4px; font-size: 15px; }
+    .tourbar { margin-bottom: 8px; } .tourbar div { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 4px 10px; } .tourbar b { font-size: 22px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+    .cell { font-size: 13px; border-radius: 14px; }
+    nav { padding: 2px max(8px, env(safe-area-inset-right)) calc(var(--sab) + 2px) max(8px, env(safe-area-inset-left)); }
+    nav button { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 0; font-size: 14px; }
+    nav button span { display: inline; font-size: 20px; margin: 0; }
+    .toast { top: calc(var(--sat) + 8px); }
+    .sheet .panel { max-height: 100%; max-width: 1000px; border-radius: 16px 16px 0 0; padding: 14px max(16px, env(safe-area-inset-right)) calc(var(--sab) + 10px) max(16px, env(safe-area-inset-left)); }
+    .sheet .panel::before { display: none; }
+    .panel h2 { font-size: 22px; } .panel h2 small { font-size: 14px; }
+    .panel .close { top: 10px; }
+    .stat { margin: 8px 0; gap: 8px; } .stat div { padding: 6px 8px; } .stat b { font-size: 22px; } .stat span { font-size: 13px; }
+    .acts { gap: 8px; margin-bottom: 8px; } .acts .btn { padding: 10px 8px; font-size: 18px; }
+    .pick-h { font-size: 17px; margin-bottom: 8px; }
+    .ranks { gap: 8px; } .ranks .rank { padding: 8px 4px; } .ranks .rank b { font-size: 22px; }
+    /* テンキー: 左に表示・よく使う金額・確定、右に数字 */
+    .pad.show { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); grid-template-areas: "disp keys" "quick keys" "confirm keys"; column-gap: 12px; align-items: start; }
+    .pad .disp { grid-area: disp; padding: 6px 12px; margin-bottom: 8px; } .pad .quick { grid-area: quick; } .pad .keys { grid-area: keys; } .pad .confirm { grid-area: confirm; margin-top: 0; }
+    .pad .disp b { font-size: 34px; height: 40px; line-height: 40px; }
+    .keys { gap: 6px; } .keys button { padding: 8px 0; font-size: 24px; }
+    .quick { gap: 6px; } .quick button { padding: 9px 0; font-size: 15px; }
+    .confirm .btn { padding: 12px; font-size: 16px; }
+    /* 3枚目: 左に札とアナウンス、右にテンキー */
+    .bd-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+    .bd-hands { margin: 8px 0 6px; gap: 8px; } .bd-hand { padding: 6px 8px; } .bd-name { font-size: 15px; }
+    .bd-row { margin-top: 4px; } .bd-v { font-size: 18px; padding: 2px 6px; min-width: 36px; } .bd-total { font-size: 26px; }
+    .bd-msg { font-size: 15px; padding: 6px; margin-bottom: 6px; } .bd-msg.done { font-size: 19px; } .bd-msg.done small { font-size: 13px; } .bd-msg.done em { font-size: 14px; }
+    .bd-say { padding: 8px 12px; margin-bottom: 6px; } .bd-say span { font-size: 12px; margin-bottom: 2px; } .bd-say p { font-size: 16px; } .bd-say p.past { font-size: 13px; }
+    .bd-keys { gap: 6px; margin-bottom: 6px; } .bd-keys button { padding: 8px 0; font-size: 24px; }
+  }
 </style>
 </head>
 <body>
@@ -400,11 +478,11 @@
 
 <div class="toast" id="toast" data-float><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=20261120203511"></script>
-<script src="js/fit.js?v=20261120203511"></script>
-<script src="js/model.js?v=20261120203511"></script>
-<script src="js/api.js?v=20261120203511"></script>
-<script src="js/image.js?v=20261120203511"></script>
-<script src="js/phone.js?v=20261120203511"></script>
+<script src="config.js?v=20261120205403"></script>
+<script src="js/fit.js?v=20261120205403"></script>
+<script src="js/model.js?v=20261120205403"></script>
+<script src="js/api.js?v=20261120205403"></script>
+<script src="js/image.js?v=20261120205403"></script>
+<script src="js/phone.js?v=20261120205403"></script>
 </body>
 </html>

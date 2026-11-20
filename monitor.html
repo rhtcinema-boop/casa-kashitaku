@@ -100,7 +100,8 @@
   .shint { margin: .2em 0 0; color: var(--text2); font-size: clamp(13px, 1.2vw, 19px); font-weight: 700; }
   .tip { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 40; background: var(--panel2); color: var(--text2); padding: .5em 1.1em; border-radius: 999px; font-size: clamp(13px, 1.2vw, 19px); font-weight: 700; transition: opacity .6s; white-space: nowrap; }
   .tip.hide { opacity: 0; pointer-events: none; }
-  @media (max-height: 600px) { .note { font-size: 12px; } .askrow { padding: .25em .6em; } .ask { gap: 6px; } }
+  @media (max-height: 600px) { .note { font-size: 12px; } .askrow { padding: .25em .6em; } .ask { gap: 6px; } .askrow small { font-size: 12px; margin-top: 0; } }
+  @media (orientation: portrait) and (max-width: 600px) { .side .note { display: none; } } /* スマホ縦: 説明文が枠からはみ出すので出さない */
   @media (prefers-reduced-motion: reduce) { .last.pop .ball, .last.pop::after, .conn.bad i, .hl.on { animation: none; } }
 </style>
 </head>
@@ -165,8 +166,8 @@
 </div>
 <div class="tip" id="tip">リモコンの決定ボタンで設定（画面サイズ）</div>
 
-<script src="config.js?v=20261120203511"></script>
-<script src="js/road-core.js?v=20261120203511"></script>
+<script src="config.js?v=20261120205403"></script>
+<script src="js/road-core.js?v=20261120205403"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
