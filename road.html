@@ -14,7 +14,7 @@
 <link rel="manifest" href="road.webmanifest">
 <link rel="icon" href="road-icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="road-icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261120c">
+<link rel="stylesheet" href="css/style.css?v=20261120203331">
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -128,7 +128,7 @@
   .bd-acts .rec.B { background: var(--banker); } .bd-acts .rec.P { background: var(--player); } .bd-acts .rec.T { background: var(--green); }
   @media (max-width: 420px) { header h1 { font-size: 20px; } header .icon { padding: 0 10px; font-size: 14px; } }
   /* タブレット横向き: 左に罫線、右に入力ボタン。1画面に収める(縦向きは今まで通り) */
-  @media (orientation: landscape) and (min-width: 900px) {
+  @media (orientation: landscape) and (min-width: 900px) and (min-height: 600px) {
     :root { --padw: clamp(300px, 28vw, 380px); }
     html, body { height: 100%; overflow: hidden; }
     .wrap { max-width: none; height: 100%; margin: 0 var(--padw) 0 0; gap: 10px;
@@ -157,7 +157,7 @@
     .bd-hands { margin-top: 12px; }
     .bd-keys { margin-top: 12px; } .bd-keys button { padding: 12px 0; }
   }
-  @media (orientation: landscape) and (min-width: 900px) and (max-width: 1100px) { .stat .l { display: none; } .stat .s { display: inline; } }
+  @media (orientation: landscape) and (min-width: 900px) and (min-height: 600px) and (max-width: 1100px) { .stat .l { display: none; } .stat .s { display: inline; } }
   button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .toast { top: auto; bottom: calc(var(--sab) + 215px); }
   .toast.top { top: calc(var(--sat) + 12px); bottom: auto; z-index: 40; }
@@ -234,15 +234,15 @@
 
 <div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261120c"></script>
-<script src="js/road-core.js?v=20261120c"></script>
-<script src="js/model.js?v=20261120c"></script>
+<script src="config.js?v=20261120203331"></script>
+<script src="js/road-core.js?v=20261120203331"></script>
+<script src="js/model.js?v=20261120203331"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const KEY = 'casa-baccarat-road-v1';
+  const KEY = 'casa-baccarat-road-v1' + (Road.room ? '-' + Road.room : ''); // テスト用の置き場(?room=)は保存場所も分ける
   // タブレット横向きかどうか(CSS の @media と同じ条件)と、枠に6段が収まるマスの大きさ
-  const LANDQ = matchMedia('(orientation: landscape) and (min-width: 900px)');
+  const LANDQ = matchMedia('(orientation: landscape) and (min-width: 900px) and (min-height: 600px)');
   const fitCell = (box, min, max, minCols) => Math.max(min, Math.min(max, Math.floor((box.clientHeight - 2) / 6), Math.floor((box.clientWidth - 2) / minCols)));
   const SAMPLE = 'BBPPPBTBBBBPBPPTBBPPPPPPPBPBBTPBBBPPBP';
   let state = { hands: [], sample: false, dirty: false };
@@ -265,72 +265,116 @@
   // その間にほかの端末(貸卓アプリの3枚目判定など)が足した分があれば、消さずに合わせてから送り直す。
   let sendTimer = null, sending = false, again = false, retry = null;
   let nextSay = null; // { text, n }: 判定から記録したときの読み上げ文。その n ゲーム目までを送るときだけ付ける
-  function changed() { state.dirty = true; save(); render(); queue(); }
+  let gen = 0;        // この端末の記録が変わるたびに増える(取り込みの途中で変わったら、その取り込み結果は捨てる)
+  const STALE_MS = 5 * 60 * 1000; // これより古い未送信の変更は、サーバーと食い違ったらサーバーを優先する
+  function changed() { state.dirty = true; state.changedAt = Date.now(); gen++; save(); render(); queue(); }
   function queue(ms) { if (!Road.hasServer || state.sample) return; clearTimeout(sendTimer); sendTimer = setTimeout(send, ms == null ? 150 : ms); }
-  // 送る(ほかの端末で増えていたら合わせて送り直す)。送れたら true
+  // サーバーと食い違ったときの合わせ方(文字列)。返り値 null = サーバーの記録をそのまま使う
+  function reconcile(base, server, local) {
+    if (server === local) return null;
+    const recent = (Date.now() - (state.changedAt || 0)) < STALE_MS;
+    if (base == null || local.startsWith(base)) {
+      // この端末は「足しただけ」
+      if (server.startsWith(local)) return null;   // 前の送信は届いていた(+ほかの端末が足した)→ 二重にしない
+      if ((base == null || server.startsWith(base)) && local.startsWith(server)) return local;  // サーバーが遅れているだけ
+      if (base == null || server.startsWith(base)) {
+        // 両方が足した: サーバーの記録 + この端末だけが足した分(届いていた分は共通に入るので二重にならない)
+        let i = 0; while (i < server.length && i < local.length && server[i] === local[i]) i++;
+        return server + local.slice(i);
+      }
+      // ほかの端末で戻した・新しいシューにした: 最近の入力ならこの端末を優先、古い未送信ならサーバーを優先
+      return recent ? local : null;
+    }
+    // この端末で戻した・新しいシューにした: 最近の操作ならこの端末を優先、古い未送信ならサーバーを優先
+    return recent ? local : null;
+  }
+  // 送る(ほかの端末で増えていたら合わせて送り直す)
   async function pushMerged() {
-    for (let tries = 0; tries < 4; tries++) {
+    // サーバーの最新の番号がまだ分からないとき(初めて使う端末・見本からの入力開始・旧版の保存データ)は、
+    // 先にサーバーの記録を取ってきて合わせる(上書きでほかの端末の分を消さないため)
+    if (state.base == null) {
+      const sv = await Road.pull();
+      const se = Road.encode(sv.hands), le = Road.encode(state.hands);
+      let i = 0; while (i < se.length && i < le.length && se[i] === le[i]) i++;
+      const m = reconcile(se.slice(0, i), se, le);
+      state.hands = Road.decode(m == null ? se : m); state.rev = sv.rev; state.base = se; save(); render();
+      if (m == null) { state.dirty = false; save(); return; }
+    }
+    for (let tries = 0; tries < 5; tries++) {
       const snap = Road.encode(state.hands);
       const say = nextSay && nextSay.n === state.hands.length ? nextSay.text : '';
-      const res = await Road.push(Road.decode(snap), state.base == null ? null : state.rev, say);
+      const res = await Road.push(Road.decode(snap), state.rev, say);
       if (res.conflict) {
-        const before = state.hands.length;
-        const merged = Road.merge3(state.base, res.hands, Road.encode(state.hands));
-        state.hands = Road.decode(merged); state.rev = res.rev; state.base = res.hands; save(); render();
-        if (state.hands.length > before) toast('ほかの端末の記録と合わせました', null, 2000);
+        const before = state.hands.length, cur = Road.encode(state.hands);
+        const m = reconcile(state.base, res.hands, cur);
+        state.rev = res.rev; state.base = res.hands;
+        if (m == null) { // サーバーの記録で確定
+          state.hands = Road.decode(res.hands); gen++;
+          if (Road.encode(state.hands) !== cur && state.hands.length > before) toast('ほかの端末の記録と合わせました', null, 2000);
+          state.dirty = false; save(); render(); return;
+        }
+        if (m !== cur) { state.hands = Road.decode(m); gen++; if (state.hands.length > before) toast('ほかの端末の記録と合わせました', null, 2000); }
+        save(); render();
         continue;
       }
-      state.rev = res.rev; state.base = snap; nextSay = null;
+      state.rev = res.rev; state.base = snap; nextSay = null; gen++;
       if (Road.encode(state.hands) === snap) state.dirty = false;
       save();
-      return true;
+      return;
     }
     throw new Error('conflict');
   }
   async function send() {
+    if (state.sample) return;
     if (sending) { again = true; return; }
     sending = true; again = false; sync = 'sending'; renderSync();
-    try { await pushMerged(); sync = 'ok'; clearTimeout(retry); }
-    catch (e) { sync = 'err'; clearTimeout(retry); retry = setTimeout(send, 4000); }
+    let ok = false;
+    try { await pushMerged(); ok = true; sync = 'ok'; clearTimeout(retry); }
+    catch (e) { sync = 'err'; clearTimeout(retry); retry = setTimeout(send, 4000); } // 失敗したら4秒後に再送(すぐには繰り返さない)
     sending = false; renderSync();
-    if (again || state.dirty) queue(0);
+    if (ok && (again || state.dirty)) queue(0);
   }
   // 開いたとき・戻ったとき・数秒ごと: 未送信がなければサーバーの記録を取り込む
   async function pullServer(fromPoll) {
     if (!Road.hasServer || sending) return;
     if (state.dirty) return queue(0);
+    const g = gen;
     try {
       const sv = await Road.pull();
-      if (state.dirty || sending) return;
+      if (state.dirty || sending || g !== gen) return; // 取り込みの間にこの端末で変わった・送った → 古い結果なので捨てる
       const svEnc = Road.encode(sv.hands), mine = state.sample ? '' : Road.encode(state.hands);
       if (sv.ts && svEnc !== mine) {
         const before = state.sample ? 0 : state.hands.length;
-        state = { hands: sv.hands, sample: false, dirty: false, rev: sv.rev, base: svEnc }; save(); render();
+        state = { hands: sv.hands, sample: false, dirty: false, rev: sv.rev, base: svEnc }; gen++; save(); render();
         const last = sv.hands[sv.hands.length - 1];
         if (fromPoll && last && sv.hands.length === before + 1) toast(`${sv.hands.length}ゲーム目 ${label(last)}（ほかの端末から）`, null, 2500);
-      } else if (!state.sample) { state.rev = sv.rev; state.base = svEnc; save(); }
+      } else { state.rev = sv.rev; state.base = svEnc; save(); } // 見本表示中(サーバーが空)でも番号は覚えておく
       sync = 'ok';
     } catch (e) { if (!fromPoll) sync = 'err'; }
     renderSync();
   }
   setInterval(() => { if (!document.hidden) pullServer(true); }, 3000);
-  // 同期ボタン: この端末の記録をモニターへ今すぐ送ってそろえる(ほかの端末で増えた分は残す)。この端末が空ならモニター側の記録を取り込む
+  // 同期ボタン: この端末の記録をモニターへ今すぐ送ってそろえる(ほかの端末で増えた分は残す)。
+  // この端末が空で、送っていない変更もないときは、モニター側の記録を取り込む
   async function manualSync() {
     if (state.sample) return toast('見本の表示中です。B・P・T で入力を始めてください', null, 2500);
     toast('モニターと同期中…', null, 15000); // 押したことがすぐ分かるように
     clearTimeout(sendTimer); clearTimeout(retry);
-    for (let i = 0; sending && i < 50; i++) await new Promise(r => setTimeout(r, 200));
+    for (let i = 0; sending && i < 125; i++) await new Promise(r => setTimeout(r, 200)); // 送信中なら終わるまで待つ(並行して送らない)
+    if (sending) return toast('送信中です。少し待ってからもう一度押してください', null, 3000);
     sending = true; again = false; sync = 'sending'; renderSync();
+    let ok = false;
     try {
-      if (!state.hands.length) {
+      if (!state.hands.length && !state.dirty) {
+        const g = gen;
         const sv = await Road.pull();
-        if (sv.hands.length) {
-          state = { hands: sv.hands, sample: false, dirty: false, rev: sv.rev, base: Road.encode(sv.hands) }; save();
+        if (sv.hands.length && g === gen) {
+          state = { hands: sv.hands, sample: false, dirty: false, rev: sv.rev, base: Road.encode(sv.hands) }; gen++; save();
           sending = false; sync = 'ok'; render();
           return toast(`モニターの記録（${sv.hands.length}ゲーム）を取り込みました`, null, 2500);
         }
       }
-      await pushMerged();
+      await pushMerged(); ok = true;
       sync = 'ok';
       toast(`モニターと同期しました（${state.hands.length}ゲーム）`, null, 2000);
     } catch (e) {
@@ -338,7 +382,7 @@
       toast('同期できませんでした。電波を確認してもう一度押してください', null, 3500);
     }
     sending = false; render();
-    if (again || state.dirty) queue(0);
+    if (ok && (again || state.dirty)) queue(0);
   }
   $('status').addEventListener('click', e => { if (e.target.closest('#syncBtn')) manualSync(); });
   function renderSync() {
@@ -384,6 +428,7 @@
   const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
   const label = h => NAME[h.r] + (h.nat ? '・ナチュラル' : '') + (h.bp ? '・Bペア' : '') + (h.pp ? '・Pペア' : '');
   function add(r) {
+    nextSay = null; // ボタンで入れた結果には判定の読み上げ文を付けない(判定からの記録は drawRecord が後で付ける)
     if (state.sample) state = { hands: [], sample: false, dirty: false, rev: state.rev, base: state.base };
     const h = { r, bp: pend.bp, pp: pend.pp, nat: pend.nat };
     state.hands.push(h); pend = { bp: false, pp: false, nat: false }; changed();
@@ -391,6 +436,7 @@
   }
   function undo() {
     if (state.sample || !state.hands.length) return;
+    nextSay = null;
     const h = state.hands.pop(); changed(); toast(`戻しました（${label(h)}）`);
   }
   $('kB').onclick = () => add('B'); $('kP').onclick = () => add('P'); $('kT').onclick = () => add('T');
@@ -404,6 +450,7 @@
     const b = $('clear');
     if (!armed) { b.textContent = 'もう一度押すと記録を消去'; b.classList.add('warn'); armed = setTimeout(() => { armed = null; b.textContent = '新しいシュー'; b.classList.remove('warn'); }, 5000); return; }
     clearTimeout(armed); armed = null; b.textContent = '新しいシュー'; b.classList.remove('warn');
+    nextSay = null;
     const prev = state; state = { hands: [], sample: false, dirty: false, rev: state.rev, base: state.base }; pend = { bp: false, pp: false, nat: false }; changed();
     if (prev.hands.length && !prev.sample) toast('新しいシューを開始', () => { state = Object.assign({}, prev, { rev: state.rev, base: state.base }); changed(); toast('記録を戻しました'); }); else toast('新しいシューを開始');
   };
@@ -497,13 +544,16 @@
     const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
     if (!r.done) return;
     pend = { bp: false, pp: false, nat: !!r.natural };
-    nextSay = { text: Road.resultSay(r), n: (state.sample ? 0 : state.hands.length) + 1 };
     add(WIN[r.winner]);
+    nextSay = { text: Road.resultSay(r), n: state.hands.length }; // 送信は少し後なので、ここで付ければ間に合う
     resetDraw(); renderDraw();
+    recordedAt = Date.now();
   }
+  let recordedAt = 0; // 記録の直後の二度押しで、同じ場所に出る数字キーを押さないように
   $('drawBtn').onclick = openDraw;
   $('drawSheet').addEventListener('click', e => {
     const t = e.target;
+    if (Date.now() - recordedAt < 500 && t.closest('[data-draw-n], [data-draw-rec], [data-draw-undo], [data-draw-reset]')) return;
     const dn = t.closest('[data-draw-n]'); if (dn) return drawNum(Number(dn.dataset.drawN));
     if (t.closest('[data-draw-undo]')) return drawUndo();
     if (t.closest('[data-draw-reset]')) { resetDraw(); return renderDraw(); }
@@ -513,6 +563,7 @@
 
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return; const k = e.key.toLowerCase();
+    if (e.repeat) { if (k === 'backspace') e.preventDefault(); return; } // 押しっぱなしで連続入力しない
     if (drawOpen()) { // 判定中はキーボードの数字で入力
       if (/^[0-9]$/.test(k)) drawNum(Number(k));
       else if (k === 'backspace') { e.preventDefault(); drawUndo(); }
@@ -535,7 +586,9 @@
   function checkVer() {
     fetch('ver.txt?_=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(v => {
       v = (v || '').trim(); if (!v) return;
-      if (ver === null) ver = v; else if (v !== ver) { save(); location.reload(); }
+      if (ver === null) ver = v;
+      // 判定の途中・送信前は読み直さない(終わってから次の確認で読み直す)
+      else if (v !== ver && !drawOpen() && !draw.order.length && !state.dirty && !sending) { save(); location.reload(); }
     }).catch(() => {});
   }
   checkVer(); setInterval(checkVer, 60 * 1000);
