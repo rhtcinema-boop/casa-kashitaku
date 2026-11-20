@@ -186,5 +186,17 @@
     return r;
   }
 
-  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel, calcPrizes, round1, bacNext, bacNext2, bacTotal, bacBankerDraws };
+  // 3枚目の判定で出てくるすべての場面 [{ pt, bt, p3, b3 }](画面の高さをそろえるのに使う)
+  function bacStates() {
+    const out = [{ pt: null, bt: null, p3: null, b3: null }];
+    const walk = s => {
+      const r = bacNext2(s.pt, s.bt, s.p3, s.b3);
+      if (r.done || !r.need) return;
+      for (let n = 0; n <= 9; n++) { const t = Object.assign({}, s, { [r.need]: n }); out.push(t); walk(t); }
+    };
+    walk(out[0]);
+    return out;
+  }
+
+  g.Kashitaku = { GAMES, TYPES, aggregate, emptyPlayer, fmtPt, fmtYen, signedPt, signedYen, todayJST, describeTx, parsePrizes, rankLabel, calcPrizes, round1, bacNext, bacNext2, bacStates, bacTotal, bacBankerDraws };
 })(typeof window !== 'undefined' ? window : globalThis);

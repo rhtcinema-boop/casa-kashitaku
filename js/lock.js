@@ -32,7 +32,7 @@
   function show() {
     if (el) return;
     code = '';
-    el = document.createElement('div'); el.id = 'ktLock';
+    el = document.createElement('div'); el.id = 'ktLock'; el.setAttribute('data-overlay', '');
     el.innerHTML = `<h1>CASA 貸卓</h1><div class="ttl">パスコードを入力</div>
       <div class="dots"><i></i><i></i><i></i><i></i></div><div class="msg"></div>
       <div class="keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-n="${n}">${n}</button>`).join('')}<button class="fn" data-n="c">クリア</button><button data-n="0">0</button><button class="fn" data-n="b">削除</button></div>`;

@@ -53,7 +53,10 @@
     else setStatus();
   }
   // 「消す?」の確認中は画面を作り直さない(押し間違い防止)
+  let renderLater = null;
   function safeRender() {
+    clearTimeout(renderLater);
+    if (window.TapGuard && TapGuard.busy()) { renderLater = setTimeout(safeRender, 250); return; } // 押している最中に画面を作り直さない
     const typing = document.activeElement && document.activeElement.tagName === 'INPUT';
     if (typing || document.querySelector('[data-del].arm')) { state = API.view(date); agg = K.aggregate(state.players, state.txs, state.config); setStatus(); return; }
     refresh();
@@ -418,11 +421,12 @@
   // 最初の2枚は合計(0〜9)だけ、3枚目からは引いたカードの数字をテンキーで入れる。サイドベットなし、バンカー6は配当半分。
   const draw = { pt: null, bt: null, p3: null, b3: null, order: [] }; // order: 入れた順(1枚戻す用)
   function openDraw() { openNo = -1; pad = null; $('#sheet').classList.add('show'); renderDraw(); }
-  function renderDraw() {
-    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+  // 上半分(手札・案内・アナウンス)。d = { pt, bt, p3, b3 }
+  function drawLeft(d) {
+    const r = K.bacNext2(d.pt, d.bt, d.p3, d.b3);
     const box = (v, key) => v != null ? `<b class="bd-v">${v}</b>` : `<b class="bd-v empty ${r.need === key ? 'next' : ''}">${r.need === key ? '?' : '—'}</b>`;
     const hand = (side, name) => {
-      const two = side === 'p' ? draw.pt : draw.bt, third = side === 'p' ? draw.p3 : draw.b3;
+      const two = side === 'p' ? d.pt : d.bt, third = side === 'p' ? d.p3 : d.b3;
       const total = two == null ? '' : (two + (third || 0)) % 10;
       const turn = r.need === (side === 'p' ? 'pt' : 'bt') || r.need === side + '3';
       const win = r.done && r.winner === (side === 'p' ? 'player' : 'banker');
@@ -436,22 +440,46 @@
       : r.winner === 'tie' ? `<div class="bd-msg done tie">タイ <small>${r.pt} 対 ${r.bt}</small></div>`
       : r.winner === 'player' ? `<div class="bd-msg done player">プレイヤーの勝ち <small>${r.pt} 対 ${r.bt}</small></div>`
       : `<div class="bd-msg done banker">バンカーの勝ち <small>${r.bt} 対 ${r.pt}</small>${r.banker6 ? '<em>バンカー6 → 配当は半分</em>' : ''}</div>`;
-    const third = r.need === 'p3' || r.need === 'b3';
+    const say = announce(r, d);
+    return { r, html: `<div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div><!-- ディーラーから見て 左: バンカー / 右: プレイヤー -->
+      ${res}
+      ${say ? `<div class="bd-say"><span>アナウンス</span>${say}</div>` : ''}` };
+  }
+  // 押し間違い防止: テンキーとボタンは、場面が変わっても同じ場所・同じ大きさのまま
+  // (終わったらテンキーは押せない表示で残す。記録ボタンも最初から同じ場所に出しておく)
+  function renderDraw() {
+    const L = drawLeft(draw), r = L.r;
+    const third = r.need === 'p3' || r.need === 'b3', off = r.done ? 'disabled' : '';
+    const sub = n => n === 1 ? (third ? 'A' : '') : n === 0 ? (third ? '10・J・Q・K' : '') : '';
     $('#panel').innerHTML = `<button class="close" data-close>✕</button>
       <h2 class="g-dealer">3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
-      <div class="bd-body"><div class="bd-l">
-      <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div><!-- ディーラーから見て 左: バンカー / 右: プレイヤー -->
-      ${res}
-      ${announce(r) ? `<div class="bd-say"><span>アナウンス</span>${announce(r)}</div>` : ''}
-      </div><div class="bd-r">
-      ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
-      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>1つ戻す</button><button class="btn ${r.done ? '' : 'gold'}" data-draw-reset ${drawSending ? 'disabled' : ''}>${r.done ? '記録せず次へ' : '次のゲーム'}</button>${r.done ? `<button class="btn gold full" data-draw-rec ${drawSending ? 'disabled' : ''}>${drawSending ? '送信中…' : 'モニターに記録して次へ'}<br><small>${{ player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner]}${r.natural ? '・ナチュラル' : ''}</small></button>` : ''}</div>
+      <div class="bd-body"><div class="bd-l">${L.html}</div><div class="bd-r">
+      <div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}" ${off}>${n}<small>${sub(n)}</small></button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0" ${off}>0<small>${sub(0)}</small></button><span></span></div>
+      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>1つ戻す</button><button class="btn ${r.done ? '' : 'gold'}" data-draw-reset ${drawSending ? 'disabled' : ''}>${r.done ? '記録せず次へ' : '次のゲーム'}</button><button class="btn gold full" data-draw-rec ${r.done && !drawSending ? '' : 'disabled'}>${drawSending ? '送信中…' : 'モニターに記録して次へ'}<br><small>${r.done ? { player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner] + (r.natural ? '・ナチュラル' : '') : '結果が出たら押せます'}</small></button></div>
       </div></div>`;
+    reserveDraw();
     fitPanel();
   }
+  // 上半分の高さを、出てくる可能性のある一番高い場面に合わせて固定する(下のテンキーが動かない)
+  const drawRes = { w: 0, h: 0 };
+  function reserveDraw() {
+    const box = $('#panel .bd-l'); if (!box || !window.TapGuard) return;
+    const w = Math.round(box.getBoundingClientRect().width);
+    // 横並び(タブレット横向き)は結果の場面まで含める(テンキーは右なので高さを取っても困らない)。縦並びは入力中の場面だけ(結果が出たらテンキーは押せない)
+    const wide = getComputedStyle(box.parentNode).display === 'grid';
+    // 縦並びでも、結果の場面まで含めて画面に収まる(または差が小さい)なら結果の場面まで含める(ボタンが少しも動かないように)
+    if (w !== drawRes.w || wide !== drawRes.wide || innerHeight !== drawRes.vh) {
+      const all = K.bacStates(), input = all.filter(s => !K.bacNext2(s.pt, s.bt, s.p3, s.b3).done);
+      const hAll = TapGuard.tallest(box, all.map(s => drawLeft(s).html)), hIn = wide ? hAll : TapGuard.tallest(box, input.map(s => drawLeft(s).html));
+      const panel = box.closest('.panel'), others = panel ? panel.scrollHeight - box.offsetHeight : 0;
+      Object.assign(drawRes, { w, wide, vh: innerHeight, h: wide || hAll - hIn <= 80 || others + hAll <= innerHeight * 0.94 ? hAll : hIn });
+    }
+    box.style.minHeight = drawRes.h ? drawRes.h + 'px' : '';
+  }
+  window.addEventListener('resize', () => { if (openNo === -1) renderDraw(); });
   // ディーラーが言う一言(引く/引かない・勝ち)
-  function announce(r) {
-    const { pt, bt, p3, b3 } = draw;
+  function announce(r, d) {
+    const { pt, bt, p3, b3 } = d || draw;
     if (pt == null || bt == null) return '';
     const lines = [];
     if (r.natural) {

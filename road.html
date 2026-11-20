@@ -14,7 +14,8 @@
 <link rel="manifest" href="road.webmanifest">
 <link rel="icon" href="road-icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="road-icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261120203331">
+<link rel="stylesheet" href="css/style.css?v=20261120203511">
+<script src="js/tapguard.js?v=20261120203511"></script>
 <style>
   :root { --green: #34c759; --natural: #e6a700; --banker: var(--red); --player: var(--blue); --grid: rgba(60, 60, 67, .1); }
   @media (prefers-color-scheme: dark) { :root { --green: #30d158; --natural: #ffd60a; --grid: rgba(235, 235, 245, .09); } }
@@ -69,8 +70,10 @@
   .kB { background: var(--banker); } .kP { background: var(--player); } .kT { background: var(--green); }
   .key:active, .sub button:active { transform: scale(.96); }
   .sub { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-  @media (max-width: 420px) { .sub button { font-size: 14px; letter-spacing: -.02em; } .sub .lg { display: none; } }
-  .sub button { border: 0; border-radius: 12px; background: var(--fill); font-size: 16px; font-weight: 600; padding: 12px 0; color: var(--text); }
+  @media (max-width: 420px) { .sub button { font-size: 14px; letter-spacing: -.02em; } .sub .lg { display: none; }
+    /* 押したときの ✓ で文字が2行になると、B・P・T が上にずれる → ✓ は左上に小さく重ねる */
+    .sub .tg { position: relative; } .sub .tg[aria-pressed="true"] .ck { position: absolute; left: 6px; top: 3px; font-size: 11px; } }
+  .sub button { border: 0; border-radius: 12px; background: var(--fill); font-size: 16px; font-weight: 600; padding: 12px 0; color: var(--text); white-space: nowrap; overflow: hidden; } /* 1行のまま(高さが変わらない) */
   .sub .tg.b { color: var(--banker); } .sub .tg.p { color: var(--player); } .sub .tg.n { color: var(--natural); } .sub .tg.n[aria-pressed="true"] { background: var(--natural); color: #1c1c1e; }
   .sub .tg[aria-pressed="true"] { color: #fff; } .sub .tg.b[aria-pressed="true"] { background: var(--banker); } .sub .tg.p[aria-pressed="true"] { background: var(--player); }
   .sub .undo { color: var(--blue); }
@@ -115,14 +118,16 @@
   .bd-say p { margin: 2px 0; font-size: clamp(19px, 4.6vw, 26px); font-weight: 700; line-height: 1.35; }
   .bd-say p.past { font-size: 15px; font-weight: 500; color: var(--text2); }
   .bd-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
-  .bd-keys button { border: 0; background: var(--card); color: var(--text); border-radius: 14px; padding: 16px 0; font-size: clamp(26px, 5vw, 36px); font-weight: 600; box-shadow: var(--shadow); min-width: 0; line-height: 1.1; }
-  .bd-keys button small { display: block; font-size: 12px; color: var(--text2); font-weight: 500; }
+  .bd-keys button { position: relative; border: 0; background: var(--card); color: var(--text); border-radius: 14px; padding: 16px 0; font-size: clamp(26px, 5vw, 36px); font-weight: 600; box-shadow: var(--shadow); min-width: 0; line-height: 1.1; }
+  /* 補足の小さい文字はボタンの下に重ねる(出たり消えたりしてもボタンの大きさ・位置が変わらない) */
+  .bd-keys button small { position: absolute; left: 0; right: 0; bottom: 3px; font-size: 11px; line-height: 13px; white-space: nowrap; overflow: hidden; color: var(--text2); font-weight: 500; }
+  .bd-keys button[disabled] { opacity: .35; }
   .bd-keys .bd-back { background: var(--fill); color: var(--blue); font-size: clamp(22px, 4.6vw, 30px); }
   .bd-keys .bd-back small { color: var(--blue); }
   .bd-keys .bd-back[disabled] { opacity: .35; }
   .bd-keys button:active { background: var(--fill2); }
   .bd-acts { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; }
-  .bd-acts .btn { padding: 18px 8px; font-size: 19px; border-radius: 16px; }
+  .bd-acts .btn { padding: 18px 8px; font-size: 19px; border-radius: 16px; min-height: 76px; } /* 記録ボタン(2行)に出し替わっても高さが同じ */
   .bd-acts .rec { color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
   .bd-acts .rec small { font-size: 13px; font-weight: 600; opacity: .9; }
   .bd-acts .rec.B { background: var(--banker); } .bd-acts .rec.P { background: var(--player); } .bd-acts .rec.T { background: var(--green); }
@@ -150,7 +155,7 @@
     .key { min-height: 0; } .key b { font-size: 48px; } .key small { font-size: 15px; }
     .sub { grid-template-columns: 1fr 1fr; }
     .sub button { padding: 14px 0; }
-    .status { align-content: flex-start; }
+    .status { align-content: flex-start; overflow: hidden; } /* 高さは一番長い表示に合わせて固定(JS) */
     .toast { left: 16px; right: calc(var(--padw) + 16px); bottom: calc(var(--sab) + 16px); }
     .sheet .panel { max-width: 1040px; }
     .bd-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -230,13 +235,13 @@
   </div>
 </div></div>
 
-<div class="sheet" id="drawSheet" hidden role="dialog" aria-label="3枚目の判定"><div class="bg" data-draw-close></div><div class="panel" id="drawPanel"></div></div>
+<div class="sheet" id="drawSheet" data-overlay hidden role="dialog" aria-label="3枚目の判定"><div class="bg" data-draw-close></div><div class="panel" id="drawPanel"></div></div>
 
-<div class="toast" id="toast"><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
+<div class="toast" id="toast" data-float><div><div class="t2" id="toastT"></div></div><button class="btn ghost" id="toastUndo" hidden>元に戻す</button></div>
 
-<script src="config.js?v=20261120203331"></script>
-<script src="js/road-core.js?v=20261120203331"></script>
-<script src="js/model.js?v=20261120203331"></script>
+<script src="config.js?v=20261120203511"></script>
+<script src="js/road-core.js?v=20261120203511"></script>
+<script src="js/model.js?v=20261120203511"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -353,7 +358,7 @@
     } catch (e) { if (!fromPoll) sync = 'err'; }
     renderSync();
   }
-  setInterval(() => { if (!document.hidden) pullServer(true); }, 3000);
+  setInterval(() => { if (!document.hidden && !(window.TapGuard && TapGuard.busy())) pullServer(true); }, 3000);
   // 同期ボタン: この端末の記録をモニターへ今すぐ送ってそろえる(ほかの端末で増えた分は残す)。
   // この端末が空で、送っていない変更もないときは、モニター側の記録を取り込む
   async function manualSync() {
@@ -392,6 +397,20 @@
     const b = $('syncBtn'); if (b) b.disabled = sync === 'sending';
   }
 
+  let lastStatus = null;
+  // 横向き: 上の案内の行は、一番長い表示が入る高さに固定(ペアを押して行数が変わっても B・P・T が動かない)
+  const statusRes = { w: 0, h: 0 };
+  function reserveStatus() {
+    const el = $('status');
+    if (!LANDQ.matches || !window.TapGuard) { el.style.height = ''; return; }
+    const w = Math.round(el.getBoundingClientRect().width);
+    if (w !== statusRes.w) {
+      statusRes.w = w;
+      statusRes.h = TapGuard.tallest(el, ['<span class="pend">ナチュラル・Bペア・Pペア 選択中 → 結果を押す</span><span>直前：<b>888ゲーム目 プレイヤー・ナチュラル・Bペア・Pペア</b></span><span class="sync err">未送信（自動で再送）</span>'
+        + (Road.hasServer ? '<button class="syncbtn" type="button">⟳ 同期</button>' : '')]);
+    }
+    el.style.height = statusRes.h ? statusRes.h + 'px' : '';
+  }
   function render() {
     const hands = state.hands, a = Road.analyze(hands), cnt = Road.counts(hands);
     const bp = cnt.B + cnt.P;
@@ -413,17 +432,19 @@
     $('tBP').setAttribute('aria-pressed', pend.bp); $('tPP').setAttribute('aria-pressed', pend.pp); $('tNat').setAttribute('aria-pressed', pend.nat);
     $('undo').disabled = !hands.length || state.sample;
     const last = hands[hands.length - 1], pn = [pend.nat && 'ナチュラル', pend.bp && 'Bペア', pend.pp && 'Pペア'].filter(Boolean).join('・');
-    $('status').innerHTML = (pn ? `<span class="pend">${pn} 選択中 → 結果を押す</span>` : '')
+    const stHtml = (pn ? `<span class="pend">${pn} 選択中 → 結果を押す</span>` : '')
       + (state.sample ? '<span>見本データ表示中</span>' : last ? `<span>直前：<b>${hands.length}ゲーム目 ${label(last)}</b></span>` : '<span>B・P・T で入力開始</span>')
       + '<span class="sync" id="sync"></span>'
       + (Road.hasServer ? '<button class="syncbtn" id="syncBtn" type="button">⟳ 同期</button>' : '');
+    if (stHtml !== lastStatus) { lastStatus = stHtml; $('status').innerHTML = stHtml; } // 同じなら作り直さない(押している同期ボタンを消さない)
+    reserveStatus();
     renderSync();
   }
 
   // ---------- 操作 ----------
   let tt;
   let toastAct = null;
-  function toast(t, act, ms) { $('toastT').textContent = t; toastAct = act || null; $('toastUndo').hidden = !act; const el = $('toast'); el.classList.toggle('top', !$('drawSheet').hidden); el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => { el.classList.remove('show'); toastAct = null; }, ms || (act ? 6000 : 1200)); }
+  function toast(t, act, ms) { $('toastT').textContent = t; toastAct = act || null; $('toastUndo').hidden = !act; const el = $('toast'); el.classList.toggle('top', !$('drawSheet').hidden); el.style.bottom = (!LANDQ.matches && $('drawSheet').hidden) ? `${document.querySelector('.pad').offsetHeight + 12}px` : ''; el.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => { el.classList.remove('show'); toastAct = null; }, ms || (act ? 6000 : 1200)); }
   $('toastUndo').onclick = () => { const a = toastAct; $('toast').classList.remove('show'); toastAct = null; if (a) a(); };
   const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
   const label = h => NAME[h.r] + (h.nat ? '・ナチュラル' : '') + (h.bp ? '・Bペア' : '') + (h.pp ? '・Pペア' : '');
@@ -462,11 +483,12 @@
   function openDraw() { $('drawSheet').hidden = false; renderDraw(); }
   function closeDraw() { $('drawSheet').hidden = true; }
   function resetDraw() { draw.pt = draw.bt = draw.p3 = draw.b3 = null; draw.order = []; }
-  function renderDraw() {
-    const r = K.bacNext2(draw.pt, draw.bt, draw.p3, draw.b3);
+  // 上半分(手札・案内・アナウンス)。d = { pt, bt, p3, b3 }
+  function drawLeft(d) {
+    const r = K.bacNext2(d.pt, d.bt, d.p3, d.b3);
     const box = (v, key) => v != null ? `<b class="bd-v">${v}</b>` : `<b class="bd-v empty ${r.need === key ? 'next' : ''}">${r.need === key ? '?' : '—'}</b>`;
     const hand = (side, name) => {
-      const two = side === 'p' ? draw.pt : draw.bt, third = side === 'p' ? draw.p3 : draw.b3;
+      const two = side === 'p' ? d.pt : d.bt, third = side === 'p' ? d.p3 : d.b3;
       const total = two == null ? '' : (two + (third || 0)) % 10;
       const turn = r.need === (side === 'p' ? 'pt' : 'bt') || r.need === side + '3';
       const win = r.done && r.winner === (side === 'p' ? 'player' : 'banker');
@@ -480,26 +502,48 @@
       : r.winner === 'tie' ? `<div class="bd-msg done tie">タイ <small>${r.pt} 対 ${r.bt}</small></div>`
       : r.winner === 'player' ? `<div class="bd-msg done player">プレイヤーの勝ち <small>${r.pt} 対 ${r.bt}</small></div>`
       : `<div class="bd-msg done banker">バンカーの勝ち <small>${r.bt} 対 ${r.pt}</small>${r.banker6 ? '<em>バンカー6 → 配当は半分</em>' : ''}</div>`;
-    const third = r.need === 'p3' || r.need === 'b3';
-    const say = drawAnnounce(r);
+    const say = drawAnnounce(r, d);
+    return { r, html: `<div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div>
+      ${res}
+      ${say ? `<div class="bd-say"><span>アナウンス</span>${say}</div>` : ''}` };
+  }
+  // 押し間違い防止: テンキーとボタンは、場面が変わっても同じ場所・同じ大きさのまま(終わったらテンキーは押せない表示で残す)
+  function renderDraw() {
+    const L = drawLeft(draw), r = L.r;
+    const third = r.need === 'p3' || r.need === 'b3', off = r.done ? 'disabled' : '';
+    const sub = n => n === 1 ? (third ? 'A' : '') : n === 0 ? (third ? '10・J・Q・K' : '') : '';
     const w = r.done ? WIN[r.winner] : '';
     $('drawPanel').innerHTML = `<button class="close" data-draw-close aria-label="閉じる">✕</button>
       <h2>3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
-      <div class="bd-body"><div class="bd-l">
-      <div class="bd-hands">${hand('b', 'バンカー')}${hand('p', 'プレイヤー')}</div>
-      ${res}
-      ${say ? `<div class="bd-say"><span>アナウンス</span>${say}</div>` : ''}
-      </div><div class="bd-r">
-      ${r.done ? '' : `<div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}">${n}${third && n === 1 ? '<small>A</small>' : ''}</button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0">0${third ? '<small>10・J・Q・K</small>' : ''}</button><span></span></div>`}
+      <div class="bd-body"><div class="bd-l">${L.html}</div><div class="bd-r">
+      <div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}" ${off}>${n}<small>${sub(n)}</small></button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0" ${off}>0<small>${sub(0)}</small></button><span></span></div>
       <div class="bd-acts">
         <button class="btn" data-draw-undo ${draw.order.length ? '' : 'disabled'}>1つ戻す</button>
         ${r.done ? `<button class="btn rec ${w}" data-draw-rec>罫線に記録して次へ<small>${NAME[w]}${r.natural ? '・ナチュラル' : ''}</small></button>` : `<button class="btn" data-draw-reset ${draw.order.length ? '' : 'disabled'}>やり直す</button>`}
       </div>
       </div></div>`;
+    reserveDraw();
   }
+  // 上半分の高さを、出てくる可能性のある一番高い場面に合わせて固定する(下のテンキーが動かない)
+  const drawRes = { w: 0, h: 0 };
+  function reserveDraw() {
+    const box = document.querySelector('#drawPanel .bd-l'); if (!box || !window.TapGuard) return;
+    const w = Math.round(box.getBoundingClientRect().width);
+    // 横並び(タブレット横向き)は結果の場面まで含める(テンキーは右なので高さを取っても困らない)。縦並びは入力中の場面だけ(結果が出たらテンキーは押せない)
+    const wide = getComputedStyle(box.parentNode).display === 'grid';
+    // 縦並びでも、結果の場面まで含めて画面に収まる(または差が小さい)なら結果の場面まで含める(ボタンが少しも動かないように)
+    if (w !== drawRes.w || wide !== drawRes.wide || innerHeight !== drawRes.vh) {
+      const all = K.bacStates(), input = all.filter(s => !K.bacNext2(s.pt, s.bt, s.p3, s.b3).done);
+      const hAll = TapGuard.tallest(box, all.map(s => drawLeft(s).html)), hIn = wide ? hAll : TapGuard.tallest(box, input.map(s => drawLeft(s).html));
+      const panel = box.closest('.panel'), others = panel ? panel.scrollHeight - box.offsetHeight : 0;
+      Object.assign(drawRes, { w, wide, vh: innerHeight, h: wide || hAll - hIn <= 80 || others + hAll <= innerHeight * 0.94 ? hAll : hIn });
+    }
+    box.style.minHeight = drawRes.h ? drawRes.h + 'px' : '';
+  }
+  window.addEventListener('resize', () => { if (drawOpen()) renderDraw(); });
   // ディーラーが言う一言(引く/引かない・勝ち)。貸卓アプリと同じ文言
-  function drawAnnounce(r) {
-    const { pt, bt, p3, b3 } = draw;
+  function drawAnnounce(r, d) {
+    const { pt, bt, p3, b3 } = d || draw;
     if (pt == null || bt == null) return '';
     const lines = [];
     if (r.natural) {
