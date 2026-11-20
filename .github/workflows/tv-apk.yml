@@ -10,7 +10,7 @@ permissions:
   contents: write
 concurrency:
   group: tv-apk
-  cancel-in-progress: true
+  cancel-in-progress: false # 途中で止めると APK の差し替え中に消えることがあるので、順番に待つ
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
           "$BT/aapt2" compile --dir res -o out/res.zip
           "$BT/aapt2" link -o out/base.apk -I "$JAR" --manifest AndroidManifest.xml -A assets \
             --min-sdk-version 22 --target-sdk-version 30 \
-            --version-code "$GITHUB_RUN_NUMBER" --version-name "1.$GITHUB_RUN_NUMBER" out/res.zip
+            --version-code "$(( $(date +%s) / 60 ))" --version-name "1.$GITHUB_RUN_NUMBER" out/res.zip
           javac -source 8 -target 8 -nowarn -classpath "$JAR" -d out/obj $(find src -name '*.java')
           "$BT/d8" --min-api 22 --lib "$JAR" --output out/dex $(find out/obj -name '*.class')
           cp out/base.apk out/unsigned.apk
