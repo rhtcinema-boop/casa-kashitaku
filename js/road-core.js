@@ -127,25 +127,27 @@
   const encode = hands => hands.map(h => String.fromCharCode(97 + R3.indexOf(h.r) * 8 + (h.nat ? 4 : 0) + (h.bp ? 2 : 0) + (h.pp ? 1 : 0))).join('');
   const decode = s => [...(s || '')].map(ch => { const n = ch.charCodeAt(0) - 97; return { r: R3[n >> 3], nat: !!(n & 4), bp: !!(n & 2), pp: !!(n & 1) }; }).filter(h => h.r);
   const URL_ = (g.KASHITAKU_CONFIG || {}).GAS_URL || '';
-  async function timed(url, init, ms) {
-    // 古いブラウザ(AbortController なし)では時間切れなしで送る
+  // 通信して JSON を受け取るまで(本文の読み取りも含めて)を時間で打ち切る。古いブラウザ(AbortController なし)でも止まらない
+  function fetchJson(url, init, ms) {
     const ctl = typeof AbortController === 'function' ? new AbortController() : null;
-    const t = ctl ? setTimeout(() => ctl.abort(), ms || 8000) : 0;
-    try { return await fetch(url, ctl ? Object.assign({ signal: ctl.signal }, init) : init); } finally { clearTimeout(t); }
+    let t;
+    const limit = new Promise((_, rej) => { t = setTimeout(() => { if (ctl) ctl.abort(); rej(new Error('timeout')); }, ms || 8000); });
+    const job = fetch(url, ctl ? Object.assign({ signal: ctl.signal }, init) : init).then(r => r.json());
+    return Promise.race([job, limit]).finally(() => clearTimeout(t));
   }
   // テスト用の置き場(?room=test など)。なければ本番
   const ROOM = (new URLSearchParams(location.search).get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
   async function pull() {
     if (!URL_) throw new Error('no server');
-    const r = await timed(`${URL_}?road=1&room=${ROOM}&_=${Date.now()}`, { cache: 'no-store' });
-    const j = await r.json(); if (j.error) throw new Error(j.error);
+    const j = await fetchJson(`${URL_}?road=1&room=${ROOM}&_=${Date.now()}`, { cache: 'no-store' }, 10000);
+    if (j.error) throw new Error(j.error);
     return { hands: decode(j.hands), rev: j.rev || 0, ts: j.ts || 0, say: j.say || '', sayRev: j.sayRev || 0 };
   }
   async function post(body) {
     if (!URL_) throw new Error('no server');
     body.room = ROOM;
-    const r = await timed(URL_, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }, 15000);
-    const j = await r.json(); if (j.error) throw new Error(j.error);
+    const j = await fetchJson(URL_, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }, 20000);
+    if (j.error) throw new Error(j.error);
     return j;
   }
   // 記録を置き換える。base(最後に見た rev)を付けると、その後ほかの端末で増えていたら書かずに conflict:true が返る
