@@ -81,7 +81,7 @@
     // マスの名前・金額は1行に(長い名前は小さく)。そのあとマス全体が収まるように
     if (window.fitLines) fitLines(document.querySelectorAll('#grid .cell .nm, #grid .cell .st, #grid .cell .n.dl'), { ratio: .62, min: 9 });
     fitAll('.cell', { min: 8 });
-    fitAll('.tourbar b, .stat b, .stat span', { min: 10 });
+    fitAll('.tool b, .stat b, .stat span', { min: 10 });
   }
   function fitPanel() { fitAll('#panel .stat b, #panel .stat span, #panel .ranks .rank b, #panel .bd-row span', { min: 10 }); fitAll('#panel .pad .disp b', { min: 14, widthOnly: true }); }
   window.addEventListener('resize', () => { fitScreen(); fitPanel(); });
@@ -89,8 +89,9 @@
   // ---------- 描画 ----------
   function render() {
     { const [y, m, d] = date.split('-').map(Number), wd = '日月火水木金土'[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; $('#hDate').innerHTML = `${m}月${d}日(${wd})` + (date === K.todayJST() ? '' : '<small class="other">別の日</small>'); }
-    $('#hSheet').href = CFG.SHEET_URL || '#';
-    document.querySelectorAll('#games button').forEach(b => b.classList.toggle('on', b.dataset.game === game));
+    // 下のタブ: ゲームのタブはそのゲーム、ほかはそのタブを光らせる
+    document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', tab === 'input' ? b.dataset.game === game : b.dataset.tab === tab));
+    renderTools();
     renderGrid();
     renderLog();
     renderSum();
@@ -103,30 +104,14 @@
   function renderGrid() {
     const grid = $('#grid');
     grid.style.display = 'grid';
-    const tb = $('#tourBar'), tt = agg.totals.tour;
-    tb.style.display = game === 'tour' ? 'grid' : 'none';
-    if (game === 'tour') tb.innerHTML = `<div><span>総エントリー</span><b>${tt.e + tt.re}</b></div><div><span>残り</span><b>${tt.active}<small>人</small></b></div>`;
     // 設定で名前を登録した人だけ表示(登録を消しても、このゲームに入力がある人は残す)
     const nos = new Set(state.players.map(p => Number(p.no)));
     state.txs.forEach(t => { if (t.game === game && t.no !== '' && t.no != null) nos.add(Number(t.no)); });
     const list = [...nos].filter(n => n > 0).sort((a, b) => a - b);
-    // バカラは先頭に「ディーラー」のマス(チップの補充・回収)
     let html = '';
-    if (game === 'bac') {
-      const d = agg.dealer.bac, used = d.in || d.out;
-      html += `<button class="cell g-dealer dealer-cell ${used ? 'act' : ''}" data-dealer-open>
-        <div class="n dl">ディーラー</div>
-        <div class="st">${used ? `手元 ${K.signedPt(K.round1(d.in - d.out))}` : 'チップ'}</div>
-      </button>
-      <button class="cell g-dealer draw-cell" data-draw-open>
-        <div class="n dl">3枚目</div>
-        <div class="st">判定</div>
-      </button>`;
-    }
     if (!list.length) {
-      grid.innerHTML = html + `<div class="nogrid">まだ誰も登録されていません<br><button class="btn gold" data-goto="set">設定で会計札と名前を登録</button></div>`;
+      grid.innerHTML = `<div class="nogrid">まだ誰も登録されていません<br><button class="btn gold" data-goto="set">名前を登録する</button></div>`;
       grid.style.gridAutoRows = '';
-      if (game === 'bac') fitGrid(2);
       return;
     }
     for (const no of list) {
@@ -144,7 +129,28 @@
       </button>`;
     }
     grid.innerHTML = html;
-    fitGrid(list.length + (game === 'bac' ? 2 : 0));
+    fitGrid(list.length);
+  }
+
+  // ゲームの上の道具: バカラ = ディーラー・3枚目・罫線、トナメ = エントリー・残り・プール・プライズ、リング = なし
+  function renderTools() {
+    const el = $('#tools');
+    let html = '';
+    if (game === 'bac') {
+      const d = agg.dealer.bac, used = d.in || d.out;
+      html = `<button class="tool glass t-dealer" data-dealer-open><b>ディーラー</b><span>${used ? `手元 ${K.signedPt(K.round1(d.in - d.out))}` : 'チップの補充・回収'}</span></button>
+        <button class="tool glass t-draw" data-draw-open><b>3枚目</b><span>引く・引かない</span></button>
+        <a class="tool glass t-road" href="road.html?from=kt"><b>罫線</b><span>大路・予測</span></a>`;
+    } else if (game === 'tour') {
+      const tt = agg.totals.tour, prizes = K.parsePrizes(state.config);
+      html = `<div class="tool glass t-stat"><span>エントリー</span><b>${tt.e + tt.re}</b></div>
+        <div class="tool glass t-stat"><span>残り</span><b>${tt.active}<small>人</small></b></div>
+        <div class="tool glass t-stat"><span>プール</span><b>${K.fmtPt(tt.in)}</b></div>
+        <button class="tool t-prize" data-prize-open><b>プライズ</b><span>${prizes.length ? `${prizes.length}位まで` : '未設定'}</span></button>`;
+    }
+    el.className = 'tools' + (game === 'tour' ? ' tour' : '');
+    el.style.display = html ? '' : 'none';
+    el.innerHTML = html;
   }
 
   // 1行5人で、画面の残りの高さいっぱいに広げる(多いときはスクロール)
@@ -155,8 +161,8 @@
     // 1列の人数は CSS に合わせる(縦向き5人、タブレット横向き7〜8人)
     const cols = Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length);
     const rows = Math.ceil(count / cols), gap = parseFloat(getComputedStyle(grid).rowGap) || 8;
-    const navH = ($('nav') || {}).offsetHeight || 70;
-    const avail = window.innerHeight - grid.getBoundingClientRect().top - navH - 12;
+    const nav = $('#nav'), navTop = nav ? nav.getBoundingClientRect().top : window.innerHeight - 70; // 浮かぶタブバーの上まで
+    const avail = navTop - grid.getBoundingClientRect().top - 12;
     const cellW = (grid.clientWidth - gap * (cols - 1)) / cols;
     // 高さは「画面の残り ÷ 行数」。ただし縦長になりすぎないよう幅の1.3倍まで
     const minH = window.innerHeight < 600 ? 64 : 96; // スマホ横向きなど高さが低い画面は低めのマスまで
@@ -178,10 +184,12 @@
   // 遊んだゲームだけ並べる(0万のゲームは出さない)
   function sumParts(p) {
     const parts = [];
-    if (p.bac.in || p.bac.out) parts.push(`バカラ IN ${K.fmtPt(p.bac.in)} OUT ${K.fmtPt(p.bac.out)} ${K.signedPt(p.bac.pl)}`);
-    if (p.cash.in || p.cash.out) parts.push(`リング IN ${K.fmtPt(p.cash.in)} ${K.signedPt(p.cash.pl)}`);
-    if (p.tour.e + p.tour.re) parts.push(`トナメ ${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b>` : ''} ${K.signedPt(p.tour.pl)}`);
-    return parts.join(' ／ ') || 'まだ入力なし';
+    // ゲームごとに1つの札(色つき)。収支は最後に色つきで
+    const pl = v => `<b class="${cls(v)}">${K.signedPt(v)}</b>`;
+    if (p.bac.in || p.bac.out) parts.push(`<span class="gchip g-bac"><em>バカラ</em>IN ${K.fmtPt(p.bac.in)} OUT ${K.fmtPt(p.bac.out)} ${pl(p.bac.pl)}</span>`);
+    if (p.cash.in || p.cash.out) parts.push(`<span class="gchip g-cash"><em>リング</em>IN ${K.fmtPt(p.cash.in)} ${pl(p.cash.pl)}</span>`);
+    if (p.tour.e + p.tour.re) parts.push(`<span class="gchip g-tour"><em>トナメ</em>${p.tour.e + p.tour.re}回${p.tour.rank ? ` <b class="rk">${p.tour.rank}</b>` : ''} ${pl(p.tour.pl)}</span>`);
+    return parts.join('') || 'まだ入力なし';
   }
   // ---------- プレイヤー一覧(全ゲーム終了ボタン付き) ----------
   // その人のまだ終わっていないゲーム
@@ -260,7 +268,7 @@
     }
     $('#rosterRows').innerHTML = html;
     $('#setMode').textContent = API.mode === 'gas' ? 'Google シート' : 'この端末のみ(テスト)';
-    $('#setModeInfo').textContent = API.mode === 'gas' ? '入力はシートに即時保存' : 'config.js に GAS_URL を入れると共有されます';
+    $('#setModeInfo').textContent = API.mode === 'gas' ? '' : 'この端末だけ';
     $('#openSheet').href = CFG.SHEET_URL || '#';
   }
 
@@ -331,8 +339,8 @@
     const n = Number(v || 0) * (pad.neg ? -1 : 1);
     const s = p ? p[pad.game || game] : null;
     let after = '';
-    if (s && pad.type === 'in') after = `合計 IN → ${s.in + n}万`;
-    if (s && (pad.type === 'out' || pad.type === 'prize')) after = `収支 → ${K.signedPt(s.out + n - s.in)}`;
+    if (s && pad.type === 'in') after = `合計 IN → <strong>${s.in + n}万</strong>`;
+    if (s && (pad.type === 'out' || pad.type === 'prize')) after = `収支 → <strong>${K.signedPt(s.out + n - s.in)}</strong>`;
     const quick = pad.type === 'in' || pad.type === 'dealerIn' ? [10, 20, 30, 50, 100] : [50, 100, 200, 300, 500];
     return `<div class="pad show">
       <div class="disp"><div><div class="lbl">${label}</div><b class="num">${pad.neg ? '-' : ''}${v || 0}<small> 万</small></b></div><small>${after}</small></div>
@@ -390,8 +398,8 @@
       let t2 = '';
       if (p) {
         const s = p[tx.game];
-        if (tx.game === 'tour') t2 = `合計 ${s.e + s.re}回 ／ IN ${s.in}万 ／ 収支 ${K.signedPt(s.pl)}`;
-        else t2 = `合計 IN ${s.in}万 ／ OUT ${s.out}万 ／ 収支 ${K.signedPt(s.pl)}`;
+        if (tx.game === 'tour') t2 = `合計 ${s.e + s.re}回 · IN ${s.in}万 · 収支 ${K.signedPt(s.pl)}`;
+        else t2 = `合計 IN ${s.in}万 · OUT ${s.out}万 · 収支 ${K.signedPt(s.pl)}`;
       } else {
         const d = agg.dealer[tx.table || 'bac'];
         t2 = `補充 ${d.in}万 ／ 回収 ${d.out}万`;
@@ -409,16 +417,39 @@
     $('#toastT1').innerHTML = t1; $('#toastT2').textContent = t2;
     el.classList.toggle('err', !!err); el.classList.add('show');
     $('#toastUndo').style.display = err || !lastTx ? 'none' : '';
+    if (window.fitText) { fitText($('#toastT1'), { min: 13 }); fitText($('#toastT2'), { min: 10 }); } // 1行ずつに収める(表示してから測る)
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), err ? 8000 : 4000);
   }
 
   // ---------- イベント ----------
-  $('#games').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; game = b.dataset.game; pad = null; render(); });
   $('#grid').addEventListener('click', e => {
-    const g = e.target.closest('[data-goto]'); if (g) return document.querySelector(`#nav [data-tab="${g.dataset.goto}"]`).click();
+    if (e.target.closest('[data-goto]')) return openPage('setSheet', 'rosterRows');
+    const c = e.target.closest('.cell'); if (c) { pad = null; openSheet(Number(c.dataset.no)); }
+  });
+  $('#tools').addEventListener('click', e => {
     if (e.target.closest('[data-dealer-open]')) { pad = null; return openDealer(); }
     if (e.target.closest('[data-draw-open]')) { pad = null; return openDraw(); }
-    const c = e.target.closest('.cell'); if (c) { pad = null; openSheet(Number(c.dataset.no)); }
+    if (e.target.closest('[data-prize-open]')) return openPage('prizeSheet');
+  });
+  // 設定・プライズ(下から出る画面)。閉じたら名前などの変更を一覧に反映
+  function openPage(id, scrollTo) {
+    const sh = $('#' + id); renderSet(); sh.classList.add('show');
+    const panel = sh.querySelector('.panel'); panel.scrollTop = 0;
+    if (scrollTo) { const t = document.getElementById(scrollTo); if (t) panel.scrollTop = Math.max(0, t.offsetTop - 80); }
+  }
+  ['setSheet', 'prizeSheet'].forEach(id => $('#' + id).addEventListener('click', e => {
+    if (!e.target.closest('[data-close-sheet]')) return;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); // 入力中の名前を確定させてから閉じる
+    $('#' + id).classList.remove('show'); refresh();
+  }));
+  $('#openSet').addEventListener('click', () => openPage('setSheet'));
+  // 集計: 収支 / 履歴
+  $('#sumSeg').addEventListener('click', e => {
+    const b = e.target.closest('[data-sub]'); if (!b) return;
+    document.querySelectorAll('#sumSeg button').forEach(x => x.classList.toggle('on', x === b));
+    $('#sub-sum').classList.toggle('hide', b.dataset.sub !== 'sum'); $('#sub-log').classList.toggle('hide', b.dataset.sub !== 'log');
+    if (b.dataset.sub !== 'sum') $('#preview').innerHTML = '';
+    window.scrollTo(0, 0); refresh();
   });
   // ---------- バカラ 3枚目の判定(ディーラー補助) ----------
   // 最初の2枚は合計(0〜9)だけ、3枚目からは引いたカードの数字をテンキーで入れる。サイドベットなし、バンカー6は配当半分。
@@ -458,7 +489,7 @@
       <h2 class="g-dealer">3枚目の判定 <small>サイドベットなし・バンカー6あり</small></h2>
       <div class="bd-body"><div class="bd-l">${L.html}</div><div class="bd-r">
       <div class="bd-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-draw-n="${n}" ${off}>${n}<small>${sub(n)}</small></button>`).join('')}<button class="bd-back" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>⌫<small>戻す</small></button><button data-draw-n="0" ${off}>0<small>${sub(0)}</small></button><span></span></div>
-      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>1つ戻す</button><button class="btn ${r.done ? '' : 'gold'}" data-draw-reset ${drawSending ? 'disabled' : ''}>${r.done ? '記録せず次へ' : '次のゲーム'}</button><button class="btn gold full" data-draw-rec ${r.done && !drawSending ? '' : 'disabled'}>${drawSending ? '送信中…' : 'モニターに記録して次へ'}<br><small>${r.done ? { player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner] + (r.natural ? '・ナチュラル' : '') : '結果が出たら押せます'}</small></button></div>
+      <div class="acts"><button class="btn" data-draw-undo ${draw.order.length && !drawSending ? '' : 'disabled'}>1つ戻す</button><button class="btn ${r.done ? '' : 'gold'}" data-draw-reset ${drawSending || !draw.order.length ? 'disabled' : ''}>${r.done ? '記録せず次へ' : '次のゲーム'}</button><button class="btn gold full" data-draw-rec ${r.done && !drawSending ? '' : 'disabled'}>${drawSending ? '送信中…' : 'モニターに記録して次へ'}<br><small>${r.done ? { player: 'プレイヤー', banker: 'バンカー', tie: 'タイ' }[r.winner] + (r.natural ? '・ナチュラル' : '') : '結果が出たら押せます'}</small></button></div>
       </div></div>`;
     reserveDraw();
     fitPanel();
@@ -600,7 +631,14 @@
         if (!K.parsePrizes(state.config).length) return sendClose({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び');
         pad = { type: 'rank' }; return renderPanel();
       }
-      if (a === 'home') { pad = null; return startHome(); }
+      if (a === 'home') {
+        if (!pendingGames(playerOf(openNo)).length && !act.classList.contains('arm')) { // すぐ記録される帰宅は、もう一度押して確定
+          act.classList.add('arm'); act.textContent = 'もう一度押すと帰宅';
+          setTimeout(() => { if (act.isConnected) { act.classList.remove('arm'); act.textContent = '帰宅'; } }, 3000);
+          return;
+        }
+        pad = null; return startHome();
+      }
       if (a === 'bustOut') { pad = null; if (home) return homeDone({ no: home.no, game: 'tour', type: 'bust', pt: 0 }, 'トーナメント 飛び(圏外)'); return sendClose({ no: openNo, game: 'tour', type: 'bust', pt: 0 }, '飛び(圏外)'); }
       pad = { type: a, value: '', allowNeg: false, neg: false }; return renderPanel();
     }
@@ -670,9 +708,8 @@
   $('#sheet').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { e.stopPropagation(); delTap(b); } }, true);
   $('#nav').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    tab = b.dataset.tab;
-    document.querySelectorAll('#nav button').forEach(x => x.classList.toggle('on', x === b));
-    ['input', 'players', 'log', 'sum', 'set'].forEach(k => $('#tab-' + k).classList.toggle('hide', k !== tab));
+    if (b.dataset.game) { tab = 'input'; game = b.dataset.game; pad = null; } else tab = b.dataset.tab;
+    ['input', 'players', 'sum'].forEach(k => $('#tab-' + k).classList.toggle('hide', k !== tab));
     if (tab !== 'sum') $('#preview').innerHTML = '';
     window.scrollTo(0, 0); // タブを押したら一番上から
     refresh();
@@ -696,7 +733,7 @@
     pcDefaults();
     const pool = agg.totals.tour.in, t = agg.totals.tour;
     $('#pcPool').textContent = K.fmtPt(pool);
-    $('#pcPoolInfo').textContent = `トーナメントの IN 合計(${t.e + t.re} エントリー)`;
+    $('#pcPoolInfo').textContent = `${t.e + t.re} エントリー`;
     $('#pcX').textContent = pc.x + '人';
     $('#pcY').textContent = pc.y + '万';
     const r = K.calcPrizes(pool, pc.x, pc.y);

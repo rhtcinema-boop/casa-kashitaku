@@ -8,7 +8,7 @@
   try { localStorage.removeItem('kt.unlock'); } catch (e) { } // 以前の「覚える」設定を消す
 
   const css = `
-  #ktLock { position: fixed; inset: 0; z-index: 1000; background: var(--bg, #f2f2f7); color: var(--text, #000); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px; font-family: -apple-system, "Hiragino Sans", sans-serif; user-select: none; -webkit-user-select: none; }
+  #ktLock { position: fixed; inset: 0; z-index: 1000; background: var(--bg-art, var(--bg, #f2f2f7)); color: var(--text, #000); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px; font-family: -apple-system, "Hiragino Sans", sans-serif; user-select: none; -webkit-user-select: none; }
   #ktLock h1 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text2, #8e8e93); letter-spacing: .04em; }
   #ktLock .ttl { font-size: 26px; font-weight: 700; }
   #ktLock .dots { display: flex; gap: 18px; height: 18px; }
@@ -17,9 +17,9 @@
   #ktLock .dots.ng { animation: ktShake .35s; }
   @keyframes ktShake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
   #ktLock .keys { display: grid; grid-template-columns: repeat(3, min(84px, 26vw)); gap: min(16px, 4vw); }
-  #ktLock .keys button { width: min(84px, 26vw); height: min(84px, 26vw); border-radius: 50%; border: 0; background: var(--fill, rgba(120,120,128,.12)); color: var(--text, #000); font-size: 34px; font-weight: 400; font-family: inherit; cursor: pointer; }
+  #ktLock .keys button { width: min(84px, 26vw); height: min(84px, 26vw); border-radius: 50%; border: .5px solid var(--glass-line, transparent); background: var(--glass, rgba(120,120,128,.12)); -webkit-backdrop-filter: var(--blur, none); backdrop-filter: var(--blur, none); box-shadow: var(--glass-hi, none), var(--shadow, none); color: var(--text, #000); font-size: 34px; font-weight: 400; font-family: inherit; cursor: pointer; }
   #ktLock .keys button:active { background: var(--fill2, rgba(120,120,128,.3)); }
-  #ktLock .keys button.fn { background: transparent; font-size: 18px; color: var(--blue, #007aff); }
+  #ktLock .keys button.fn { background: transparent; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; font-size: 18px; color: var(--blue, #007aff); }
   #ktLock .msg { height: 20px; font-size: 15px; color: var(--red, #ff3b30); }`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 

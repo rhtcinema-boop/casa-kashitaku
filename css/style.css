@@ -1,12 +1,13 @@
-/* casa 貸卓 — 共通スタイル(iOS 純正アプリ風: 白と青、ダークモード自動対応) */
+/* casa 貸卓 — 共通スタイル(ガラス調: 半透明の板を色のにじむ背景に重ねる。ダークモード自動対応) */
 :root {
   color-scheme: light dark;
   --bg: #f2f2f7;               /* systemGroupedBackground */
-  --card: #ffffff;             /* secondarySystemGroupedBackground */
+  --card: rgba(255, 255, 255, .7); /* 半透明の板(マス・ボタンなど。ぼかしなしで軽い) */
   --fill: rgba(120, 120, 128, .12);
   --fill2: rgba(120, 120, 128, .2);
   --text: #000000;
   --text2: rgba(60, 60, 67, .6);
+  --text2-strong: rgba(60, 60, 67, .78); /* 補助の文字でも読みやすい濃さ */
   --sep: rgba(60, 60, 67, .18);
   --blue: #007aff;
   --blue-tint: rgba(0, 122, 255, .1);
@@ -17,7 +18,18 @@
   --teal: #30b0c7;
   --gray: #8e8e93;
   --bar: rgba(249, 249, 249, .86);
-  --shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 14px rgba(0, 0, 0, .05);
+  --shadow: 0 1px 2px rgba(20, 30, 70, .05), 0 6px 18px rgba(20, 30, 70, .07);
+  /* ガラス */
+  --glass: rgba(255, 255, 255, .56);         /* ぼかし付きの板(バー・シート・カード) */
+  --glass-strong: rgba(250, 251, 255, .82);  /* 文字が多い板 */
+  --glass-sel: rgba(255, 255, 255, .92);     /* 選んでいるタブ */
+  --glass-line: rgba(255, 255, 255, .8);     /* ふちの光 */
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 -1px 0 rgba(255, 255, 255, .3);
+  --glass-shadow: 0 10px 30px rgba(20, 30, 70, .13), 0 1px 3px rgba(20, 30, 70, .06);
+  --blur: saturate(180%) blur(24px);
+  --bg-art: radial-gradient(1100px 620px at 0% -10%, rgba(0, 122, 255, .2), transparent 62%),
+    radial-gradient(900px 560px at 105% 8%, rgba(175, 82, 222, .17), transparent 60%),
+    radial-gradient(1000px 700px at 40% 115%, rgba(48, 176, 199, .18), transparent 62%), #edf0f7;
   /* ゲームの色 */
   --bac: var(--blue); --cash: var(--teal); --tour: var(--indigo); --dealer: var(--gray);
   /* 旧名(画面のコードから参照) */
@@ -27,28 +39,38 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #000000; --card: #1c1c1e; --fill: rgba(120, 120, 128, .24); --fill2: rgba(120, 120, 128, .36);
-    --text: #ffffff; --text2: rgba(235, 235, 245, .6); --sep: rgba(84, 84, 88, .6);
+    --text: #ffffff; --text2: rgba(235, 235, 245, .6); --text2-strong: rgba(235, 235, 245, .8); --sep: rgba(84, 84, 88, .6);
     --blue: #0a84ff; --blue-tint: rgba(10, 132, 255, .18); --red: #ff453a; --red-tint: rgba(255, 69, 58, .18);
     --indigo: #5e5ce6; --indigo-tint: rgba(94, 92, 230, .2); --teal: #40c8e0; --gray: #98989d;
-    --bar: rgba(22, 22, 24, .86); --shadow: none;
+    --bar: rgba(22, 22, 24, .86); --shadow: 0 6px 18px rgba(0, 0, 0, .3);
+    --card: rgba(64, 66, 78, .5);
+    --glass: rgba(40, 42, 52, .5); --glass-strong: rgba(28, 30, 38, .82); --glass-sel: rgba(255, 255, 255, .16); --glass-line: rgba(255, 255, 255, .16);
+    --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .18), inset 0 -1px 0 rgba(255, 255, 255, .04);
+    --glass-shadow: 0 12px 34px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .3);
+    --bg-art: radial-gradient(1100px 620px at 0% -10%, rgba(10, 132, 255, .28), transparent 62%),
+      radial-gradient(900px 560px at 105% 8%, rgba(191, 90, 242, .22), transparent 60%),
+      radial-gradient(1000px 700px at 40% 115%, rgba(64, 200, 224, .16), transparent 62%), #06070c;
   }
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } /* 横向きにしたときにスマホが勝手に文字を大きくしない */
-body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
+/* 背景: 色がにじむ面(画面に固定)。ガラスの板はこの上に重なる */
+html::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--bg-art); pointer-events: none; }
+body { margin: 0; min-height: 100%; background: transparent; color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
 button { font: inherit; color: inherit; cursor: pointer; }
 .num { font-variant-numeric: tabular-nums; }
 .plus { color: var(--blue); } .minus { color: var(--red); } .zero { color: var(--text2); }
-.card { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
+.card { background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: .5px solid var(--glass-line); border-radius: 20px; box-shadow: var(--glass-hi), var(--glass-shadow); }
+.glass { background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: .5px solid var(--glass-line); box-shadow: var(--glass-hi), var(--glass-shadow); }
 .btn { border: 0; background: var(--fill); color: var(--blue); border-radius: 14px; padding: 15px 20px; font-size: 18px; font-weight: 600; }
 .btn:active { opacity: .6; }
-.btn.gold { background: var(--blue); color: #fff; }
+.btn.gold { background: var(--blue); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 6px 16px rgba(0, 122, 255, .28); }
 .btn.red { background: var(--red-tint); color: var(--red); }
 .btn.ghost { background: transparent; }
 .btn[disabled] { opacity: .35; pointer-events: none; }
 .g-bac { --c: var(--bac); } .g-cash { --c: var(--cash); } .g-tour { --c: var(--tour); } .g-dealer { --c: var(--dealer); }
 .tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--fill); color: var(--c, var(--text2)); }
-.toast { position: fixed; left: 12px; right: 12px; top: calc(var(--sat) + 70px); z-index: 50; background: var(--card); color: var(--text); border-radius: 16px; padding: 14px 16px; display: none; grid-template-columns: 1fr auto; gap: 10px; align-items: center; box-shadow: 0 8px 30px rgba(0, 0, 0, .18); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.toast { position: fixed; left: 12px; right: 12px; top: calc(var(--sat) + 70px); z-index: 50; background: var(--glass-strong); border: .5px solid var(--glass-line); color: var(--text); border-radius: 22px; padding: 14px 16px; display: none; grid-template-columns: 1fr auto; gap: 10px; align-items: center; box-shadow: var(--glass-hi), var(--glass-shadow); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); }
 .toast.show { display: grid; animation: drop .25s cubic-bezier(.2, .9, .3, 1.2); }
 @keyframes drop { from { transform: translateY(-12px); opacity: 0; } }
 .toast .t1 { font-size: 15px; color: var(--text2); } .toast .t2 { font-size: 21px; font-weight: 700; margin-top: 2px; }

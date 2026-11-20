@@ -14,10 +14,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=20261120205403">
+<link rel="stylesheet" href="css/style.css?v=20261120212621">
 <script>
   // 最新版チェック: 開いたとき・アプリに戻ったときに ver.txt を見て、新しければ自動で読み込み直す
-  window.KT_VER = '20261120205403';
+  window.KT_VER = '20261120212621';
   (function () {
     function check() {
       fetch('ver.txt?_=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -33,39 +33,55 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
   })();
 </script>
-<script src="js/tapguard.js?v=20261120205403"></script>
-<script src="js/lock.js?v=20261120205403"></script>
+<script src="js/tapguard.js?v=20261120212621"></script>
+<script src="js/lock.js?v=20261120212621"></script>
 <style>
   body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; overflow-wrap: anywhere; }
-  .wrap { margin: 0 auto; padding: calc(var(--sat) + 12px) 16px calc(var(--sab) + 120px); }
-  #tab-log, #tab-sum, #tab-set { max-width: 900px; margin: 0 auto; }
+  .wrap { margin: 0 auto; padding: 12px max(16px, env(safe-area-inset-right)) calc(var(--sab) + 104px) max(16px, env(safe-area-inset-left)); }
+  #tab-sum { max-width: 900px; margin: 0 auto; }
 
-  /* ヘッダー(大きなタイトル) */
-  header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-bottom: 12px; }
-  header > div:first-child { min-width: 0; }
-  h1 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text2); text-transform: uppercase; }
-  .date { font-size: clamp(21px, 4.4vw, 36px); font-weight: 700; letter-spacing: -.02em; margin-top: 0; white-space: nowrap; }
+  /* ===== 上のバー(ガラス・上に固定) ===== */
+  .topbar { position: sticky; top: 0; z-index: 15; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    padding: calc(var(--sat) + 8px) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+    background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-bottom: .5px solid var(--glass-line); box-shadow: 0 1px 0 rgba(0, 0, 0, .03); }
+  .topbar > div:first-child { min-width: 0; }
+  h1 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--text2); text-transform: uppercase; }
+  .date { font-size: clamp(20px, 4.2vw, 30px); font-weight: 800; letter-spacing: -.02em; margin-top: 0; white-space: nowrap; }
   .status { font-size: 12px; color: var(--text2); text-align: right; }
   .hright { display: flex; align-items: center; gap: 8px; }
-  .sheetbtn { background: var(--fill); color: var(--blue); border-radius: 999px; padding: 13px 20px; font-size: 18px; font-weight: 600; text-decoration: none; }
-  .syncbtn { display: flex; flex-direction: column; align-items: center; border: 0; background: var(--fill); color: var(--blue); border-radius: 16px; padding: 8px 16px; min-width: 100px; }
-  .syncbtn b { font-size: 19px; font-weight: 600; }
-  .syncbtn small { font-size: 11px; color: var(--text2); margin-top: 1px; }
-  .syncbtn.dirty { background: var(--blue); color: #fff; }
-  .syncbtn.dirty small { color: rgba(255, 255, 255, .85); font-weight: 600; }
+  .gbtn { border: .5px solid var(--glass-line); background: var(--glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: var(--glass-hi), 0 2px 10px rgba(20, 30, 70, .08); color: var(--blue); }
+  .gbtn:active { transform: scale(.96); }
+  .syncbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 22px; padding: 6px 14px; min-width: 92px; min-height: 44px; }
+  .syncbtn b { font-size: 16px; font-weight: 700; }
+  .syncbtn small { font-size: 11px; color: var(--text2); margin-top: 1px; font-weight: 600; }
+  .syncbtn.dirty { background: var(--blue); color: #fff; border-color: transparent; }
+  .syncbtn.dirty small { color: rgba(255, 255, 255, .88); }
   .syncbtn.spin { opacity: .55; }
-  .syncbtn.err { background: var(--red); color: #fff; }
-  .syncbtn.err small { color: rgba(255, 255, 255, .9); font-weight: 600; }
+  .syncbtn.err { background: var(--red); color: #fff; border-color: transparent; }
+  .syncbtn.err small { color: rgba(255, 255, 255, .9); }
+  .iconbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; padding: 0; color: var(--text); }
+  .iconbtn svg, .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* ゲーム選択(iOS のセグメント) */
-  .games { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; margin-bottom: 12px; background: var(--fill); border-radius: 12px; }
-  .games button { word-break: keep-all; }
-  .games button { border: 0; background: transparent; border-radius: 9px; padding: 15px 4px; font-size: clamp(15px, 2.4vw, 21px); font-weight: 600; color: var(--text); transition: background .2s; }
-  .games button.on { background: var(--card); color: var(--c); box-shadow: 0 3px 8px rgba(0, 0, 0, .12), 0 3px 1px rgba(0, 0, 0, .04); }
+  /* ===== ゲームの道具(バカラ: ディーラー・3枚目・罫線 / トナメ: 人数・プール・プライズ) ===== */
+  .tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .tools.tour { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.1fr); }
+  .tool { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; min-height: 60px; padding: 8px 6px; border-radius: 20px; color: var(--text); text-decoration: none; font: inherit; text-align: center; }
+  .tool b { font-size: clamp(16px, 3.4vw, 22px); font-weight: 800; letter-spacing: -.01em; white-space: nowrap; color: var(--c, var(--text)); }
+  .tool span { font-size: 12px; color: var(--text2); font-weight: 600; white-space: nowrap; }
+  .tool b small { font-size: .62em; color: var(--text2); font-weight: 600; margin-left: 2px; }
+  button.tool:active, a.tool:active { transform: scale(.97); }
+  .tool.t-dealer { --c: var(--blue); } .tool.t-draw { --c: var(--indigo); } .tool.t-road { --c: var(--red); } .tool.t-stat { --c: var(--indigo); }
+  .tool.t-prize { background: var(--indigo); color: #fff; border-color: transparent; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 6px 16px rgba(88, 86, 214, .3); }
+  .tool.t-prize b, .tool.t-prize span { color: #fff; }
+
+  /* ===== 集計: 収支 / 履歴 の切り替え ===== */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 24px; max-width: 440px; margin: 0 auto 14px; }
+  .seg button { border: 0; background: transparent; border-radius: 20px; padding: 10px 6px; font-size: 16px; font-weight: 700; color: var(--text2); white-space: nowrap; transition: background .2s, color .2s; }
+  .seg button.on { background: var(--glass-sel); color: var(--text); box-shadow: var(--glass-hi), 0 2px 8px rgba(20, 30, 70, .1); }
 
   /* 番号グリッド(1行5人) */
   .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-rows: 110px; gap: 10px; }
-  .cell { position: relative; border: 0; background: var(--card); border-radius: 18px; padding: 6px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3em; min-width: 0; overflow: hidden; box-shadow: var(--shadow); transition: transform .1s; font-size: clamp(13px, 2.6vw, 24px); }
+  .cell { position: relative; border: 0; background: var(--card); border-radius: 18px; padding: 6px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3em; min-width: 0; overflow: hidden; box-shadow: var(--shadow); transition: transform .1s; font-size: clamp(14px, 2.6vw, 24px); }
   .cell:active { transform: scale(.96); }
   .cell .n { font-size: 2.3em; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--text); }
   .cell .nm { font-size: 1em; color: var(--text); font-weight: 500; max-width: 100%; line-height: 1.15; overflow-wrap: anywhere; }
@@ -117,17 +133,13 @@
   .bd-rule th, .bd-rule td { text-align: left; padding: 8px 10px; border-top: .5px solid var(--sep); vertical-align: top; }
   .bd-rule th { color: var(--text2); font-weight: 600; width: 38%; }
   .nogrid { grid-column: 1 / -1; text-align: center; color: var(--text2); font-size: 19px; line-height: 2.4; padding: 50px 10px; }
-  .tourbar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
-  .tourbar div { background: var(--card); border-radius: 16px; padding: 10px; text-align: center; box-shadow: var(--shadow); min-width: 0; }
-  .tourbar span { display: block; font-size: 14px; color: var(--text2); font-weight: 500; }
-  .tourbar b { display: block; white-space: nowrap; font-size: clamp(28px, 4.8vw, 42px); color: var(--indigo); font-weight: 700; letter-spacing: -.02em; }
-  .tourbar small { font-size: 15px; color: var(--text2); font-weight: 500; margin-left: 2px; }
-
-  /* 下のタブバー(すりガラス) */
-  nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bar); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px max(8px, calc((100% - 900px) / 2)) calc(var(--sab) + 8px); z-index: 20; }
-  nav button { border: 0; background: none; color: var(--gray); font-size: clamp(11px, 3.3vw, 16px); font-weight: 600; padding: 10px 0 8px; white-space: nowrap; min-width: 0; }
-  nav button span { display: block; font-size: 32px; line-height: 1.1; margin-bottom: 3px; }
-  nav button.on { color: var(--blue); }
+  /* ===== 下のタブバー(浮かぶガラス) ===== */
+  .tabbar { position: fixed; z-index: 20; left: 0; right: 0; bottom: calc(var(--sab) + 10px); margin: 0 auto; width: min(600px, calc(100% - 20px));
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 6px; border-radius: 34px; }
+  .tabbar button { border: 0; background: transparent; border-radius: 28px; min-width: 0; padding: 6px 0 5px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--text2); font-size: 11px; font-weight: 700; white-space: nowrap; transition: background .2s, color .2s; }
+  .tabbar button.on { color: var(--c, var(--blue)); background: var(--glass-sel); box-shadow: var(--glass-hi), 0 2px 10px rgba(20, 30, 70, .12); }
+  .tabbar svg { width: 26px; height: 26px; }
 
   /* シート(下から出る画面) */
   .sheet { position: fixed; inset: 0; z-index: 30; display: none; }
@@ -246,6 +258,10 @@
   .summary-tab .list .row .sum-nm { font-size: 19px; font-weight: 600; }
   .summary-tab .list .row b.sum-tot { font-size: 19px; margin-left: 10px; }
   .summary-tab .list .row i b.rk { font-size: 13px; color: var(--indigo); }
+  .summary-tab .list .row i { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; }
+  .gchip { display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--fill); font-size: 14px; color: var(--text2-strong); white-space: nowrap; }
+  .gchip em { font-style: normal; font-weight: 700; color: var(--c); }
+  .gchip b { font-weight: 700; }
   .preview { margin-top: 10px; }
   .preview canvas, .preview img { width: 100%; border-radius: 14px; box-shadow: var(--shadow); }
   .hide { display: none !important; }
@@ -270,18 +286,12 @@
 
   /* ===== どの端末でも崩れないように ===== */
   /* 短い言葉・数字は途中で改行しない(入りきらないときは文字を小さくする: fit.js) */
-  h1, .sheetbtn, .syncbtn b, .syncbtn small, .games button, nav button, .stat b, .ranks .rank b, .ranks .rank span, .tourbar span, .bd-row span, .bd-name { white-space: nowrap; }
+  h1, .syncbtn b, .syncbtn small, .tabbar button, .stat b, .ranks .rank b, .ranks .rank span, .bd-row span, .bd-name { white-space: nowrap; }
   .stat span { word-break: keep-all; overflow-wrap: normal; } /* 見出しは空白の所でだけ改行 */
   .bd-msg { word-break: keep-all; } /* 「を入力」などが途中で切れない(入りきらない言葉だけ折り返す) */
   .summary-tab .list .row b.sum-tot { white-space: nowrap; display: inline-block; }
   .date .other { font-size: .55em; color: var(--red); margin-left: 6px; vertical-align: middle; }
   .bd-row span { min-width: 0; overflow: hidden; font-size: clamp(11px, 3.4vw, 14px); }
-  /* スマホ縦: ヘッダーのボタンを小さくして、日付の場所を空ける */
-  @media (max-width: 600px) {
-    .hright { gap: 6px; }
-    .sheetbtn { padding: 10px 13px; font-size: 16px; }
-    .syncbtn { min-width: 84px; padding: 6px 10px; } .syncbtn b { font-size: 17px; }
-  }
   /* スマホ縦: 3枚目の判定をテンキーまで1画面に収める */
   @media (max-width: 600px) and (orientation: portrait) {
     .panel h2 { font-size: 22px; } .panel h2 small { font-size: 12px; }
@@ -305,23 +315,20 @@
   }
 
   /* 狭い幅(iPad の Slide Over・1/3 表示) */
-  @media (max-width: 340px) {
-    header { grid-template-columns: 1fr; }
-    .hright { justify-content: space-between; }
-  }
   @media (max-width: 380px) {
     .wrap { padding-left: 10px; padding-right: 10px; }
-    .games button { font-size: 13px; padding: 10px 2px; }
+    .topbar { padding-left: 10px; padding-right: 10px; }
+    .syncbtn { min-width: 80px; padding: 6px 10px; }
+    .tools { gap: 6px; } .tool { min-height: 54px; border-radius: 16px; }
     .grid { gap: 6px; }
-    .cell { border-radius: 14px; }
-    .stat b, .tourbar b { font-size: 22px; }
+    .cell { border-radius: 16px; }
+    .stat b { font-size: 22px; }
     .acts .btn { font-size: 17px; padding: 16px 4px; }
     .roster { grid-template-columns: 1fr; }
   }
 
   /* タブレット横向き: 1列の人数を増やし、下から出る画面を1画面に収める(縦向きは今まで通り) */
   @media (orientation: landscape) and (min-width: 900px) and (min-height: 600px) {
-    .wrap { padding-bottom: calc(var(--sab) + 92px); }
     .grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
     .cell { font-size: clamp(13px, 1.75vw, 21px); }
     .sheet .panel { max-width: 1000px; padding-top: 16px; padding-bottom: calc(var(--sab) + 14px); }
@@ -336,19 +343,18 @@
 
   /* スマホ横向き(高さが低い横画面): 上と下を詰めて、1列の人数を増やす。下から出る画面は高さいっぱい・左右2列 */
   @media (orientation: landscape) and (max-height: 599px) {
-    .wrap { padding: calc(var(--sat) + 6px) max(12px, env(safe-area-inset-right)) calc(var(--sab) + 62px) max(12px, env(safe-area-inset-left)); }
-    header { margin-bottom: 6px; }
+    .wrap { padding-top: 8px; padding-bottom: calc(var(--sab) + 66px); }
+    .topbar { padding-top: calc(var(--sat) + 4px); padding-bottom: 4px; }
     h1 { display: none; }
     .date { font-size: 20px; }
-    .sheetbtn { padding: 8px 14px; font-size: 15px; }
-    .syncbtn { flex-direction: row; gap: 8px; padding: 8px 12px; min-width: 0; } .syncbtn b { font-size: 15px; } .syncbtn small { margin-top: 0; }
-    .games { margin-bottom: 8px; } .games button { padding: 8px 4px; font-size: 15px; }
-    .tourbar { margin-bottom: 8px; } .tourbar div { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 4px 10px; } .tourbar b { font-size: 22px; }
+    .syncbtn { flex-direction: row; gap: 8px; padding: 6px 12px; min-width: 0; min-height: 36px; } .syncbtn b { font-size: 15px; } .syncbtn small { margin-top: 0; }
+    .iconbtn { width: 36px; height: 36px; } .iconbtn svg { width: 20px; height: 20px; }
+    .tools { margin-bottom: 8px; gap: 8px; } .tool { min-height: 0; padding: 5px 8px; flex-direction: row; gap: 8px; border-radius: 16px; } .tool b { font-size: 17px; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
-    .cell { font-size: 13px; border-radius: 14px; }
-    nav { padding: 2px max(8px, env(safe-area-inset-right)) calc(var(--sab) + 2px) max(8px, env(safe-area-inset-left)); }
-    nav button { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 0; font-size: 14px; }
-    nav button span { display: inline; font-size: 20px; margin: 0; }
+    .cell { font-size: 13px; border-radius: 16px; }
+    .tabbar { bottom: calc(var(--sab) + 6px); padding: 4px; width: min(640px, calc(100% - 24px)); }
+    .tabbar button { flex-direction: row; justify-content: center; gap: 6px; padding: 6px 0; font-size: 13px; }
+    .tabbar svg { width: 20px; height: 20px; }
     .toast { top: calc(var(--sat) + 8px); }
     .sheet .panel { max-height: 100%; max-width: 1000px; border-radius: 16px 16px 0 0; padding: 14px max(16px, env(safe-area-inset-right)) calc(var(--sab) + 10px) max(16px, env(safe-area-inset-left)); }
     .sheet .panel::before { display: none; }
@@ -373,81 +379,103 @@
     .bd-say { padding: 8px 12px; margin-bottom: 6px; } .bd-say span { font-size: 12px; margin-bottom: 2px; } .bd-say p { font-size: 16px; } .bd-say p.past { font-size: 13px; }
     .bd-keys { gap: 6px; margin-bottom: 6px; } .bd-keys button { padding: 8px 0; font-size: 24px; }
   }
+
+  /* ===== ガラス調の部品(上の指定の見た目だけを上書き) ===== */
+  .cell { background: var(--card); border: .5px solid var(--glass-line); box-shadow: var(--glass-hi), var(--shadow); }
+  .cell.act { box-shadow: inset 0 0 0 2.5px var(--c), var(--glass-hi), var(--shadow); }
+  /* 終了・帰宅: 背景で区別(文字は読める濃さのまま) */
+  .cell.out { opacity: 1; background: var(--fill); border-color: transparent; box-shadow: none; }
+  .cell.out .n { color: var(--text2-strong); } .cell.out .nm { color: var(--text2-strong); } .cell.out .st { color: var(--text2-strong); }
+  .cell.out.act { box-shadow: inset 0 0 0 1.5px var(--c); }
+  .stat div, .ranks .rank, .bd-hand, .pad .disp, .keys button, .bd-keys button { border: .5px solid var(--glass-line); box-shadow: var(--glass-hi), var(--shadow); }
+  .bd-say { box-shadow: inset 0 0 0 2px var(--indigo), var(--glass-hi), var(--shadow); }
+  .keys button.fn { border-color: transparent; box-shadow: none; }
+  .bd-keys .bd-back { border-color: transparent; }
+  .acts .btn.in, .acts .btn.re, .confirm .btn.gold { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), 0 6px 16px rgba(0, 0, 0, .14); }
+  .acts .btn.out, .acts .btn.home { background: var(--card); }
+  .sheet .bg { background: rgba(0, 0, 0, .28); }
+  .sheet .panel { background: var(--glass-strong); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px);
+    border: .5px solid var(--glass-line); border-bottom: 0; box-shadow: var(--glass-hi), 0 -12px 40px rgba(0, 0, 0, .2); border-radius: 30px 30px 0 0; }
+  .panel .close { background: var(--fill); }
+  .sheet .panel { overscroll-behavior: contain; } /* 中をスクロールしても後ろの画面が動かない */
+  .cell .st { font-weight: 700; } .cell.g-tour .st { font-size: .9em; }
+  .pad .disp > small { color: var(--text2-strong); font-weight: 600; } .pad .disp > small strong { color: var(--text); font-weight: 800; }
+  .bd-v.empty.next { background: rgba(88, 86, 214, .2); color: var(--indigo); font-weight: 800; } /* いま入れる欄 */
+  #toast { padding: 10px 12px 10px 16px; gap: 8px; }
+  #toast > div { min-width: 0; }
+  #toast .t1 { font-size: 18px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; } #toast .t2 { font-size: 14px; font-weight: 600; color: var(--text2-strong); margin-top: 2px; white-space: nowrap; overflow: hidden; } /* 何をしたか(上)を大きく、合計(下)は小さく。どちらも1行 */
+  #toast .btn { padding: 10px 12px; font-size: 16px; white-space: nowrap; }
+  #toast.err .t1, #toast.err .t2 { color: var(--red); }
+  .acts .btn.home.arm { background: var(--red); color: #fff; box-shadow: none; }
+  @media (max-width: 480px) { .roster { grid-template-columns: 1fr; } } /* 名前を最後まで見せる */
+  .hint { display: inline-block; margin-left: 8px; vertical-align: middle; text-transform: none; letter-spacing: 0; }
+  .hint summary { list-style: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--fill); color: var(--blue); font-size: 13px; font-weight: 800; cursor: pointer; }
+  .hint summary::-webkit-details-marker { display: none; }
+  .hint p { position: absolute; left: 16px; right: 16px; margin: 6px 0 0; padding: 10px 14px; border-radius: 14px; background: var(--glass-strong); border: .5px solid var(--glass-line); box-shadow: var(--glass-shadow); font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.5; z-index: 2; }
+  .sec-h { position: relative; }
+  .quick button { border: .5px solid transparent; }
+  .log .row button, .set .row .btn, .pl-list .pl .btn { border-radius: 999px; }
+  .card.set, .card.log, .card.list, .card.pl-list { overflow: hidden; }
+  .sec-h { margin-left: 18px; }
+  .sheet .panel .sec-h:first-of-type { margin-top: 14px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div><h1>casa 貸卓</h1><div class="date" id="hDate"></div></div>
-    <div class="hright"><div class="status" id="status"></div><a class="sheetbtn" href="road.html?from=kt">罫線</a><a class="sheetbtn" id="hSheet" target="_blank" rel="noopener">シート</a><button class="syncbtn" id="syncBtn"><b>⟳ 同期</b><small id="syncCount"></small></button></div>
-  </header>
+<header class="topbar">
+  <div><h1>casa 貸卓</h1><div class="date" id="hDate"></div></div>
+  <div class="hright"><div class="status" id="status"></div><button class="syncbtn gbtn" id="syncBtn"><b>⟳ 同期</b><small id="syncCount"></small></button><button class="iconbtn gbtn" id="openSet" aria-label="設定"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button></div>
+</header>
 
-  <!-- 入力タブ -->
+<div class="wrap">
+  <!-- ゲーム(バカラ・リング・トナメ): 下のタブで切り替え -->
   <section id="tab-input">
-    <div class="games" id="games">
-      <button data-game="bac" class="g-bac on">バカラ</button>
-      <button data-game="cash" class="g-cash">リング</button>
-      <button data-game="tour" class="g-tour">トーナメント</button>
-    </div>
-    <div class="tourbar" id="tourBar" style="display:none"></div>
+    <div class="tools" id="tools"></div>
     <div class="grid" id="grid"></div>
   </section>
 
-  <!-- プレイヤータブ -->
+  <!-- お客様 -->
   <section id="tab-players" class="hide">
     <div class="stat" id="plStat"></div>
     <div class="card pl-list" id="plList"></div>
   </section>
 
-  <!-- 履歴タブ -->
-  <section id="tab-log" class="hide">
-    <div class="card log" id="logList"></div>
-  </section>
-
-  <!-- 収支タブ -->
+  <!-- 集計(収支・履歴) -->
   <section id="tab-sum" class="hide summary-tab">
-    <h3 class="sec-h" style="margin-top:4px">収支一覧</h3>
-    <div class="card list" id="sumList"></div>
-    <h3 class="sec-h">全体</h3>
-    <div class="stat" id="sumStat"></div>
-    <div class="acts"><button class="btn gold full" id="makeImage">収支一覧の画像を作る・共有</button></div>
-    <div class="preview" id="preview"></div>
+    <div class="seg glass" id="sumSeg"><button data-sub="sum" class="on">収支</button><button data-sub="log">履歴</button></div>
+    <div id="sub-sum">
+      <div class="card list" id="sumList"></div>
+      <h3 class="sec-h">全体</h3>
+      <div class="stat" id="sumStat"></div>
+      <div class="acts"><button class="btn gold full" id="makeImage">収支の画像を作る・共有</button></div>
+      <div class="preview" id="preview"></div>
+    </div>
+    <div id="sub-log" class="hide">
+      <div class="card log" id="logList"></div>
+    </div>
   </section>
+</div>
 
-  <!-- 設定タブ(初期設定) -->
-  <section id="tab-set" class="hide">
-    <h3 class="sec-h">イベント</h3>
+<nav id="nav" class="tabbar glass">
+  <button data-game="bac" class="g-bac on"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="10" height="14" rx="2"/><path d="M10.5 4.2 18.6 3a2 2 0 0 1 2.2 1.7l1.3 9.8a2 2 0 0 1-1.7 2.2l-4.4.6"/></svg>バカラ</button>
+  <button data-game="cash" class="g-cash"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><path d="M12 3.5V6M12 18v2.5M3.5 12H6M18 12h2.5M6 6l1.7 1.7M16.3 16.3 18 18M18 6l-1.7 1.7M7.7 16.3 6 18"/></svg>リング</button>
+  <button data-game="tour" class="g-tour"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11M12 14v4M8.5 20.5h7"/></svg>トナメ</button>
+  <button data-tab="players"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.2A6.5 6.5 0 0 1 21.5 20"/></svg>お客様</button>
+  <button data-tab="sum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>集計</button>
+</nav>
+
+<!-- 設定(右上の歯車) -->
+<div class="sheet" id="setSheet" data-overlay>
+  <div class="bg" data-close-sheet></div>
+  <div class="panel">
+    <button class="close" data-close-sheet aria-label="閉じる">✕</button>
+    <h2>設定</h2>
+    <h3 class="sec-h">記録する日</h3>
     <div class="card set">
-      <div class="row"><span>日付<i>この日のタブに記録されます</i></span><input type="date" id="setDate"></div>
-      <div class="row"><span>トーナメント エントリー<i>1回の金額(万)</i></span><button class="btn" id="setTourFee"><b></b> 万</button></div>
-      <div class="row"><span>トーナメント リエントリー<i>1回の金額(万)</i></span><button class="btn" id="setReFee"><b></b> 万</button></div>
+      <div class="row"><span>日付</span><input type="date" id="setDate"></div>
     </div>
 
-    <h3 class="sec-h">プライズ 傾斜の自動計算</h3>
-    <div class="card set" id="prizeCalc">
-      <div class="row"><span>プール<i id="pcPoolInfo"></i></span><b id="pcPool"></b></div>
-      <div class="row"><span>入賞人数 X</span><div class="stepper" data-k="x"><button data-d="-1">−</button><b id="pcX"></b><button data-d="1">＋</button></div></div>
-      <div class="row"><span>最低賞金 Y<i>いちばん下の順位(万)</i></span><div class="stepper" data-k="y"><button data-d="-5">−5</button><button data-d="-1">−</button><b id="pcY"></b><button data-d="1">＋</button><button data-d="5">＋5</button></div></div>
-      <div class="row"><span>a<i>下から 0a・1a・3a・6a・10a・15a… と上乗せ</i></span><b id="pcA"></b></div>
-      <div class="row" style="grid-template-columns:1fr"><button class="btn gold big" id="pcCalc">自動計算</button></div>
-      <div id="pcDraft" class="hide">
-        <div class="row" style="grid-template-columns:1fr"><span style="font-size:14px;color:var(--text2)">1位以外は5万単位に切り捨て、余りは1位。金額はタップして直せます(万)</span></div>
-        <div id="pcRows"></div>
-        <div class="row"><span>合計<i id="pcDiff"></i></span><b id="pcSum"></b></div>
-        <div class="row" style="grid-template-columns:1fr 1fr;gap:10px"><button class="btn big" data-prize-text="draft">テキストで共有</button><button class="btn gold big" id="pcApply">確定して適用</button></div>
-      </div>
-    </div>
-
-    <h3 class="sec-h">適用中のプライズ</h3>
+    <h3 class="sec-h">会計札と名前<details class="hint"><summary aria-label="説明">?</summary><p>名前を入れて次の欄へ進むと自動で保存。空欄は未登録のまま。</p></details></h3>
     <div class="card set">
-      <div id="prizeRows"></div>
-      <div class="row"><span>合計<i id="prizeInfo"></i></span><b id="prizeTotal"></b></div>
-      <div class="row" id="prizeTextRow" style="grid-template-columns:1fr"><button class="btn big" data-prize-text="applied">テキストで共有・コピー</button></div>
-    </div>
-
-    <h3 class="sec-h">会計札と名前の紐づけ</h3>
-    <div class="card set">
-      <div class="row" style="grid-template-columns:1fr"><span style="color:var(--dim);font-size:12px">名前を入れて次の欄に進むと自動で保存されます。空欄は未登録のままです。</span></div>
       <div id="rosterRows" class="roster"></div>
     </div>
 
@@ -455,22 +483,50 @@
     <div class="card set">
       <div class="row"><span>保存先<i id="setModeInfo"></i></span><b id="setMode"></b></div>
       <div class="row"><span>スプレッドシート</span><a class="btn" id="openSheet" target="_blank" rel="noopener" style="text-decoration:none">開く</a></div>
-      <div class="row"><span>PC ボード<i>パソコンで開く画面</i></span><a class="btn" href="board.html" target="_blank" style="text-decoration:none">開く</a></div>
-      <div class="row"><span>今すぐロック<i>パスコード画面にします(開くたびにも毎回出ます)</i></span><button class="btn" id="lockNow">ロック</button></div>
-      <div class="row"><span>この日のデータを全消去<i>テスト後の片付け用。元に戻せません</i></span><button class="btn red" id="clearDay">全消去</button></div>
+      <div class="row"><span>PC ボード</span><a class="btn" href="board.html" target="_blank" style="text-decoration:none">開く</a></div>
+      <div class="row"><span>今すぐロック</span><button class="btn" id="lockNow">ロック</button></div>
+      <div class="row"><span>この日を全消去<i>元に戻せません</i></span><button class="btn red" id="clearDay">全消去</button></div>
     </div>
-  </section>
+  </div>
 </div>
 
-<nav id="nav">
-  <button data-tab="input" class="on"><span>⌨︎</span>入力</button>
-  <button data-tab="players"><span>☺︎</span>プレイヤー</button>
-  <button data-tab="log"><span>☰</span>履歴</button>
-  <button data-tab="sum"><span>¥</span>収支</button>
-  <button data-tab="set"><span>⚙︎</span>設定</button>
-</nav>
+<!-- トナメの設定とプライズ(トナメの上の「プライズ」) -->
+<div class="sheet" id="prizeSheet" data-overlay>
+  <div class="bg" data-close-sheet></div>
+  <div class="panel">
+    <button class="close" data-close-sheet aria-label="閉じる">✕</button>
+    <h2 class="g-tour">プライズ</h2>
+    <h3 class="sec-h">1回の金額</h3>
+    <div class="card set">
+      <div class="row"><span>エントリー</span><button class="btn" id="setTourFee"><b></b> 万</button></div>
+      <div class="row"><span>リエントリー</span><button class="btn" id="setReFee"><b></b> 万</button></div>
+    </div>
 
-<!-- プレイヤーシート -->
+    <h3 class="sec-h">自動計算<details class="hint"><summary aria-label="説明">?</summary><p>X人に入賞、いちばん下は Y万。下から 0a・1a・3a・6a・10a… と上乗せ。1位以外は5万単位に切り捨て、余りは1位。</p></details></h3>
+    <div class="card set" id="prizeCalc">
+      <div class="row"><span>プール<i id="pcPoolInfo"></i></span><b id="pcPool"></b></div>
+      <div class="row"><span>入賞人数 X</span><div class="stepper" data-k="x"><button data-d="-1">−</button><b id="pcX"></b><button data-d="1">＋</button></div></div>
+      <div class="row"><span>最低賞金 Y</span><div class="stepper" data-k="y"><button data-d="-5">−5</button><button data-d="-1">−</button><b id="pcY"></b><button data-d="1">＋</button><button data-d="5">＋5</button></div></div>
+      <div class="row"><span>上乗せ a</span><b id="pcA"></b></div>
+      <div class="row" style="grid-template-columns:1fr"><button class="btn gold big" id="pcCalc">自動計算</button></div>
+      <div id="pcDraft" class="hide">
+        <div class="row" style="grid-template-columns:1fr"><span style="font-size:14px;color:var(--text2)">金額はタップして直せます(万)</span></div>
+        <div id="pcRows"></div>
+        <div class="row"><span>合計<i id="pcDiff"></i></span><b id="pcSum"></b></div>
+        <div class="row" style="grid-template-columns:1fr 1fr;gap:10px"><button class="btn big" data-prize-text="draft">テキストで共有</button><button class="btn gold big" id="pcApply">確定して適用</button></div>
+      </div>
+    </div>
+
+    <h3 class="sec-h">適用中</h3>
+    <div class="card set">
+      <div id="prizeRows"></div>
+      <div class="row"><span>合計<i id="prizeInfo"></i></span><b id="prizeTotal"></b></div>
+      <div class="row" id="prizeTextRow" style="grid-template-columns:1fr"><button class="btn big" data-prize-text="applied">テキストで共有・コピー</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- お客様・ディーラー・3枚目のシート -->
 <div class="sheet" id="sheet" data-overlay>
   <div class="bg" data-close></div>
   <div class="panel" id="panel"></div>
@@ -478,11 +534,11 @@
 
 <div class="toast" id="toast" data-float><div><div class="t1" id="toastT1"></div><div class="t2" id="toastT2"></div></div><button class="btn ghost" id="toastUndo">取り消し</button></div>
 
-<script src="config.js?v=20261120205403"></script>
-<script src="js/fit.js?v=20261120205403"></script>
-<script src="js/model.js?v=20261120205403"></script>
-<script src="js/api.js?v=20261120205403"></script>
-<script src="js/image.js?v=20261120205403"></script>
-<script src="js/phone.js?v=20261120205403"></script>
+<script src="config.js?v=20261120212621"></script>
+<script src="js/fit.js?v=20261120212621"></script>
+<script src="js/model.js?v=20261120212621"></script>
+<script src="js/api.js?v=20261120212621"></script>
+<script src="js/image.js?v=20261120212621"></script>
+<script src="js/phone.js?v=20261120212621"></script>
 </body>
 </html>
