@@ -18,7 +18,7 @@
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif; overflow: hidden; -webkit-font-smoothing: antialiased; }
   body.idle { cursor: none; }
-  .screen { height: 100%; display: grid; gap: var(--gap); padding: var(--gap) max(var(--gap), env(safe-area-inset-right)) var(--gap) max(var(--gap), env(safe-area-inset-left));
+  .screen { height: 100%; display: grid; gap: var(--gap); padding: 12px; padding: var(--gap) max(var(--gap), env(safe-area-inset-right)) var(--gap) max(var(--gap), env(safe-area-inset-left));
     grid-template-columns: minmax(240px, 24vw) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1.25fr) minmax(0, 1fr);
     grid-template-areas: "head head" "last big" "side lower"; }
   header { grid-area: head; display: flex; align-items: center; gap: var(--gap); min-width: 0; }
@@ -165,14 +165,14 @@
 </div>
 <div class="tip" id="tip">リモコンの決定ボタンで設定（画面サイズ）</div>
 
-<script src="config.js?v=20261120c"></script>
-<script src="js/road-core.js?v=20261120c"></script>
+<script src="config.js?v=20261120203331"></script>
+<script src="js/road-core.js?v=20261120203331"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
   const NAME = { B: 'バンカー', P: 'プレイヤー', T: 'タイ' };
   const POLL = 1000;
-  let hands = [], rev = -1, lastOk = 0, first = true;
+  let hands = [], rev = -1, lastOk = 0, first = true, loaded = false; // loaded: サーバーから1回でも取れたか
 
   // 枠の高さに6段がちょうど収まるマスの大きさ
   // 横は最低 minCols 列は見えるようにする
@@ -227,14 +227,21 @@
   async function poll() {
     try {
       const sv = await Road.pull();
+      const prevOk = lastOk;
       lastOk = Date.now();
       if (sv.rev !== rev) {
-        const grew = !first && sv.hands.length > hands.length;
-        const one = !first && sv.hands.length === hands.length + 1; // 1ゲーム増えたときだけ読む(開いた直後・まとめて同期したときは読まない)
-        hands = sv.hands; rev = sv.rev; render(grew);
-        if (one) speak(sv.say && sv.sayRev === sv.rev ? sv.say : Road.handSay(hands[hands.length - 1]));
+        const before = Road.encode(hands), after = Road.encode(sv.hands);
+        // 1ゲーム増えた / 最後の1ゲームが直された(戻して入れ直し)ときだけ光らせて読む。
+        // 開いた直後・まとめて増えたとき・通信が切れていた間の古い結果は読まない
+        const added = loaded && sv.hands.length === hands.length + 1 && after.startsWith(before);
+        const fixed = loaded && sv.hands.length === hands.length && after.length > 0 && before !== after && before.slice(0, -1) === after.slice(0, -1);
+        const fresh = prevOk && lastOk - prevOk < 15000;
+        const grew = loaded && sv.hands.length > hands.length;
+        hands = sv.hands; rev = sv.rev;
+        try { render(grew || fixed); } catch (e) { setTimeout(() => { throw e; }); } // 描画で失敗しても読み上げは続ける(エラーは画面左下に出る)
+        if ((added || fixed) && fresh && !document.hidden) speak(sv.say && sv.sayRev === sv.rev ? sv.say : Road.handSay(hands[hands.length - 1]));
       }
-      first = false;
+      loaded = true; first = false;
     } catch (e) { first = false; }
     setConn();
     setTimeout(poll, POLL);
@@ -320,6 +327,7 @@
   // キー操作。テレビのアプリからは window.casaKey('ArrowUp' など) で届く
   function handleKey(k) {
     if (!isOpen()) { if (k === 'Enter' || k === ' ' || k === 'ContextMenu') { openSet(); return true; } return false; }
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape', 'Backspace', 'GoBack'].includes(k)) return false; // ほかのキー(F5 など)は邪魔しない
     if (k === 'ArrowUp') idx = (idx + rows.length - 1) % rows.length;
     else if (k === 'ArrowDown') idx = (idx + 1) % rows.length;
     else if ((k === 'ArrowLeft' || k === 'ArrowRight') && rows[idx].dataset.k === 'scale') { sc += k === 'ArrowLeft' ? -2 : 2; applySc(); }
