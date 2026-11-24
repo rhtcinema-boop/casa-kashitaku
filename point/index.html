@@ -11,14 +11,14 @@
   --glass:rgba(255,255,255,.62);--glass-strong:rgba(255,255,255,.82);--edge:rgba(255,255,255,.9);
   --line:rgba(60,60,67,.14);--text:#1c1c1e;--sub:#5b5b63;
   --accent:#0068d6;--on-accent:#fff;--orange:#b45300;--gray:#5b5b63;--red:#c4271b;--green:#1a7f37;
-  --shadow:0 10px 30px rgba(30,40,80,.12);
+  --shadow:0 10px 30px rgba(30,40,80,.12);--solid:#f7f8fc;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg1:#10131c;--bg2:#1a1420;--bg3:#0f1b1c;
   --glass:rgba(44,44,50,.6);--glass-strong:rgba(54,54,60,.86);--edge:rgba(255,255,255,.14);
   --line:rgba(255,255,255,.14);--text:#f2f2f7;--sub:#aeaeb6;
   --accent:#4da3ff;--on-accent:#00172e;--orange:#ffb04d;--gray:#aeaeb6;--red:#ff6b61;--green:#4cd16b;
-  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow:0 10px 30px rgba(0,0,0,.45);--solid:#26262b;
 }}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
@@ -63,18 +63,33 @@ input[type=date],input[type=time]{font:inherit;color:var(--text);min-height:44px
 .csv{min-height:44px;padding:0 18px;border-radius:22px;background:var(--accent);color:var(--on-accent);font-weight:700;
   display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
 .csv svg{width:18px;height:18px}
-.scroll{overflow:auto;max-height:70vh;border-radius:14px;border:1px solid var(--line);background:var(--glass-strong)}
+.scroll{overflow:auto;max-height:70vh;border-radius:14px;border:1px solid var(--line);background:var(--solid)}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 th,td{padding:10px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
-th{position:sticky;top:0;background:var(--glass-strong);font-size:12px;color:var(--sub);font-weight:700;z-index:1;
-  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+th{position:sticky;top:0;background:var(--solid);font-size:12px;color:var(--sub);font-weight:700;z-index:1;
+}
 th.l,td.l{text-align:left}
 td.memo{white-space:normal;min-width:180px;max-width:320px;text-align:left;color:var(--sub);font-size:13px}
 tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
 .neg{color:var(--red)}.pos{color:var(--green)}
 .empty{padding:36px 12px;text-align:center;color:var(--sub)}
 .more{display:block;width:100%;min-height:44px;margin-top:10px;border-radius:14px;background:var(--glass-strong);border:1px solid var(--edge);font-weight:600}
+
 .more[hidden],.state[hidden]{display:none}
+button:focus-visible,input:focus-visible,.scroll:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.card.wide .row{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap}
+.card.wide .v small{font-size:13px;font-weight:600;color:var(--sub);margin-left:2px}
+.scrollwrap{position:relative}
+.hint{position:absolute;right:1px;top:1px;bottom:1px;width:44px;border-radius:0 14px 14px 0;pointer-events:none;
+  display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:22px;font-weight:700;color:var(--sub);
+  background:linear-gradient(90deg,transparent,var(--solid) 70%)}
+.hint[hidden]{display:none}
+th:first-child,td:first-child{position:sticky;left:0;background:var(--solid);z-index:1}
+th:first-child{z-index:3}
+th{z-index:2}
+.range label{display:grid;gap:4px;font-size:11px;color:var(--sub);font-weight:600}
+.snote{font-size:12px;color:var(--sub);margin:10px 0 0}
+
 .state{padding:48px 16px;text-align:center;color:var(--sub)}
 .state b{display:block;color:var(--text);font-size:16px;margin-bottom:6px}
 /* 設定 */
@@ -95,14 +110,20 @@ tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
 .err{color:var(--red);font-size:13px;margin-top:8px;min-height:1em}
 @media (max-width:520px){
   .wrap{padding:12px 12px 40px}
-  .card .v{font-size:20px}
-  .cards{grid-template-columns:repeat(2,1fr)}
+  .card{padding:10px 14px}
+  .card .v{font-size:20px;margin-top:2px}
+  .cards{grid-template-columns:repeat(2,1fr);gap:8px}
+  .card.wide{grid-column:1/-1}
+  .range{display:grid;grid-template-columns:1fr 1fr}
+  .range .tilde{display:none}
+  .range input{width:100%}
+  .csv{min-height:44px}
   th,td{padding:9px 10px}
-  .sync span{display:none}
   h1{font-size:16px;white-space:nowrap}
+  .sync{font-size:11px;white-space:nowrap}
   header{gap:8px;padding:10px 12px}
 }
-@media (prefers-reduced-transparency:reduce){.glass,th{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--glass-strong)}}
+@media (prefers-reduced-transparency:reduce){.glass{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--glass-strong)}}
 </style>
 </head>
 <body>
@@ -125,9 +146,9 @@ tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
     <section class="glass panel">
       <div class="chips" id="periods" role="group" aria-label="期間"></div>
       <div class="range" id="range" hidden>
-        <input type="date" id="from" aria-label="開始日">
-        <span>〜</span>
-        <input type="date" id="to" aria-label="終了日">
+        <label>開始日<input type="date" id="from"></label>
+        <span class="tilde">〜</span>
+        <label>終了日<input type="date" id="to"></label>
       </div>
       <div class="chips" id="stores" role="group" aria-label="店舗"></div>
       <div class="period-label" id="plabel"></div>
@@ -139,11 +160,11 @@ tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
       <div class="tabs">
         <div class="chips" id="tabs" role="group" aria-label="表の種類"></div>
         <div class="sp"></div>
-        <button class="csv" id="csv">
+        <button class="csv" id="csv" title="表示中の表をCSVで保存">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg>CSV
         </button>
       </div>
-      <div class="scroll" id="scroll"><table id="table"></table></div>
+      <div class="scrollwrap"><div class="scroll" id="scroll" tabindex="0" aria-label="集計の表（横にスクロールできます）"><table id="table"></table></div><div class="hint" id="hint" hidden aria-hidden="true">›</div></div>
       <button class="more" id="more" hidden></button>
     </section>
   </main>
@@ -154,10 +175,11 @@ tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
     <h2 id="st">営業時間</h2>
     <p class="note">閉店から次の開店までの真ん中で、営業日を切り替えます。</p>
     <div id="srows"></div>
+    <p class="snote">保存すると、過去の集計にもこの時間が使われます。</p>
     <div class="err" id="serr" role="alert"></div>
     <div class="actions">
       <button class="btn" id="scancel">閉じる</button>
-      <button class="btn primary" id="ssave">保存</button>
+      <button class="btn primary" id="ssave" disabled>保存</button>
     </div>
   </div>
 </div>
@@ -258,7 +280,7 @@ function makeView(){
     rows=list.slice().sort(function(a,b){return a.sort<b.sort?1:-1;}).map(function(r){
       return [r.dt,r.biz,r.store,r.nick,r.type,r.amt,r.bal,r.dev,r.memo,r.id,r.uid];});
   }else if(tab==='member'){
-    head=['ニックネーム'].concat(types,['差し引き','件数','最新の残高','会員UID']);
+    head=['ニックネーム'].concat(types,['差し引き','件数','期間末の残高','会員UID']);
     kinds=['l'].concat(types.map(function(){return 'n';}),['s','n','n','l']);
     rows=group(list,function(r){return r.uid;},types).sort(function(a,b){return b.count-a.count||(a.last.nick<b.last.nick?-1:1);})
       .map(function(g){return [g.last.nick].concat(sums(g),[g.net,g.count,g.last.bal,g.key]);});
@@ -303,8 +325,9 @@ function render(){
   $('range').hidden=S.period!=='custom';
   var p=periodRange();
   if(S.period==='custom'){$('from').value=p[0];$('to').value=p[1];}
-  $('plabel').textContent=S.period==='all'?'営業日：すべて':
-    '営業日：'+p[0].replace(/-/g,'/')+(p[0]===p[1]?'':' 〜 '+p[1].replace(/-/g,'/'));
+  $('plabel').textContent=(S.period==='all'?'営業日：すべて':
+    '営業日：'+p[0].replace(/-/g,'/')+(p[0]===p[1]?'':' 〜 '+p[1].replace(/-/g,'/')))+'　単位：チップ';
+  $('from').max=p[1];$('to').min=p[0];
   $('kari').hidden=S.settings.saved;
   $('sync').textContent='';
   if(S.synced){$('sync').appendChild(el('span','', '同期 '));$('sync').appendChild(document.createTextNode(S.synced.replace(/^\d{4}\//,'').replace(/:\d{2}$/,'')));}
@@ -319,15 +342,18 @@ function render(){
   v.types.forEach(function(t){
     var n=v.tot.sum[t]||0,cnt=v.list.filter(function(r){return r.type===t;}).length;
     if(KNOWN_TYPES.indexOf(t)<0&&!cnt)return;
-    card(t,t==='調整'?signed(n):nf(Math.abs(n)),cnt+'件',t==='ためる'?'t-save':(t==='つかう'?'t-use':''),t==='ためる'?'d-save':(t==='つかう'?'d-use':''));
+    card(t,t==='ためる'?nf(n):signed(n),cnt+'件',t==='ためる'?'t-save':(t==='つかう'?'t-use':''),t==='ためる'?'d-save':(t==='つかう'?'d-use':''));
   });
   card('差し引き',signed(v.tot.net),'',v.tot.net<0?'neg':(v.tot.net>0?'pos':''));
-  card('件数',nf(v.tot.count),(v.tot.people||0)+'人');
+  var w=el('div','glass card wide'),row=el('div','row');
+  [['取引件数',v.tot.count,'件'],['会員',v.tot.people||0,'人']].forEach(function(x){
+    var b=el('div'),k=el('div','k',x[0]),val=el('div','v',nf(x[1]));val.appendChild(el('small','',x[2]));b.appendChild(k);b.appendChild(val);row.appendChild(b);});
+  w.appendChild(row);cards.appendChild(w);
 
   var table=$('table');table.textContent='';
   if(!v.rows.length){
     table.appendChild(el('caption','empty','この期間の取引はありません'));
-    $('more').hidden=true;$('csv').disabled=true;$('csv').style.opacity=.5;return;
+    $('more').hidden=true;$('csv').disabled=true;$('csv').style.opacity=.5;hint();return;
   }
   $('csv').disabled=false;$('csv').style.opacity=1;
   var thead=el('thead'),tr=el('tr');
@@ -342,7 +368,9 @@ function render(){
   var rest=v.rows.length-S.limit;
   $('more').hidden=rest<=0;
   if(rest>0)$('more').textContent='あと'+nf(rest)+'件を表示';
+  hint();
 }
+function hint(){var s=$('scroll');$('hint').hidden=!(s.scrollWidth-s.clientWidth-s.scrollLeft>4);}
 
 /* ---------- CSV ---------- */
 function csvCell(v){
@@ -357,7 +385,7 @@ function downloadCsv(){
   var text='﻿'+lines.map(function(r){return r.map(csvCell).join(',');}).join('\r\n')+'\r\n';
   var p=periodRange(),tab=TABS.filter(function(t){return t[0]===S.tab;})[0][1];
   var span=S.period==='all'?'全期間':p[0].replace(/-/g,'')+(p[0]===p[1]?'':'-'+p[1].replace(/-/g,''));
-  var name='casaPoint_'+tab+'_'+(S.store==='all'?'全店':S.store)+'_'+span+'.csv';
+  var name='casaPoint_'+(S.store==='all'?'全店':S.store)+'_'+span+'_'+tab+'.csv';
   var url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));
   var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();
   setTimeout(function(){a.remove();URL.revokeObjectURL(url);},1000);
@@ -376,12 +404,18 @@ function openSettings(){
     });
     row.appendChild(el('div','cut'));box.appendChild(row);upd(row);
   });
+  S.settingsSnap=snap();dirty();
   $('overlay').hidden=false;
 }
 function rowHours(row){var i=row.querySelectorAll('input');return {open:i[0].value,close:i[1].value};}
+function snap(){return JSON.stringify([].map.call($('srows').children,function(r){return rowHours(r);}));}
+function dirty(){var d=snap()!==S.settingsSnap||!S.settings.saved;var ch=snap()!==S.settingsSnap;
+  $('ssave').disabled=!d;$('scancel').textContent=ch?'キャンセル':'閉じる';}
 function upd(row){
   var h=rowHours(row),ok=h.open&&h.close;
+  row.querySelectorAll('label')[1].firstChild.textContent=ok&&toMin(h.close)<=toMin(h.open)?'閉店（翌日）':'閉店';
   row.querySelector('.cut').textContent=ok?'営業日の切り替え '+fmtMin(boundary(h)):'時刻を入れてください';
+  if(S.settingsSnap!=null)dirty();
 }
 function saveSettings(){
   var stores={},bad=false;
@@ -404,6 +438,7 @@ function call(fn,args,ok,ng){
 }
 function load(){
   $('loading').hidden=false;$('loading').textContent='';$('loading').appendChild(el('b','','読み込み中'));$('main').hidden=true;
+  $('loading').setAttribute('role','status');
   call('getAll',[],function(d){
     S.raw=d.rows||[];S.settings=d.settings||S.settings;S.synced=d.synced||'';
     build();$('loading').hidden=true;$('main').hidden=false;render();
@@ -422,6 +457,7 @@ $('csv').onclick=downloadCsv;
 $('more').onclick=function(){S.limit+=PAGE;render();};
 $('from').onchange=function(){S.from=this.value;S.limit=PAGE;render();};
 $('to').onchange=function(){S.to=this.value;S.limit=PAGE;render();};
+$('scroll').addEventListener('scroll',hint,{passive:true});window.addEventListener('resize',hint);
 window.__casaPoint={S:S,boundary:boundary,bizDate:bizDate,makeView:makeView};
 load();
 })();
