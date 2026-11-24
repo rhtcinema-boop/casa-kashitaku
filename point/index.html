@@ -240,8 +240,9 @@ function storeNames(){
 }
 function todayBiz(){
   var j=new Date(Date.now()+9*3600000);
-  var store=S.store!=='all'?S.store:(storeNames()[0]||'');
-  return bizDate(j.getUTCFullYear(),j.getUTCMonth()+1,j.getUTCDate(),j.getUTCHours()*60+j.getUTCMinutes(),store);
+  // 全店のときは、どこかの店で始まっている一番新しい営業日を「今日」とする
+  var names=S.store!=='all'?[S.store]:storeNames();if(!names.length)names=[''];
+  return names.map(function(n){return bizDate(j.getUTCFullYear(),j.getUTCMonth()+1,j.getUTCDate(),j.getUTCHours()*60+j.getUTCMinutes(),n);}).sort().pop();
 }
 function periodRange(){
   var t=parseYmd(todayBiz()),d=new Date(t),DAY=86400000;
