@@ -75,7 +75,8 @@ tr.total td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
 .empty{padding:36px 12px;text-align:center;color:var(--sub)}
 .more{display:block;width:100%;min-height:44px;margin-top:10px;border-radius:14px;background:var(--glass-strong);border:1px solid var(--edge);font-weight:600}
 
-.more[hidden],.state[hidden]{display:none}
+.more[hidden],.state[hidden],.warn[hidden]{display:none}
+.warn{padding:12px 16px;margin-bottom:12px;color:var(--red);font-weight:700;border-color:var(--red)}
 button:focus-visible,input:focus-visible,.scroll:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .card.wide .row{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap}
 .card.wide .v small{font-size:13px;font-weight:600;color:var(--sub);margin-left:2px}
@@ -154,6 +155,7 @@ th{z-index:2}
       <div class="period-label" id="plabel"></div>
     </section>
 
+    <div class="glass warn" id="warn" role="alert" hidden></div>
     <section class="cards" id="cards"></section>
 
     <section class="glass tablebox">
@@ -193,7 +195,7 @@ var KNOWN_TYPES=['ためる','つかう','調整'];
 var PERIODS=[['today','今日'],['yesterday','昨日'],['week','今週'],['month','今月'],['lastMonth','先月'],['all','全期間'],['custom','期間指定']];
 var TABS=[['day','日別'],['store','店舗別'],['member','会員別'],['detail','明細']];
 var PAGE=300;
-var S={raw:[],recs:[],settings:{fallback:{open:'13:00',close:'06:00'},stores:{},saved:false},synced:'',
+var S={raw:[],recs:[],bad:[],settings:{fallback:{open:'13:00',close:'06:00'},stores:{},saved:false},synced:'',
        period:'month',from:'',to:'',store:'all',tab:'day',limit:PAGE,view:null};
 var $=function(id){return document.getElementById(id);};
 
@@ -214,23 +216,26 @@ function bizDate(y,mo,d,min,store){
   if(min<boundary(hoursOf(store)))t-=86400000;
   return ymd(t);
 }
-function num(s){var n=Number(String(s).replace(/[,\s]/g,''));return isFinite(n)?n:0;}
+// 数字として読めないものは NaN を返す（0 にして黙って足さない）
+function num(s){var t=String(s==null?'':s).replace(/[,\s]/g,'');return /^-?\d+(\.\d+)?$/.test(t)?Number(t):NaN;}
 function build(){
-  S.recs=[];
-  S.raw.forEach(function(r){
-    var m=/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/.exec(r[0]||'');
-    if(!m)return;
+  S.recs=[];S.bad=[];
+  S.raw.forEach(function(r,i){
+    r=r.map(function(x){return x==null?'':String(x);});   // 数字で届いても文字として扱う
+    var m=/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(r[0]||'');
+    // 日時かチップ数が読めない行は、集計に入れず画面に知らせる
+    if(!m||isNaN(num(r[5]))||+m[2]<1||+m[2]>12||+m[3]<1||+m[3]>31||+m[4]>23||+m[5]>59){S.bad.push(r[1]?'取引ID '+r[1]:(i+2)+'行目');return;}
     if(!r[7]||EXCLUDE_STORES.indexOf(r[7])>=0)return;   // 集計に入れない店舗（オーナー指定 2026-11-24）
-    S.recs.push({dt:r[0],id:r[1],uid:r[2],nick:r[3],type:r[4]||'その他',amt:num(r[5]),bal:num(r[6]),
-      store:r[7]||'（店舗なし）',dev:r[8]||'',memo:r[9]||'',
-      biz:bizDate(+m[1],+m[2],+m[3],(+m[4])*60+(+m[5]),r[7]||''),
-      sort:m[1]+('0'+m[2]).slice(-2)+('0'+m[3]).slice(-2)+('0'+m[4]).slice(-2)+m[5]+('0000000000'+(r[1]||'')).slice(-10)});
+    S.recs.push({dt:r[0],id:r[1],uid:r[2],nick:r[3],type:r[4]||'その他',amt:num(r[5]),bal:isNaN(num(r[6]))?'':num(r[6]),
+      store:r[7],dev:r[8]||'',memo:r[9]||'',
+      biz:bizDate(+m[1],+m[2],+m[3],(+m[4])*60+(+m[5]),r[7]),
+      sort:m[1]+('0'+m[2]).slice(-2)+('0'+m[3]).slice(-2)+('0'+m[4]).slice(-2)+m[5]+('0'+(m[6]||'0')).slice(-2)+('0000000000'+(r[1]||'')).slice(-10)});
   });
 }
 function storeNames(){
   var seen={},out=[];
   S.recs.forEach(function(r){if(!seen[r.store]){seen[r.store]=1;out.push(r.store);}});
-  Object.keys(S.settings.stores).forEach(function(n){if(!seen[n]){seen[n]=1;out.push(n);}});
+  Object.keys(S.settings.stores).forEach(function(n){if(!seen[n]&&n!=='（店舗なし）'&&EXCLUDE_STORES.indexOf(n)<0){seen[n]=1;out.push(n);}});
   return out.sort();
 }
 function todayBiz(){
@@ -331,6 +336,8 @@ function render(){
     '営業日：'+p[0].replace(/-/g,'/')+(p[0]===p[1]?'':' 〜 '+p[1].replace(/-/g,'/')))+'　単位：チップ';
   $('from').max=p[1];$('to').min=p[0];
   $('kari').hidden=S.settings.saved;
+  $('warn').hidden=!S.bad.length;
+  if(S.bad.length)$('warn').textContent='読めない行が'+S.bad.length+'件あり、集計に入っていません（'+S.bad.slice(0,5).join('、')+(S.bad.length>5?' ほか':'')+'）';
   $('sync').textContent='';
   if(S.synced){$('sync').appendChild(el('span','', '同期 '));$('sync').appendChild(document.createTextNode(S.synced.replace(/^\d{4}\//,'').replace(/:\d{2}$/,'')));}
 
@@ -381,10 +388,13 @@ function csvCell(v){
   if(/^[=+\-@\t\r]/.test(s))s="'"+s;   // 表計算で数式として動かないようにする
   return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
 }
+function csvText(v){
+  var lines=[v.head].concat(v.rows);if(v.total)lines.push(v.total);
+  return '\ufeff'+lines.map(function(r){return r.map(csvCell).join(',');}).join('\r\n')+'\r\n';
+}
 function downloadCsv(){
   var v=S.view;if(!v||!v.rows.length)return;
-  var lines=[v.head].concat(v.rows);if(v.total)lines.push(v.total);
-  var text='﻿'+lines.map(function(r){return r.map(csvCell).join(',');}).join('\r\n')+'\r\n';
+  var text=csvText(v);
   var p=periodRange(),tab=TABS.filter(function(t){return t[0]===S.tab;})[0][1];
   var span=S.period==='all'?'全期間':p[0].replace(/-/g,'')+(p[0]===p[1]?'':'-'+p[1].replace(/-/g,''));
   var name='casaPoint_'+(S.store==='all'?'全店':S.store)+'_'+span+'_'+tab+'.csv';
@@ -460,7 +470,7 @@ $('more').onclick=function(){S.limit+=PAGE;render();};
 $('from').onchange=function(){S.from=this.value;S.limit=PAGE;render();};
 $('to').onchange=function(){S.to=this.value;S.limit=PAGE;render();};
 $('scroll').addEventListener('scroll',hint,{passive:true});window.addEventListener('resize',hint);
-window.__casaPoint={S:S,boundary:boundary,bizDate:bizDate,makeView:makeView};
+window.__casaPoint={build:build,render:render,csvText:csvText,periodRange:periodRange,S:S,boundary:boundary,bizDate:bizDate,makeView:makeView};
 load();
 })();
 </script>
