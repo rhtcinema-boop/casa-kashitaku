@@ -188,6 +188,7 @@ th{z-index:2}
 (function(){
 'use strict';
 var API_URL='https://script.google.com/macros/s/AKfycbyZvSXiegJGumalqTbZnA326goaTWqLxi2FeXjS7jZNMCy23LIqT8lLtYPUxONBbv10/exec';
+var EXCLUDE_STORES=['開発テスト'];
 var KNOWN_TYPES=['ためる','つかう','調整'];
 var PERIODS=[['today','今日'],['yesterday','昨日'],['week','今週'],['month','今月'],['lastMonth','先月'],['all','全期間'],['custom','期間指定']];
 var TABS=[['day','日別'],['store','店舗別'],['member','会員別'],['detail','明細']];
@@ -219,6 +220,7 @@ function build(){
   S.raw.forEach(function(r){
     var m=/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/.exec(r[0]||'');
     if(!m)return;
+    if(!r[7]||EXCLUDE_STORES.indexOf(r[7])>=0)return;   // 集計に入れない店舗（オーナー指定 2026-11-24）
     S.recs.push({dt:r[0],id:r[1],uid:r[2],nick:r[3],type:r[4]||'その他',amt:num(r[5]),bal:num(r[6]),
       store:r[7]||'（店舗なし）',dev:r[8]||'',memo:r[9]||'',
       biz:bizDate(+m[1],+m[2],+m[3],(+m[4])*60+(+m[5]),r[7]||''),
